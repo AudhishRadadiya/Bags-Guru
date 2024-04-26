@@ -1,0 +1,280 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
+
+$primary: #322972;
+$secondary: #ed701e;
+$bgLightGray: #fbfafc;
+$textDark: #343434;
+$textLight: #7b7b7b;
+$textExtraLight: #d7d7d7;
+$borderColor: #d7d7d7;
+$textPrimary: #322972;
+$secondary: #ed701e;
+$textWhite: #ffffff;
+$bgWhite: #fff;
+$bgPrimaryLight: #ebe9ff;
+$green: #1c8f3c;
+
+body {
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #343434;
+  background: #fbfafc;
+  overflow: hidden;
+}
+
+p {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #343434;
+}
+
+a {
+  transition: 0.5s ease;
+  text-decoration: none;
+  color: $textPrimary;
+}
+a:hover {
+  color: $secondary;
+}
+
+.text_dark {
+  color: $textDark !important;
+}
+.text_light {
+  color: $textLight !important;
+}
+.text_extra_light {
+  color: $textExtraLight !important;
+}
+.text_primary {
+  color: $textPrimary !important;
+}
+.text_secondary {
+  color: $secondary !important;
+}
+.text_white {
+  color: $textWhite !important;
+}
+.text_success {
+  color: #00b232;
+}
+.text_danger {
+}
+.border {
+  border: 1px solid $borderColor;
+}
+
+.bg_white {
+  background: $bgWhite;
+}
+.bg_light {
+  background: $bgLightGray;
+}
+.bg_primary_light {
+  background: $bgPrimaryLight;
+}
+
+.white_space_nowrap {
+  white-space: nowrap;
+}
+.white_space_wrap {
+  white-space: break-spaces;
+}
+
+.text_small {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+h1 {
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 26px;
+}
+h2 {
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 24px;
+}
+h3 {
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 22px;
+}
+h4 {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+}
+h5 {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+}
+h6 {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.fw_100 {
+  font-weight: 100;
+}
+.fw_200 {
+  font-weight: 200;
+}
+.fw_300 {
+  font-weight: 300;
+}
+.fw_400 {
+  font-weight: 400;
+}
+.fw_500 {
+  font-weight: 500;
+}
+.fw_600 {
+  font-weight: 600;
+}
+.fw_700 {
+  font-weight: 700;
+}
+.fw_800 {
+  font-weight: 800;
+}
+.fw_900 {
+  font-weight: 900;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 15px;
+  height: 15px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #fff;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #ebe9ff;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: $primary;
+}
+
+.badge {
+  border-radius: 4px;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  padding: 5px 0;
+  width: 80px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  &.bg-success {
+    background-color: #b6f2d8 !important;
+    color: #1c8f3c;
+  }
+  &.bg-secondary {
+    background-color: #d7d7d7 !important;
+    color: #7b7b7b;
+  }
+}
+.react-loading-skeleton {
+  line-height: 35px !important;
+  margin: 10px 0;
+}
+.max_100 {
+  max-width: 100%;
+}
+.max_75 {
+  max-width: 75%;
+}
+.max_66 {
+  max-width: 66.667%;
+}
+.max_50 {
+  max-width: 50%;
+}
+.max_33 {
+  max-width: 33.3333%;
+}
+.max_25 {
+  max-width: 25%;
+}
+.max_100px {
+  max-width: 100px;
+  width: auto;
+}
+.max_150px {
+  max-width: 150px;
+  width: auto;
+  white-space: normal;
+}
+.max_280px {
+  max-width: 280px;
+  width: auto;
+}
+.min_100 {
+  min-width: 100px;
+}
+
+.pb20 {
+  padding-bottom: 20px;
+}
+
+.mb10 {
+  margin-bottom: 10px !important;
+}
+
+.mb20 {
+  margin-bottom: 20px;
+}
+
+.px_10 {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+.py_10 {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+@media (max-width: 1600px) {
+  body {
+    font-size: 13px;
+    line-height: 17px;
+  }
+  p {
+    font-size: 13px;
+    line-height: 17px;
+  }
+}
+
+@media (max-width: 575px) {
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+}
+
+@media (min-width: 575px) {
+  .w-sm-auto {
+    width: auto !important;
+  }
+}

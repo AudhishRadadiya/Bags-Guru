@@ -1,0 +1,408 @@
+.financial_year_wrap {
+  ul {
+    li {
+      padding: 26px 16px;
+      border-top: 1px solid #d2d1ff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      .finanacial_year_left {
+        position: relative;
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -12px;
+          left: 50%;
+          transform: translate(-50%, 0);
+          height: 5px;
+          width: 40px;
+          background: $primary;
+          border-radius: 30px;
+        }
+        &.orange_line {
+          &::after {
+            background: $secondary;
+          }
+        }
+      }
+      .finanacial_year_right {
+        text-align: right;
+      }
+    }
+  }
+}
+
+.pie_chart_wrap .highcharts-container {
+  height: 250px !important;
+}
+
+.sales_comparison_chart_wrap .highcharts-container {
+  height: 293px !important;
+}
+
+.sales_calculation {
+  > ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    > li {
+      margin: 15px 0;
+    }
+  }
+}
+
+.chart_wrap {
+  justify-content: space-between;
+  .pie_chart_wrap {
+    width: 250px;
+  }
+  .chart_list_wrap {
+    min-width: 100px;
+  }
+}
+
+.table_main_Wrapper.admin_table_wrapper
+  .top_filter_wrap
+  .right_filter_wrapper
+  ul {
+  flex-wrap: nowrap;
+}
+
+.table_main_Wrapper.admin_table_wrapper {
+  border-bottom: none;
+}
+
+.chart_box_wrapper h3 {
+  font-size: 16px;
+}
+
+.sales_dashboard_main_wrap .chart_box_wrapper .chart_head_wrapper ul {
+  flex-wrap: nowrap;
+}
+
+.sales_dashboard_main_wrap .p-selectbutton {
+  display: flex;
+  flex-wrap: nowrap;
+  width: fit-content;
+}
+
+.sales_dashboard_main_wrap
+  .chart_box_wrapper
+  .pie_chart_Wrapper
+  .legend_wrapper {
+  padding-left: 0;
+}
+
+.table_wrapper {
+  .table_scroll_wrapper {
+    &.Customers_table_wrapper {
+      height: 323px;
+      tbody {
+        tr {
+          th {
+            padding: 8px 10px;
+            color: #000;
+            border-top: 1px solid #d7d7d7;
+          }
+          td {
+            padding: 14px 10px;
+          }
+        }
+      }
+      thead {
+        tr {
+          th {
+            padding: 15px 20px 15px 10px;
+            font-weight: bold;
+          }
+        }
+      }
+    }
+    &.admin_dashboars_table_wrapper {
+      height: 312px;
+      max-height: inherit;
+      thead {
+        tr {
+          th {
+            padding: 15px 10px 15px 10px;
+            font-weight: bold;
+            border: 1px solid #c5c5c5;
+            position: sticky;
+            top: 0;
+          }
+          &:last-child {
+            th {
+              top: 34px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.data_table_wrapper {
+  &.customer_follow_table_wrapper {
+    > .p-datatable {
+      > .p-datatable-wrapper {
+        height: 323px;
+      }
+    }
+  }
+}
+
+.new_customer {
+  td {
+    &:nth-child(2) {
+      border-left: 1px solid #d7d7d7;
+      border-right: 1px solid #d7d7d7;
+    }
+  }
+}
+.total_turnover {
+  td {
+    &:first-child {
+      border-left: 1px solid #d7d7d7;
+      border-right: 1px solid #d7d7d7;
+    }
+  }
+}
+
+.chart_head_wrapper .date_range_wrapper .date_range_select {
+  padding: 7px 10px;
+  font-size: 12px;
+  min-width: 210px;
+}
+
+@media (max-width: 1800px) {
+  .sales_dashboard_main_wrap .chart_wrap .pie_chart_wrap {
+    width: 220px;
+  }
+}
+
+@media (max-width: 1750px) {
+  .sales_dashboard_main_wrap .chart_box_wrapper .chart_head_wrapper {
+    flex-wrap: wrap;
+    gap: 10px;
+    h3 {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 1650px) {
+  .chart_wrap .pie_chart_wrap {
+    width: 200px;
+  }
+  .chart_title h3 {
+    font-size: 16px;
+  }
+  .finanacial_year_right h2 {
+    font-size: 18px;
+  }
+  .finanacial_year_right h4 {
+    font-size: 14px;
+  }
+  .admin_table_wrapper .top_filter_wrap h3 {
+    font-size: 16px;
+  }
+  .sales_dashboard_main_wrap .chart_wrap .pie_chart_wrap {
+    width: 180px;
+  }
+  .pie_chart_wrap .highcharts-container {
+    height: 210px !important;
+  }
+  .chart_head_wrapper .date_range_wrapper .date_range_select {
+    // padding: 9px 8px;
+    // font-size: 13px;
+    min-width: 200px;
+  }
+  .table_wrapper .table_scroll_wrapper.Customers_table_wrapper tbody tr td {
+    padding: 12px 10px;
+  }
+  .chart_box_wrapper h3 {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 1450px) {
+  .chart_wrap .pie_chart_wrap {
+    width: 180px;
+  }
+  .pie_chart_wrap .highcharts-container {
+    height: 180px !important;
+  }
+  .chart_list_wrap ul li label {
+    font-size: 12px;
+  }
+  .chart_box_wrapper h3 {
+    font-size: 14px;
+  }
+  .table_wrapper .table_scroll_wrapper.Customers_table_wrapper tbody tr td {
+    padding: 10px 10px;
+  }
+}
+
+@media (max-width: 1400px) {
+  .chart_wrap .pie_chart_wrap {
+    width: 230px;
+  }
+
+  .sales_dashboard_main_wrap .pie_chart_Wrapper {
+    flex-wrap: wrap;
+  }
+
+  .chart_wrap .chart_list_wrap {
+    width: 30%;
+  }
+
+  .pie_chart_wrap .highcharts-container {
+    height: 170px !important;
+  }
+  .sales_dashboard_main_wrap
+    .chart_box_wrapper
+    .pie_chart_Wrapper
+    .legend_wrapper {
+    width: 50%;
+    padding-top: 0;
+  }
+  .sales_dashboard_main_wrap .chart_box_wrapper .pie_chart_Wrapper .chart_wrap {
+    width: 50%;
+  }
+  .sales_dashboard_main_wrap
+    .chart_box_wrapper
+    .pie_chart_Wrapper
+    .chart_wrap
+    .pie_chart_wrap {
+    width: 100%;
+  }
+  .sales_dashboard_main_wrap
+    .chart_box_wrapper
+    .pie_chart_Wrapper
+    .legend_wrapper
+    ul
+    li {
+    margin: 0 0 10px;
+  }
+  .sales_dashboard_main_wrap .chart_box_wrapper .chart_head_wrapper h3 {
+    width: auto;
+  }
+}
+
+@media (max-width: 1200px) {
+  .chart_wrap .pie_chart_wrap {
+    width: 300px;
+  }
+
+  .sales_calculation > ul > li {
+    width: 100%;
+  }
+
+  .bg_box .bg_box_inner .sales_new_customer .sales_new_customer_right {
+    width: 100%;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 991px) {
+  .chart_wrap .pie_chart_wrap {
+    width: 200px;
+  }
+  .sales_Comparison_col {
+    order: 6;
+  }
+  .bg_box .bg_box_inner .sales_new_customer .sales_new_customer_right {
+    width: calc(100% - 60px);
+    padding-left: 15px;
+  }
+  .sales_calculation > ul > li {
+    width: 50%;
+  }
+  .sales_dashboard_main_wrap .chart_box_wrapper .chart_head_wrapper h3 {
+    width: auto;
+  }
+  // .round_chat_head .chart_head_wrapper {
+  //   flex-direction: column;
+  //   align-items: flex-start;
+  //   gap: 5px;
+  // }
+}
+
+@media (max-width: 767px) {
+  .sales_comparison_top {
+    > ul {
+      flex-wrap: wrap;
+      > li {
+        width: 100%;
+        h5 {
+          text-align: start !important;
+        }
+      }
+    }
+  }
+  .chart_wrap .pie_chart_wrap {
+    width: 310px;
+  }
+  .chart_wrap .chart_list_wrap {
+    width: 40%;
+  }
+}
+
+@media (max-width: 600px) {
+  .chart_wrap .pie_chart_wrap {
+    width: 230px;
+  }
+}
+
+@media (max-width: 575px) {
+  .chart_title_list ul {
+    gap: 10px;
+    li {
+      width: calc(50% - 30px);
+    }
+  }
+  .pie_chart_wrap .highcharts-container {
+    height: 180px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .bg_box .bg_box_inner .sales_new_customer .sales_new_customer_right {
+    width: 100%;
+    padding-left: 0;
+  }
+  .sales_calculation > ul > li {
+    width: 100%;
+  }
+  .chart_wrap .pie_chart_wrap {
+    margin: 0 auto;
+  }
+  .chart_wrap .chart_list_wrap {
+    width: 100%;
+  }
+  .pie_chart_Wrapper {
+    padding: 10px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .chart_header {
+    flex-wrap: wrap;
+    gap: 15px;
+    .chart_title {
+      width: 100%;
+    }
+    .chart_input_wrap {
+      width: 100%;
+    }
+  }
+
+  .chart_title_list ul li {
+    width: 100%;
+    padding: 0;
+  }
+  .chart_wrap .pie_chart_wrap {
+    width: 180px;
+  }
+}

@@ -1,0 +1,372 @@
+.bedge_warning {
+  font-size: 13px;
+  padding: 5px 14px;
+  color: #f3a533;
+  background: #fff4d3;
+  border: 1px solid #fbcf4f;
+  border-radius: 4px;
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed !important;
+  }
+}
+.bedge_danger {
+  font-size: 13px;
+  padding: 5px 14px;
+  color: #c62828;
+  background: #ffc3c3;
+  border: 1px solid #c62828;
+  border-radius: 4px;
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed !important;
+  }
+}
+.bedge_success {
+  font-size: 13px;
+  padding: 5px 14px;
+  color: #1c8f3c;
+  background: #b6f2d8;
+  border: 1px solid #1c8f3c;
+  border-radius: 4px;
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed !important;
+  }
+}
+
+.address_select_wrap {
+  border: 1px solid $borderColor;
+  border-radius: 6px;
+  .p-dropdown {
+    border: none;
+    border-bottom: 1px solid $borderColor;
+    border-radius: 0;
+    background: transparent;
+    &:hover {
+      border-color: $borderColor !important;
+    }
+    &:focus {
+      border-color: $borderColor !important;
+    }
+  }
+  .address_wrap {
+    padding: 10px;
+  }
+  &:hover {
+    border-color: $primary;
+  }
+}
+
+.product_detail_wrap {
+  img {
+    height: 270px;
+    object-fit: contain;
+    margin: 15px 0;
+    @media (max-width: 1400px) {
+      height: 200px;
+    }
+  }
+}
+
+.rounded_ul {
+  li {
+    padding-left: 12px;
+    position: relative;
+    margin-bottom: 10px;
+    &::after {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: $textDark;
+    }
+  }
+}
+
+.grey_border_box {
+  padding: 10px;
+  border: 1px solid $borderColor;
+  border-radius: 4px;
+  background: $bgWhite;
+  margin-bottom: 10px;
+}
+
+.product_box {
+  background: $bgLightGray;
+  border-radius: 6px;
+  border: 1px solid $borderColor;
+  .product_img {
+    padding: 10px;
+    border-bottom: 1px solid $borderColor;
+    position: relative;
+    .p-checkbox {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+    }
+    img {
+      height: 180px;
+      object-fit: contain;
+      width: 100%;
+      background: #e5e5e5;
+    }
+  }
+  .product_content {
+    padding: 10px;
+  }
+}
+
+.size_checkbox_wrap {
+  ul {
+    @media (max-width: 991px) {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    li {
+      @media (max-width: 991px) {
+        width: calc(33.33% - 20px);
+        margin: 0 10px 10px;
+        @media (max-width: 767px) {
+          width: calc(50% - 20px);
+          @media (max-width: 575px) {
+            width: 100%;
+            margin: 0 0 10px;
+          }
+        }
+      }
+    }
+  }
+}
+
+.order_operator_right {
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    li {
+      width: calc(100% / 6 - 20px);
+      margin: 0 10px 20px;
+      @media (max-width: 1650px) {
+        width: calc(100% / 5 - 20px);
+        @media (max-width: 1450px) {
+          width: calc(100% / 4 - 20px);
+        }
+        @media (max-width: 1400px) {
+          width: calc(100% / 3 - 20px);
+          @media (max-width: 767px) {
+            width: calc(100% / 2 - 20px);
+            @media (max-width: 575px) {
+              width: 100%;
+              margin: 0 0 10px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.order_operator_right {
+  height: calc(100vh - 290px);
+  overflow: auto;
+}
+
+.job_detail_img.product_img img {
+  height: 50px;
+  // height: 100px;
+  object-fit: contain;
+}
+
+.order_operator_flex {
+  display: flex;
+  flex-wrap: wrap;
+  .order_operator_left_wrap {
+    width: 320px;
+    @media (max-width: 1200px) {
+      width: 260px;
+    }
+    @media (max-width: 991px) {
+      width: 100%;
+    }
+    .order_operator_left {
+      ul {
+        height: calc(100vh - 353px);
+        overflow: auto;
+        padding-right: 5px;
+      }
+    }
+  }
+  .order_operator_right_wrap {
+    width: calc(100% - 320px);
+    padding-left: 10px;
+    @media (max-width: 1200px) {
+      width: calc(100% - 260px);
+    }
+    @media (max-width: 991px) {
+      width: 100%;
+      padding-left: 0;
+      margin-top: 30px;
+    }
+  }
+}
+
+.job_detail_question_wrap {
+  ul {
+    @media (max-width: 991px) {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    li {
+      display: flex;
+      margin-bottom: 10px;
+      align-items: center;
+      img {
+        width: 25px;
+      }
+      label {
+        width: calc(100% - 25px);
+        padding-left: 10px;
+      }
+      @media (max-width: 991px) {
+        width: calc(33.33% - 20px);
+        margin: 0 10px 10px;
+        @media (max-width: 767px) {
+          width: calc(50% - 20px);
+          @media (max-width: 575px) {
+            width: 100%;
+            margin: 0 0 20px;
+          }
+        }
+      }
+    }
+  }
+}
+
+.order_radio_wrap .custom_radio_wrappper {
+  margin-bottom: 50px;
+  @media (max-width: 1600px) {
+    margin-bottom: 20px;
+  }
+}
+
+.plus_address_wrap .btn_primary {
+  padding: 6px 7px;
+  img {
+    width: 22px;
+  }
+}
+
+.col-xxxl-6 {
+  @media (min-width: 1600px) {
+    flex: 0 0 auto;
+    width: 50%;
+  }
+  width: 100%;
+  &.custom_col {
+    @media (max-width: 1200px) {
+      width: 25%;
+      @media (max-width: 991px) {
+        width: 33.33%;
+      }
+      @media (max-width: 767px) {
+        width: 50%;
+      }
+    }
+  }
+}
+
+.comment_wrapper {
+  p {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.p-image-preview-enter-done img {
+  background: #fff;
+  padding: 20px;
+}
+
+.add_package_wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid $borderColor;
+  border-radius: 4px;
+  background: $bgWhite;
+  .icon {
+    padding: 8px;
+    border-right: 1px solid $borderColor;
+    cursor: pointer;
+  }
+  span {
+    padding: 0 8px;
+  }
+}
+
+.invoice_no {
+  color: #ed701e;
+}
+
+// .add_job_left_wrap{
+//   @mdia
+// }
+
+.radio_line_wrap {
+  display: flex;
+  align-items: center;
+  .custom_radio_wrappper {
+    width: 90px;
+  }
+  .radio_line_input {
+    width: calc(100% - 90px);
+    .custom_col {
+      width: 20%;
+      @media (max-width: 1400px) {
+        width: 33.33%;
+        @media (max-width: 767px) {
+          width: 50%;
+          @media (max-width: 575px) {
+            width: 100%;
+          }
+        }
+      }
+    }
+  }
+}
+
+.job_detail_right_wrap_inner {
+  max-height: 420px;
+  overflow: hidden auto;
+  padding-right: 20px;
+}
+
+@media (max-width: 1441px) {
+  .bedge_success,
+  .bedge_danger,
+  .bedge_warning {
+    font-size: 12px;
+    padding: 4px 14px;
+  }
+}
+
+@media (max-width: 575px) {
+  .bedge_success,
+  .bedge_danger,
+  .bedge_warning {
+    font-size: 12px;
+    padding: 3px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .order_checkbox_wrap {
+    margin-top: 12px;
+  }
+  .order_radio_wrap .row .col-xxxl-6.custom_col {
+    width: 100%;
+  }
+}
