@@ -44,6 +44,8 @@ import {
 import {
   setIsStockTransfer,
   setSelectedStockTransferData,
+  setSortStockRawMaterialField,
+  setSortStockRawMaterialOrder,
   setStockRawList,
   setStockSingleRowData,
 } from 'Store/Reducers/Inventory/StockRawMaterialSlice';
@@ -147,6 +149,8 @@ export default function Stock() {
 
   const {
     stockRawList,
+    sortStockRawMaterialField,
+    sortStockRawMaterialOrder,
     stockRawBaseDataList,
     stockRawLoading,
     selectedStockTransferData,
@@ -236,6 +240,7 @@ export default function Stock() {
           total_length: stockSingleRowData?.length,
         },
       });
+
       setActualWeight(
         parseFloat(stockSingleRowData?.net_weight?.split(' ')?.[0]),
       );
@@ -311,6 +316,11 @@ export default function Stock() {
       }
     }
   }, [stockRawList, dispatch]);
+
+  const onSort = e => {
+    dispatch(setSortStockRawMaterialField(e.sortField));
+    dispatch(setSortStockRawMaterialOrder(e.sortOrder));
+  };
 
   const weightCal = (price, weight, width) => {
     return (price * weight) / width;
@@ -866,22 +876,24 @@ export default function Stock() {
 
   const onPageChange = useCallback(
     page => {
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
 
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          stockRawMaterial: {
-            ...allFilters?.stockRawMaterial,
-            currentPage: pageIndex,
-          },
-        }),
-      );
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            stockRawMaterial: {
+              ...allFilters?.stockRawMaterial,
+              currentPage: pageIndex,
+            },
+          }),
+        );
 
-      dispatch(getRawStockList(pageLimit, pageIndex, searchQuery, applied));
+        dispatch(getRawStockList(pageLimit, pageIndex, searchQuery, applied));
+      }
     },
     [currentPage, dispatch, allFilters, pageLimit, searchQuery, applied],
   );
@@ -931,16 +943,12 @@ export default function Stock() {
         ...totalWeight,
         width: {
           ...totalWeight.width,
-          widthWeight_1: weightCal(
-            target,
-            actualWeight,
-            widthOrWidthMm,
-          )?.toFixed(2),
+          widthWeight_1: weightCal(target, actualWeight, widthOrWidthMm),
           widthWeight_2: weightCal(
             parseFloat(remaining),
             actualWeight,
             widthOrWidthMm,
-          )?.toFixed(2),
+          ),
           widthWeight_3: 0,
           widthWeight_4: 0,
           // ...(totalWeight?.width?.widthWeight_3 && { widthWeight_3: 0 }),
@@ -969,16 +977,12 @@ export default function Stock() {
         ...totalWeight,
         width: {
           ...totalWeight.width,
-          widthWeight_2: weightCal(
-            target,
-            actualWeight,
-            widthOrWidthMm,
-          )?.toFixed(2),
+          widthWeight_2: weightCal(target, actualWeight, widthOrWidthMm),
           widthWeight_3: weightCal(
             parseFloat(remaining),
             actualWeight,
             widthOrWidthMm,
-          )?.toFixed(2),
+          ),
           widthWeight_4: 0,
           // ...(totalWeight?.width?.widthWeight_4 && { widthWeight_4: 0 }),
         },
@@ -1005,16 +1009,12 @@ export default function Stock() {
         ...totalWeight,
         width: {
           ...totalWeight.width,
-          widthWeight_3: weightCal(
-            target,
-            actualWeight,
-            widthOrWidthMm,
-          )?.toFixed(2),
+          widthWeight_3: weightCal(target, actualWeight, widthOrWidthMm),
           widthWeight_4: weightCal(
             parseFloat(remaining),
             actualWeight,
             widthOrWidthMm,
-          )?.toFixed(2),
+          ),
         },
       });
     }
@@ -1039,11 +1039,7 @@ export default function Stock() {
         ...totalWeight,
         width: {
           ...totalWeight.width,
-          widthWeight_4: weightCal(
-            target,
-            actualWeight,
-            widthOrWidthMm,
-          )?.toFixed(2),
+          widthWeight_4: weightCal(target, actualWeight, widthOrWidthMm),
         },
       });
     }
@@ -1081,12 +1077,12 @@ export default function Stock() {
             target,
             actualWeight,
             stockSingleRowData?.length,
-          )?.toFixed(2),
+          ),
           lengthWeight_2: weightCal(
             parseFloat(remaining),
             actualWeight,
             stockSingleRowData?.length,
-          )?.toFixed(2),
+          ),
           lengthWeight_3: 0,
           lengthWeight_4: 0,
           // ...(totalWeight?.length?.lengthWeight_3 && { lengthWeight_3: 0 }),
@@ -1122,12 +1118,12 @@ export default function Stock() {
             target,
             actualWeight,
             stockSingleRowData?.length,
-          )?.toFixed(2),
+          ),
           lengthWeight_3: weightCal(
             parseFloat(remaining),
             actualWeight,
             stockSingleRowData?.length,
-          )?.toFixed(2),
+          ),
           lengthWeight_4: 0,
           // ...(totalWeight?.length?.lengthWeight_4 && { lengthWeight_4: 0 }),
         },
@@ -1161,12 +1157,12 @@ export default function Stock() {
             target,
             actualWeight,
             stockSingleRowData?.length,
-          )?.toFixed(2),
+          ),
           lengthWeight_4: weightCal(
             parseFloat(remaining),
             actualWeight,
             stockSingleRowData?.length,
-          )?.toFixed(2),
+          ),
         },
       });
     }
@@ -1194,7 +1190,7 @@ export default function Stock() {
             target,
             actualWeight,
             stockSingleRowData?.length,
-          )?.toFixed(2),
+          ),
         },
       });
     }
@@ -1236,6 +1232,7 @@ export default function Stock() {
     };
     dispatch(splitRollData(obj));
   };
+
   const saveStockConsumption = useCallback(async () => {
     if (consumptionData?.reason === '') {
       setConsumptionData({
@@ -1478,9 +1475,10 @@ export default function Stock() {
               value={stockRawList?.list}
               rowGroupMode="subheader"
               groupRowsBy="d_name"
-              sortMode="multiple"
-              sortField="d_name"
-              sortOrder={1}
+              sortMode="single"
+              onSort={onSort}
+              sortField={sortStockRawMaterialField}
+              sortOrder={sortStockRawMaterialOrder}
               expandableRowGroups
               expandedRows={expandedRows}
               onRowToggle={e => setExpandedRows(e.data)}
@@ -2361,22 +2359,22 @@ export default function Stock() {
                       <li>Weight</li>
                       <li>
                         {totalWeight?.width?.widthWeight_1
-                          ? totalWeight?.width?.widthWeight_1
+                          ? convertIntoNumber(totalWeight?.width?.widthWeight_1)
                           : ''}
                       </li>
                       <li>
                         {totalWeight?.width?.widthWeight_2
-                          ? totalWeight?.width?.widthWeight_2
+                          ? convertIntoNumber(totalWeight?.width?.widthWeight_2)
                           : ''}
                       </li>
                       <li>
                         {totalWeight?.width?.widthWeight_3
-                          ? totalWeight?.width?.widthWeight_3
+                          ? convertIntoNumber(totalWeight?.width?.widthWeight_3)
                           : ''}
                       </li>
                       <li>
                         {totalWeight?.width?.widthWeight_4
-                          ? totalWeight?.width?.widthWeight_4
+                          ? convertIntoNumber(totalWeight?.width?.widthWeight_4)
                           : ''}
                       </li>
                     </ul>
@@ -2411,22 +2409,30 @@ export default function Stock() {
                       <li>Weight</li>
                       <li>
                         {totalWeight?.length?.lengthWeight_1
-                          ? totalWeight?.length?.lengthWeight_1
+                          ? convertIntoNumber(
+                              totalWeight?.length?.lengthWeight_1,
+                            )
                           : ''}
                       </li>
                       <li>
                         {totalWeight?.length?.lengthWeight_2
-                          ? totalWeight?.length?.lengthWeight_2
+                          ? convertIntoNumber(
+                              totalWeight?.length?.lengthWeight_2,
+                            )
                           : ''}
                       </li>
                       <li>
                         {totalWeight?.length?.lengthWeight_3
-                          ? totalWeight?.length?.lengthWeight_3
+                          ? convertIntoNumber(
+                              totalWeight?.length?.lengthWeight_3,
+                            )
                           : ''}
                       </li>
                       <li>
                         {totalWeight?.length?.lengthWeight_4
-                          ? totalWeight?.length?.lengthWeight_4
+                          ? convertIntoNumber(
+                              totalWeight?.length?.lengthWeight_4,
+                            )
                           : ''}
                       </li>
                     </ul>

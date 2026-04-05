@@ -252,10 +252,13 @@
   }
 }
 
-.plus_address_wrap .btn_primary {
-  padding: 6px 7px;
-  img {
-    width: 22px;
+.plus_address_wrap {
+  width: fit-content;
+  .btn_primary {
+    padding: 6px 7px;
+    img {
+      width: 22px;
+    }
   }
 }
 

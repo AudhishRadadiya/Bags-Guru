@@ -7,6 +7,8 @@ let initialState = {
   completedPrePrintedOrderList: {},
   savedPrePrintedOrder: {},
   selectedRollsData: [],
+  sortPrePrintedField: null,
+  sortPrePrintedOrder: null,
 };
 
 const prePrintedStatusSlice = createSlice({
@@ -31,6 +33,12 @@ const prePrintedStatusSlice = createSlice({
     setSelectedRollsData: (state, action) => {
       state.selectedRollsData = action.payload;
     },
+    setSortPrePrintedField: (state, action) => {
+      state.sortPrePrintedField = action.payload;
+    },
+    setSortPrePrintedOrder: (state, action) => {
+      state.sortPrePrintedOrder = action.payload;
+    },
   },
 });
 
@@ -41,5 +49,7 @@ export const {
   setCompletedPrePrintedOrderList,
   setSavedPrePrintedOrder,
   setSelectedRollsData,
+  setSortPrePrintedField,
+  setSortPrePrintedOrder,
 } = prePrintedStatusSlice.actions;
 export default prePrintedStatusSlice.reducer;

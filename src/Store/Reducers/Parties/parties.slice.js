@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const addPartiesData = {
   party_type: '',
+  party_type_label: '',
   party_name: '',
   person_name: '',
   personal_email: '',
@@ -14,6 +15,9 @@ const addPartiesData = {
   state_option: [],
   city_option: [],
   is_mobile_app_registered: false,
+  is_reviewed: false,
+  review_snapshot: '',
+  review_snapshot_name: '',
   bag_rate_list: 1,
   register_mobile_number: [],
   register_email: [],
@@ -54,6 +58,9 @@ const addPartiesData = {
   address_details_cityOption: [],
   is_default: true,
   is_same_as_shipping: false,
+  transporter_attachment_file_name: '',
+  collection_note: '',
+  no_of_outlets: 1,
 };
 
 let initialState = {
@@ -124,6 +131,10 @@ let initialState = {
   // registerPhoneIndex: [''], // new
   // registerEmailIndex: [''], // new
   partiesListLoading: false,
+  sortPartiesField: null,
+  sortPartiesOrder: null,
+  transporterFileLink: '',
+  transporterPrevFileLink: '',
 };
 
 const partiesSlice = createSlice({
@@ -269,6 +280,18 @@ const partiesSlice = createSlice({
     setRegisterEmailIndex: (state, action) => {
       state.registerEmailIndex = action.payload;
     },
+    setSortPartiesField: (state, action) => {
+      state.sortPartiesField = action.payload;
+    },
+    setSortPartiesOrder: (state, action) => {
+      state.sortPartiesOrder = action.payload;
+    },
+    setTransporterFileLink: (state, action) => {
+      state.transporterFileLink = action.payload;
+    },
+    setTransporterPrevFileLink: (state, action) => {
+      state.transporterPrevFileLink = action.payload;
+    },
   },
 });
 
@@ -319,6 +342,10 @@ export const {
   setPartiesAddressList,
   setRegisterPhoneIndex,
   setRegisterEmailIndex,
+  setSortPartiesField,
+  setSortPartiesOrder,
+  setTransporterFileLink,
+  setTransporterPrevFileLink,
 } = partiesSlice.actions;
 
 export default partiesSlice.reducer;

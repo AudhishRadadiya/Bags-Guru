@@ -16,7 +16,10 @@ import {
 } from 'Services/Settings/RolePermissionService';
 import { clearSelectedRolePermissions } from 'Store/Reducers/Settings/SettingSlice';
 import Loader from 'Components/Common/Loader';
-import { getUserRolesList } from 'Services/baseService';
+import {
+  getMainModuleWithSubModule,
+  getUserRolesList,
+} from 'Services/baseService';
 
 const subPermissions = [
   'create',
@@ -46,8 +49,13 @@ export default function AddRolePermissions() {
   }, [dispatch, role_id, state?.role]);
 
   useEffect(() => {
-    if (locationPath?.length < 3) dispatch(clearSelectedRolePermissions());
-    else if (role_id) loadData();
+    // if (locationPath?.length < 3) dispatch(clearSelectedRolePermissions());
+    if (role_id) {
+      loadData();
+    } else {
+      dispatch(getMainModuleWithSubModule());
+    }
+
     return () => dispatch(clearSelectedRolePermissions());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role_id, locationPath?.length]);
@@ -179,7 +187,7 @@ export default function AddRolePermissions() {
 
   return (
     <>
-      {settingsCRUDLoading && <Loader />}
+      {(settingsCRUDLoading || settingLoading) && <Loader />}
       <div className="main_Wrapper">
         <div className="border rounded-3 bg_white p-3">
           <Col md={12}>

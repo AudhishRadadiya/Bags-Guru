@@ -5,6 +5,8 @@ let initialState = {
   stockConsumptionExportLoading: false,
   stockConsumptionList: [],
   stockConsumptionCount: 0,
+  sortStockConsumptionField: null,
+  sortStockConsumptionOrder: null,
 };
 
 const StockConsumptionSlice = createSlice({
@@ -23,6 +25,12 @@ const StockConsumptionSlice = createSlice({
     setStockConsumptionCount: (state, action) => {
       state.stockConsumptionCount = action.payload;
     },
+    setSortStockConsumptionField: (state, action) => {
+      state.sortStockConsumptionField = action.payload;
+    },
+    setSortStockConsumptionOrder: (state, action) => {
+      state.sortStockConsumptionOrder = action.payload;
+    },
   },
 });
 
@@ -31,6 +39,8 @@ export const {
   setStockConsumptionList,
   setStockConsumptionLoading,
   setStockConsumptionExportLoading,
+  setSortStockConsumptionField,
+  setSortStockConsumptionOrder,
 } = StockConsumptionSlice.actions;
 
 export default StockConsumptionSlice.reducer;

@@ -239,15 +239,15 @@ const SalesInvoiceDetail = ({ initialValues }) => {
           sub_total_amount: convertIntoNumber(res?.sub_total_amount),
           sales_invoice_item: sales_invoice_item,
         };
-        // result = await dispatch(updateSalesInvoice(payload));
+        result = await dispatch(updateSalesInvoice(payload));
 
-        // dispatch(
-        //   setIsGetInitialValuesSalesInvoice({
-        //     ...isGetInitialValuesSalesInvoice,
-        //     update: false,
-        //   }),
-        // );
-        // ClearUpdateSelectedSalesInvoiceData();
+        dispatch(
+          setIsGetInitialValuesSalesInvoice({
+            ...isGetInitialValuesSalesInvoice,
+            update: false,
+          }),
+        );
+        ClearUpdateSelectedSalesInvoiceData();
       } else {
         const payload = {
           ...res,
@@ -271,21 +271,21 @@ const SalesInvoiceDetail = ({ initialValues }) => {
           sub_total_amount: convertIntoNumber(res?.sub_total_amount),
           sales_invoice_item: sales_invoice_item,
         };
-        // result = await dispatch(createSalesInvoice(payload));
+        result = await dispatch(createSalesInvoice(payload));
 
-        // dispatch(
-        //   setIsGetInitialValuesSalesInvoice({
-        //     ...isGetInitialValuesSalesInvoice,
-        //     add: false,
-        //   }),
-        // );
-        // ClearAddSelectedSalesInvoiceData();
+        dispatch(
+          setIsGetInitialValuesSalesInvoice({
+            ...isGetInitialValuesSalesInvoice,
+            add: false,
+          }),
+        );
+        ClearAddSelectedSalesInvoiceData();
       }
-      // if (result) {
-      //   // setBillingList([]);
-      //   // setShippingList([]);
-      //   navigate('/sales-invoice');
-      // }
+      if (result) {
+        // setBillingList([]);
+        // setShippingList([]);
+        navigate('/sales-invoice');
+      }
     },
     [dispatch, id, isGetInitialValuesSalesInvoice, navigate, fixedTerm],
   );
@@ -1506,6 +1506,8 @@ const SalesInvoiceDetail = ({ initialValues }) => {
           ...item,
           available_qty: qty_value,
           available_weight: weight_value,
+          total_available_qty: qty_value,
+          total_available_weight: weight_value,
         };
       });
 

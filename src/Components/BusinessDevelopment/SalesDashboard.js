@@ -16,13 +16,16 @@ import { useDispatch } from 'react-redux';
 import { setAllFilters } from 'Store/Reducers/Common';
 import WhatsAppIcon from '../../Assets/Images/whatsapp.svg';
 import {
-  getAdvisorReport,
+  getAdvisorTeamAverageSalesReport,
+  getAdvisorTeamComparisonReport,
+  getAdvisorTeamReport,
   getCustomerSorceDetailReport,
   getCustomerSourceReport,
   getIndustryReport,
   getLaminationReport,
   getNewAndRepeatOrderReport,
   getPartyTypeReport,
+  getReviewComparisonDetailReport,
   getSalesTargetList,
 } from 'Services/Sales/SalesDashboardServices';
 import {
@@ -33,6 +36,13 @@ import WhatsAppShare from 'Components/Common/Whatsapp';
 import { useNavigate } from 'react-router-dom';
 import { roundValueThousandSeparator, thousandSeparator } from 'Helper/Common';
 import accessibility from 'highcharts/modules/accessibility';
+import SalesComparison from 'Components/Common/Charts/SalesComparison';
+import AdvisorTeamComparison from './SalesDashboard/AdvisorTeamComparison';
+import AdvisorTeamAverageSales from './SalesDashboard/AdvisorTeamAverageSales';
+import ReviewComparison from './SalesDashboard/ReviewComparison';
+import AdvisorComparison from './SalesDashboard/AdvisorComparison';
+import { getAdvisorReportList } from 'Services/Business/AdminDashboardServices';
+import OKRReports from './SalesDashboard/OKRReports';
 
 accessibility(Highcharts);
 variablePie(Highcharts);
@@ -76,7 +86,6 @@ const SalesDashboard = () => {
   const {
     salesTableData,
     laminationReportData,
-    advisorReportData,
     partyTypeReportData,
     industryReportData,
     newAndRepeatOrderReportData,
@@ -84,8 +93,8 @@ const SalesDashboard = () => {
     customerSourceDetailData,
   } = useSelector(({ salesDashBoard }) => salesDashBoard);
 
-  const { allFilters, allCommon } = useSelector(({ common }) => common);
   const { customerList } = useSelector(({ customer }) => customer);
+  const { allFilters, allCommon } = useSelector(({ common }) => common);
 
   const { customerFollowUp } = allCommon?.salesDashboard;
   const { filterToggle } = customerFollowUp;
@@ -96,6 +105,7 @@ const SalesDashboard = () => {
     customerSourceReport,
     customerSorceDetailReport,
     industryReport,
+    reviewComparisonDetailReport,
   } = allFilters?.salesDashboard;
 
   const { field_filter, searchQuery } = allCommon?.customer;
@@ -114,13 +124,33 @@ const SalesDashboard = () => {
       ),
     ); // Customer List Report:
     dispatch(getLaminationReport(laminationReport?.dates)); // Lamination Type Sales:
-    dispatch(getAdvisorReport()); // Sales Comparision Report:
+    // dispatch(getAdvisorReport()); // Sales Comparison Report:
+    dispatch(getAdvisorReportList()); // Sales Comparison Report:
     dispatch(getPartyTypeReport(partyTypeReport?.dates)); // Party Type Sales Report:
     dispatch(getIndustryReport(industryReport?.dates)); // Industry Wise Sales Report:
     dispatch(getNewAndRepeatOrderReport()); // New & Repeat Order Report:
     dispatch(getCustomerSourceReport(customerSourceReport?.dates)); // Customer Source Report:
     dispatch(getCustomerSorceDetailReport(customerSorceDetailReport?.dates)); // Customer Source Detail Report:
-  }, []);
+    dispatch(getAdvisorTeamReport()); // Advisor Team Report:
+    dispatch(getAdvisorTeamComparisonReport()); // Advisor Team Comparison Report:
+    dispatch(getAdvisorTeamAverageSalesReport()); // Advisor Team Average Sales Report:
+    dispatch(
+      getReviewComparisonDetailReport(reviewComparisonDetailReport?.dates),
+    ); // Review Comparison Detail Report:
+  }, [
+    applied,
+    dispatch,
+    currentPage,
+    searchQuery,
+    field_filter,
+    salesReport?.dates,
+    industryReport?.dates,
+    partyTypeReport?.dates,
+    laminationReport?.dates,
+    customerSourceReport?.dates,
+    customerSorceDetailReport?.dates,
+    reviewComparisonDetailReport?.dates,
+  ]);
 
   useEffect(() => {
     loadData();
@@ -367,87 +397,87 @@ const SalesDashboard = () => {
     return options;
   }, [customerSourceDetailData]);
 
-  const SalesComparisonoptions = useMemo(() => {
-    const headerMenu = advisorReportData?.date || [];
-    let salesComparisonChartData = [];
-    // const generate_color = handleColorCode(advisorReportData?.data);
-    // const salesComparisonChartData = handleColorCode(advisorReportData?.data);
+  // const SalesComparisonoptions = useMemo(() => {
+  //   const headerMenu = advisorReportData?.date || [];
+  //   let salesComparisonChartData = [];
+  //   // const generate_color = handleColorCode(advisorReportData?.data);
+  //   // const salesComparisonChartData = handleColorCode(advisorReportData?.data);
 
-    if (advisorReportData?.data?.length > 0) {
-      salesComparisonChartData =
-        advisorReportData?.data?.map((item, i) => {
-          const colorIndex = i % color_code?.length;
-          return {
-            data: item?.sales,
-            name: item?.advisor_name,
-            color: color_code[colorIndex],
-          };
-        }) || [];
-    }
+  //   if (advisorReportData?.data?.length > 0) {
+  //     salesComparisonChartData =
+  //       advisorReportData?.data?.map((item, i) => {
+  //         const colorIndex = i % color_code?.length;
+  //         return {
+  //           data: item?.sales,
+  //           name: item?.advisor_name,
+  //           color: color_code[colorIndex],
+  //         };
+  //       }) || [];
+  //   }
 
-    const modifiedSalesComparisonData = {
-      chart: {
-        type: 'line',
-      },
-      title: {
-        text: '',
-      },
-      yAxis: {
-        title: {
-          text: 'Sales revenue',
-        },
-        opposite: true,
-      },
+  //   const modifiedSalesComparisonData = {
+  //     chart: {
+  //       type: 'line',
+  //     },
+  //     title: {
+  //       text: '',
+  //     },
+  //     yAxis: {
+  //       title: {
+  //         text: 'Sales revenue',
+  //       },
+  //       opposite: true,
+  //     },
 
-      xAxis: {
-        categories: headerMenu,
-      },
+  //     xAxis: {
+  //       categories: headerMenu,
+  //     },
 
-      credits: {
-        enabled: false,
-      },
-      legend: {
-        enabled: false,
-      },
-      series: salesComparisonChartData || [], // Ensure series is always an array
-      tooltip: {
-        formatter: function () {
-          return (
-            '<div>' +
-            '<span class="tooltip-x">' +
-            this.x +
-            '</span>' +
-            '</div>' +
-            '<div> <br>' +
-            '<span style="color:' +
-            this.point.color +
-            '">\u25CF</span> <b>' +
-            this.series.name +
-            '</b>: ' +
-            thousandSeparator(this.y) +
-            '</div>'
-          );
-        },
-      },
-      responsive: {
-        rules: [
-          {
-            condition: {
-              maxWidth: 500,
-            },
-            chartOptions: {
-              legend: {
-                layout: 'horizontal',
-                align: 'center',
-                verticalAlign: 'bottom',
-              },
-            },
-          },
-        ],
-      },
-    };
-    return modifiedSalesComparisonData;
-  }, [advisorReportData]);
+  //     credits: {
+  //       enabled: false,
+  //     },
+  //     legend: {
+  //       enabled: false,
+  //     },
+  //     series: salesComparisonChartData || [], // Ensure series is always an array
+  //     tooltip: {
+  //       formatter: function () {
+  //         return (
+  //           '<div>' +
+  //           '<span class="tooltip-x">' +
+  //           this.x +
+  //           '</span>' +
+  //           '</div>' +
+  //           '<div> <br>' +
+  //           '<span style="color:' +
+  //           this.point.color +
+  //           '">\u25CF</span> <b>' +
+  //           this.series.name +
+  //           '</b>: ' +
+  //           thousandSeparator(this.y) +
+  //           '</div>'
+  //         );
+  //       },
+  //     },
+  //     responsive: {
+  //       rules: [
+  //         {
+  //           condition: {
+  //             maxWidth: 500,
+  //           },
+  //           chartOptions: {
+  //             legend: {
+  //               layout: 'horizontal',
+  //               align: 'center',
+  //               verticalAlign: 'bottom',
+  //             },
+  //           },
+  //         },
+  //       ],
+  //     },
+  //   };
+  //   return modifiedSalesComparisonData;
+  // }, [advisorReportData]);
 
   const NewAndRepeatSales = useMemo(() => {
     const headerMenu = newAndRepeatOrderReportData?.date || [];
@@ -784,8 +814,605 @@ const SalesDashboard = () => {
             </div>
           </div>
         </Col>
-        <Col xxl={3} xl={4} md={6} className="order-5 order-xxl-0">
+
+        <Col
+          xxl={3}
+          xl={12}
+          className="okr-reports table_main_Wrapper bg-white px-0"
+        >
+          <OKRReports />
+        </Col>
+
+        {/* <Col xxl={3} xl={12} className="order-5 order-xxl-0">
+          <div className="chart_box_wrapper mb-md-0 mb-3 border rounded-3 bg_white h-100">
+            <div className="chart_head_wrapper">
+              <h3 className="m-0">Lamination Type Sales</h3>
+              <ul>
+                <li>
+                  <div className="form_group date_range_wrapper">
+                    <div
+                      className="date_range_select"
+                      onClick={e => {
+                        laminationDateRef.current.toggle(e);
+                      }}
+                    >
+                      <span>
+                        {laminationReport?.dates?.startDate
+                          ? moment(laminationReport?.dates.startDate).format(
+                              'DD-MM-yyyy',
+                            )
+                          : ''}{' '}
+                        {laminationReport?.dates?.startDate &&
+                          laminationReport?.dates?.endDate &&
+                          '-'}{' '}
+                        {laminationReport?.dates?.endDate
+                          ? moment(laminationReport?.dates.endDate).format(
+                              'DD-MM-yyyy',
+                            )
+                          : 'Select Date Range'}
+                      </span>
+                    </div>
+                    <OverlayPanel ref={laminationDateRef}>
+                      <div className="date_range_wrap">
+                        <DateRangeCalender
+                          ranges={[laminationReport?.dates]}
+                          onChange={e => {
+                            handleDateManage('laminationReport', e);
+                            dispatch(getLaminationReport(e));
+                          }}
+                        />
+                        <Button
+                          className="btn_transperant"
+                          onClick={e => {
+                            laminationDateRef.current.toggle(e);
+                            handleDateManage('laminationReport', {
+                              startDate: oneMonthAgoDate,
+                              endDate: todayDate,
+                              key: 'selection',
+                            });
+
+                            dispatch(
+                              getLaminationReport({
+                                startDate: oneMonthAgoDate,
+                                endDate: todayDate,
+                                key: 'selection',
+                              }),
+                            );
+                          }}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </OverlayPanel>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div className="high_chart_wrapper p-3">
+              <div className="pie_chart_Wrapper d-flex">
+                <div className="chart_wrap">
+                  <div className="pie_chart_wrap">
+                    <HighchartsReact
+                      highcharts={Highcharts}
+                      options={handleLaminationChartOptions}
+                    />
+                  </div>
+                  <div className="d-flex justify-content-center">
+                    <b className="me-2">Total:</b>
+                    {`₹${roundValueThousandSeparator(
+                      laminationReportData?.reduce(
+                        (acc, cur) => acc + cur.amount,
+                        0,
+                      ),
+                    )}`}
+                  </div>
+                </div>
+                <div className="legend_wrapper">
+                  <ul>
+                    {laminationReportData?.map((data, i) => {
+                      const colorIndex = i % (color_code?.length + 1);
+                      if (data?.amount > 0) {
+                        return (
+                          <li key={i}>
+                            <span
+                              style={{
+                                backgroundColor: color_code[colorIndex],
+                              }}
+                              className="dot"
+                            ></span>
+                            <label>{`${data?.lamination}  ${data?.amountstring}`}</label>
+                          </li>
+                        );
+                      }
+                    })}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Col> */}
+      </Row>
+      <Row className="g-3 mt-0 pb-3">
+        <Col lg={6}>
+          <SalesComparison />
+        </Col>
+        <Col lg={6}>
+          <Row className="g-3">
+            <Col lg={12}>
+              <AdvisorComparison />
+            </Col>
+            <Col lg={12}>
+              <AdvisorTeamComparison />
+            </Col>
+          </Row>
+        </Col>
+        <Col lg={6}>
+          <AdvisorTeamAverageSales />
+        </Col>
+        <Col lg={6}>
+          <Row className="g-3">
+            <Col md={6}>
+              <div className="chart_box_wrapper border rounded-3 bg_white h-100">
+                <div className="chart_head_wrapper">
+                  <h3 className="m-0">Party Type Sales</h3>
+                  <ul>
+                    <li>
+                      <div className="form_group date_range_wrapper">
+                        <div
+                          className="date_range_select"
+                          onClick={e => {
+                            partyTypeDateRef.current.toggle(e);
+                          }}
+                        >
+                          <span>
+                            {partyTypeReport?.dates?.startDate
+                              ? moment(partyTypeReport?.dates.startDate).format(
+                                  'DD-MM-yyyy',
+                                )
+                              : ''}{' '}
+                            {partyTypeReport?.dates?.startDate &&
+                              partyTypeReport?.dates?.endDate &&
+                              '-'}{' '}
+                            {partyTypeReport?.dates?.endDate
+                              ? moment(partyTypeReport?.dates.endDate).format(
+                                  'DD-MM-yyyy',
+                                )
+                              : 'Select Date Range'}
+                          </span>
+                        </div>
+                        <OverlayPanel ref={partyTypeDateRef}>
+                          <div className="date_range_wrap">
+                            <DateRangeCalender
+                              ranges={[partyTypeReport?.dates]}
+                              onChange={e => {
+                                handleDateManage('partyTypeReport', e);
+                                dispatch(getPartyTypeReport(e));
+                              }}
+                            />
+                            <Button
+                              className="btn_transperant"
+                              onClick={e => {
+                                partyTypeDateRef.current.toggle(e);
+                                handleDateManage('partyTypeReport', {
+                                  startDate: oneMonthAgoDate,
+                                  endDate: todayDate,
+                                  key: 'selection',
+                                });
+
+                                dispatch(
+                                  getPartyTypeReport({
+                                    startDate: oneMonthAgoDate,
+                                    endDate: todayDate,
+                                    key: 'selection',
+                                  }),
+                                );
+                              }}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        </OverlayPanel>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div className="high_chart_wrapper p-3">
+                  <div className="pie_chart_Wrapper d-flex">
+                    <div className="chart_wrap">
+                      <div className="pie_chart_wrap">
+                        <HighchartsReact
+                          highcharts={Highcharts}
+                          options={handlePartyTypeChartOptions}
+                        />
+                      </div>
+                      <div className="d-flex justify-content-center">
+                        <b className="me-2">Total:</b>
+                        {`₹${roundValueThousandSeparator(
+                          partyTypeReportData?.reduce(
+                            (acc, cur) => acc + cur.amount,
+                            0,
+                          ),
+                        )}`}
+                      </div>
+                    </div>
+                    <div className="legend_wrapper">
+                      <ul>
+                        {partyTypeReportData?.map((data, i) => {
+                          const colorIndex = i % (color_code?.length + 1);
+                          if (data?.amount > 0) {
+                            return (
+                              // <li className="yellow">
+                              //   {data?.party_type}
+                              //   <span>{data?.amountstring}</span>
+                              // </li>
+                              <li key={i}>
+                                <span
+                                  style={{
+                                    backgroundColor: color_code[colorIndex],
+                                  }}
+                                  className="dot"
+                                ></span>
+                                <label>{`${data?.party_type}  ${data?.amountstring}`}</label>
+                              </li>
+                            );
+                          }
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Col>
+            <Col md={6}>
+              <div className="chart_box_wrapper border rounded-3 bg_white h-100">
+                <div className="chart_head_wrapper">
+                  <h3 className="m-0">Industry Wise Sales</h3>
+                  <ul>
+                    <li>
+                      <div className="form_group date_range_wrapper">
+                        <div
+                          className="date_range_select"
+                          onClick={e => {
+                            industryDateRef.current.toggle(e);
+                          }}
+                        >
+                          <span>
+                            {industryReport?.dates?.startDate
+                              ? moment(industryReport?.dates?.startDate).format(
+                                  'DD-MM-yyyy',
+                                )
+                              : ''}{' '}
+                            {industryReport?.dates?.startDate &&
+                              industryReport?.dates?.endDate &&
+                              '-'}{' '}
+                            {industryReport?.dates?.endDate
+                              ? moment(industryReport?.dates?.endDate).format(
+                                  'DD-MM-yyyy',
+                                )
+                              : 'Select Date Range'}
+                          </span>
+                        </div>
+                        <OverlayPanel ref={industryDateRef}>
+                          <div className="date_range_wrap">
+                            <DateRangeCalender
+                              ranges={[industryReport?.dates]}
+                              onChange={e => {
+                                handleDateManage('industryReport', e);
+                                dispatch(getIndustryReport(e));
+                              }}
+                            />
+                            <Button
+                              className="btn_transperant"
+                              onClick={e => {
+                                industryDateRef.current.toggle(e);
+                                handleDateManage('industryReport', {
+                                  startDate: oneMonthAgoDate,
+                                  endDate: todayDate,
+                                  key: 'selection',
+                                });
+                                dispatch(
+                                  getIndustryReport({
+                                    startDate: oneMonthAgoDate,
+                                    endDate: todayDate,
+                                    key: 'selection',
+                                  }),
+                                );
+                              }}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        </OverlayPanel>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div className="high_chart_wrapper p-3">
+                  <div className="d-flex pie_chart_Wrapper">
+                    <div className="chart_wrap">
+                      <div className="pie_chart_wrap">
+                        <HighchartsReact
+                          highcharts={Highcharts}
+                          options={handleIndustryChartOptions}
+                        />
+                      </div>
+                      <div className="d-flex justify-content-center">
+                        <b className="me-2">Total:</b>
+                        {`₹${roundValueThousandSeparator(
+                          industryReportData?.reduce(
+                            (acc, cur) => acc + cur.amount,
+                            0,
+                          ),
+                        )}`}
+                      </div>
+                    </div>
+                    <div className="legend_wrapper">
+                      <ul>
+                        {industryReportData?.map((data, i) => {
+                          const colorIndex = i % (color_code?.length + 1);
+                          if (data?.amount > 0) {
+                            return (
+                              <li key={i}>
+                                <span
+                                  style={{
+                                    backgroundColor: color_code[colorIndex],
+                                  }}
+                                  className="dot"
+                                ></span>
+                                <label>{`${data?.industry_name}  ${data?.amountstring}`}</label>
+                              </li>
+                            );
+                          }
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Col>
+            <Col xl={6} md={6}>
+              <div className="chart_box_wrapper border rounded-3 bg_white h-100">
+                <div className="chart_head_wrapper">
+                  <h3 className="m-0">Customer Source Wise Sales</h3>
+                  <ul>
+                    <li>
+                      <div className="form_group date_range_wrapper">
+                        <div
+                          className="date_range_select"
+                          onClick={e => {
+                            customerDateRef.current.toggle(e);
+                          }}
+                        >
+                          <span>
+                            {customerSourceReport?.dates?.startDate
+                              ? moment(
+                                  customerSourceReport?.dates?.startDate,
+                                ).format('DD-MM-yyyy')
+                              : ''}{' '}
+                            {customerSourceReport?.dates?.startDate &&
+                              customerSourceReport?.dates?.endDate &&
+                              '-'}{' '}
+                            {customerSourceReport?.dates?.endDate
+                              ? moment(
+                                  customerSourceReport?.dates?.endDate,
+                                ).format('DD-MM-yyyy')
+                              : 'Select Date Range'}
+                          </span>
+                        </div>
+                        <OverlayPanel ref={customerDateRef}>
+                          <div className="date_range_wrap">
+                            <DateRangeCalender
+                              ranges={[customerSourceReport?.dates]}
+                              onChange={e => {
+                                handleDateManage('customerSourceReport', e);
+                                dispatch(getCustomerSourceReport(e));
+                              }}
+                            />
+                            <Button
+                              className="btn_transperant"
+                              onClick={e => {
+                                customerDateRef.current.toggle(e);
+                                handleDateManage('customerSourceReport', {
+                                  startDate: oneMonthAgoDate,
+                                  endDate: todayDate,
+                                  key: 'selection',
+                                });
+                                dispatch(
+                                  getCustomerSourceReport({
+                                    startDate: oneMonthAgoDate,
+                                    endDate: todayDate,
+                                    key: 'selection',
+                                  }),
+                                );
+                              }}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        </OverlayPanel>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div className="high_chart_wrapper p-3">
+                  <div className="pie_chart_Wrapper d-flex">
+                    <div className="chart_wrap">
+                      <div className="pie_chart_wrap">
+                        <HighchartsReact
+                          highcharts={Highcharts}
+                          options={handleCustomerSourceChartOptions}
+                        />
+                      </div>
+                      <div className="d-flex justify-content-center">
+                        <b className="me-2">Total:</b>
+                        {`₹${roundValueThousandSeparator(
+                          customerSourceReportData?.reduce(
+                            (acc, cur) => acc + cur.amount,
+                            0,
+                          ),
+                        )}`}
+                      </div>
+                    </div>
+                    <div className="legend_wrapper">
+                      <ul>
+                        {customerSourceReportData?.map((data, i) => {
+                          const colorIndex = i % (color_code?.length + 1);
+                          if (data?.amount > 0) {
+                            return (
+                              <li key={i}>
+                                <span
+                                  style={{
+                                    backgroundColor: color_code[colorIndex],
+                                  }}
+                                  className="dot"
+                                ></span>
+                                <label>{`${data?.customer_source}  ${data?.amountstring}`}</label>
+                              </li>
+                            );
+                          }
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Col>
+            <Col xl={6} md={6}>
+              <div className="chart_box_wrapper border rounded-3 bg_white h-100">
+                <div className="chart_head_wrapper">
+                  <h3 className="m-0">Customer Source Details Wise Sales</h3>
+                  <ul>
+                    <li>
+                      <div className="form_group date_range_wrapper">
+                        <div
+                          className="date_range_select"
+                          onClick={e => {
+                            customerDetailDateRef.current.toggle(e);
+                          }}
+                        >
+                          <span>
+                            {customerSorceDetailReport?.dates?.startDate
+                              ? moment(
+                                  customerSorceDetailReport?.dates?.startDate,
+                                ).format('DD-MM-yyyy')
+                              : ''}{' '}
+                            {customerSorceDetailReport?.dates?.startDate &&
+                              customerSorceDetailReport?.dates?.endDate &&
+                              '-'}{' '}
+                            {customerSorceDetailReport?.dates?.endDate
+                              ? moment(
+                                  customerSorceDetailReport?.dates?.endDate,
+                                ).format('DD-MM-yyyy')
+                              : 'Select Date Range'}
+                          </span>
+                        </div>
+                        <OverlayPanel ref={customerDetailDateRef}>
+                          <div className="date_range_wrap">
+                            <DateRangeCalender
+                              ranges={[customerSorceDetailReport?.dates]}
+                              onChange={e => {
+                                handleDateManage(
+                                  'customerSorceDetailReport',
+                                  e,
+                                );
+                                dispatch(getCustomerSorceDetailReport(e));
+                              }}
+                            />
+                            <Button
+                              className="btn_transperant"
+                              onClick={e => {
+                                customerDetailDateRef.current.toggle(e);
+                                handleDateManage('customerSorceDetailReport', {
+                                  startDate: oneMonthAgoDate,
+                                  endDate: todayDate,
+                                  key: 'selection',
+                                });
+                                dispatch(
+                                  getCustomerSorceDetailReport({
+                                    startDate: oneMonthAgoDate,
+                                    endDate: todayDate,
+                                    key: 'selection',
+                                  }),
+                                );
+                              }}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        </OverlayPanel>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div className="high_chart_wrapper p-3">
+                  <div className="pie_chart_Wrapper d-flex">
+                    <div className="chart_wrap">
+                      <div className="pie_chart_wrap">
+                        <HighchartsReact
+                          highcharts={Highcharts}
+                          options={handleCustomerSourceDetailChartOptions}
+                        />
+                      </div>
+                      <div className="d-flex justify-content-center">
+                        <b className="me-2">Total: </b>
+                        {`₹${roundValueThousandSeparator(
+                          customerSourceDetailData?.reduce(
+                            (acc, cur) => acc + cur.amount,
+                            0,
+                          ),
+                        )}`}
+                      </div>
+                    </div>
+                    <div className="legend_wrapper">
+                      <ul>
+                        {customerSourceDetailData?.map((data, i) => {
+                          const colorIndex = i % (color_code?.length + 1);
+                          if (data?.amount > 0) {
+                            return (
+                              // <li className="yellow">
+                              //   {data?.customer_source_detail}
+                              //   <span>{data?.amountstring}</span>
+                              // </li>
+                              <li key={i}>
+                                <span
+                                  style={{
+                                    backgroundColor: color_code[colorIndex],
+                                  }}
+                                  className="dot"
+                                ></span>
+                                <label>
+                                  {`${data?.customer_source_detail}:`}{' '}
+                                  <span className="fw-bold">{`${data?.amountstring}`}</span>
+                                </label>
+                              </li>
+                            );
+                          }
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Col>
+      </Row>
+      <Row className="g-3">
+        <Col lg={6}>
           <div className="chart_box_wrapper border rounded-3 bg_white h-100">
+            <div className="chart_head_wrapper">
+              <h3 className="m-0">New & Repeat Sales</h3>
+            </div>
+            <div className="sales_comparison_chart_wrap p-3">
+              <HighchartsReact
+                highcharts={Highcharts}
+                options={NewAndRepeatSales}
+              />
+            </div>
+          </div>
+        </Col>
+        <Col xxl={3} xl={12} className="order-5 order-xxl-0">
+          <div className="chart_box_wrapper mb-md-0 mb-3 border rounded-3 bg_white h-100">
             <div className="chart_head_wrapper">
               <h3 className="m-0">Lamination Type Sales</h3>
               <ul>
@@ -892,45 +1519,12 @@ const SalesDashboard = () => {
             </div>
           </div>
         </Col>
-        <Col lg={6} className="order-3 order-xxl-0">
-          <div className="chart_box_wrapper border rounded-3 bg_white h-100">
-            <div className="sales_comparison_top p-3">
-              <ul>
-                <li>
-                  <h3 className="m-0">Sales Comparison</h3>
-                </li>
-                <li>
-                  {/* <h5 className="text-center mb-2">Top Broker</h5> */}
-                  <div className="chart_title_list">
-                    <ul>
-                      {advisorReportData?.data?.map((item, i) => {
-                        const colorIndex = i % (color_code?.length + 1);
-                        return (
-                          <li key={i}>
-                            <span
-                              style={{ background: color_code[colorIndex] }}
-                              className="dot"
-                            ></span>
-                            <label>{item?.advisor_name}</label>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div className="high_chart_wrapper p-3">
-              <div className="sales_comparison_chart_wrap">
-                <HighchartsReact
-                  highcharts={Highcharts}
-                  options={SalesComparisonoptions}
-                />
-              </div>
-            </div>
-          </div>
+        <Col lg={3} className="sales_Comparison_col">
+          <ReviewComparison handleDateManage={handleDateManage} />
         </Col>
-        <Col xxl={3} xl={4} md={6} className="order-last order-xxl-0">
+      </Row>
+      {/* <Row className="pb-3">
+        <Col md={3} className="mb-md-0 mb-3">
           <div className="chart_box_wrapper border rounded-3 bg_white h-100">
             <div className="chart_head_wrapper">
               <h3 className="m-0">Party Type Sales</h3>
@@ -1042,7 +1636,7 @@ const SalesDashboard = () => {
             </div>
           </div>
         </Col>
-        <Col xxl={3} xl={4} md={6} className="order-last order-xxl-0">
+        <Col md={3} className="mb-md-0 mb-3">
           <div className="chart_box_wrapper border rounded-3 bg_white h-100">
             <div className="chart_head_wrapper">
               <h3 className="m-0">Industry Wise Sales</h3>
@@ -1149,20 +1743,7 @@ const SalesDashboard = () => {
             </div>
           </div>
         </Col>
-        <Col lg={6} className="order-4 order-xxl-0 sales_Comparison_col">
-          <div className="chart_box_wrapper border rounded-3 bg_white h-100">
-            <div className="chart_head_wrapper">
-              <h3 className="m-0">New & Repeat Sales</h3>
-            </div>
-            <div className="sales_comparison_chart_wrap p-3">
-              <HighchartsReact
-                highcharts={Highcharts}
-                options={NewAndRepeatSales}
-              />
-            </div>
-          </div>
-        </Col>
-        <Col xxl={3} xl={6} md={6} className="order-last order-xxl-0">
+        <Col xl={3} md={3} className="mb-md-0 mb-3 ">
           <div className="chart_box_wrapper border rounded-3 bg_white h-100">
             <div className="chart_head_wrapper">
               <h3 className="m-0">Customer Source Wise Sales</h3>
@@ -1269,7 +1850,7 @@ const SalesDashboard = () => {
             </div>
           </div>
         </Col>
-        <Col xxl={3} xl={6} md={6} className="order-last order-xxl-0">
+        <Col xl={3} md={3}>
           <div className="chart_box_wrapper border rounded-3 bg_white h-100">
             <div className="chart_head_wrapper">
               <h3 className="m-0">Customer Source Details Wise Sales</h3>
@@ -1383,7 +1964,7 @@ const SalesDashboard = () => {
             </div>
           </div>
         </Col>
-      </Row>
+      </Row> */}
       {/* <Dialog
         header=""
         visible={deletePopup}

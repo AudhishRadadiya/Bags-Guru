@@ -11,6 +11,9 @@ let initialState = {
   pendingJobBagTypeReportData: [],
   stateTurnoverReportData: [],
   advisorTurnoverReportData: {},
+  newAndRepeatOrderBusinessData: {},
+  traderAndEndUserReportData: {},
+  laminatedAndNonLaminatedList: {},
 };
 
 const AdminDashboardSlice = createSlice({
@@ -47,6 +50,15 @@ const AdminDashboardSlice = createSlice({
     setAdvisorTurnoverReportData: (state, action) => {
       state.advisorTurnoverReportData = action.payload;
     },
+    setNewAndRepeatOrderBusinessData: (state, action) => {
+      state.newAndRepeatOrderBusinessData = action.payload;
+    },
+    setTraderAndEndUserReportData: (state, action) => {
+      state.traderAndEndUserReportData = action.payload;
+    },
+    setLaminatedAndNonLaminatedList: (state, action) => {
+      state.laminatedAndNonLaminatedList = action.payload;
+    },
   },
 });
 
@@ -61,6 +73,9 @@ export const {
   setPendingJobBagTypeReportData,
   setStateTurnoverReportData,
   setAdvisorTurnoverReportData,
+  setNewAndRepeatOrderBusinessData,
+  setTraderAndEndUserReportData,
+  setLaminatedAndNonLaminatedList,
 } = AdminDashboardSlice.actions;
 
 export default AdminDashboardSlice.reducer;

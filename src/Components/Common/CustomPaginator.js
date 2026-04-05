@@ -4,6 +4,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { Paginator } from 'primereact/paginator';
 import LeftArrow from '../../Assets/Images/left-arrow.svg';
 import RightArrow from '../../Assets/Images/right-arrow.svg';
+import { getCurrentUserFromLocal } from 'Services/baseService';
 
 const CustomPaginator = ({
   dataList = [],
@@ -12,13 +13,24 @@ const CustomPaginator = ({
   totalCount = 0,
   onPageChange,
   onPageRowsChange,
+  isRestrictTotalEntries,
+  isRestrictPagination,
 }) => {
+  const UserPreferencesData = getCurrentUserFromLocal();
+
   const template = {
     layout:
       currentPage === 0
         ? 'CurrentPageReport RowsPerPageDropdown'
         : 'PrevPageLink PageLinks NextPageLink CurrentPageReport RowsPerPageDropdown',
     PrevPageLink: options => {
+      if (
+        isRestrictPagination &&
+        UserPreferencesData?.role_name === 'Advisor'
+      ) {
+        return;
+      }
+
       return (
         <button
           className="border border-0 prev_arrow"
@@ -37,6 +49,12 @@ const CustomPaginator = ({
     },
     NextPageLink: options => {
       const totalPages = Math.ceil(totalCount / pageLimit);
+      if (
+        isRestrictPagination &&
+        UserPreferencesData?.role_name === 'Advisor'
+      ) {
+        return;
+      }
 
       return (
         <button
@@ -55,6 +73,13 @@ const CustomPaginator = ({
       );
     },
     PageLinks: options => {
+      if (
+        isRestrictPagination &&
+        UserPreferencesData?.role_name === 'Advisor'
+      ) {
+        return;
+      }
+
       if (
         (options.view.startPage === options.page &&
           options.view.startPage !== 0) ||
@@ -87,6 +112,13 @@ const CustomPaginator = ({
         { label: 'All', value: 0 },
       ];
 
+      if (
+        isRestrictPagination &&
+        UserPreferencesData?.role_name === 'Advisor'
+      ) {
+        return;
+      }
+
       return (
         <Dropdown
           value={options.value}
@@ -106,9 +138,9 @@ const CustomPaginator = ({
         rowsPerPageOptions={[5, 10, 25, 50]}
         currentPageReportTemplate={`Showing ${
           dataList?.length ? pageLimit * (currentPage - 1) + 1 : 0
-        } to ${
-          pageLimit * (currentPage - 1) + dataList?.length
-        } of ${totalCount} entries`}
+        } to ${pageLimit * (currentPage - 1) + dataList?.length} ${
+          !isRestrictTotalEntries ? 'of ' + totalCount + ' entries' : ''
+        }`}
         template={template}
       />
     </>

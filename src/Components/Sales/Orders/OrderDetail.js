@@ -40,6 +40,7 @@ import UploadIcon from '../../../Assets/Images/upload.svg';
 import Download from '../../../Assets/Images/download.svg';
 import TrashIcon from '../../../Assets/Images/trash.svg';
 import { getFormattedDate } from 'Helper/Common';
+import { Tag } from 'primereact/tag';
 
 const OrderDetail = ({ initialValues }) => {
   const ref = useRef();
@@ -279,6 +280,14 @@ const OrderDetail = ({ initialValues }) => {
     const res = await dispatch(getSingleListParties(field_value));
 
     if (res) {
+      if (res?.shipping_pincode) {
+        dispatch(
+          getTransporterPartyList({
+            pincode: res?.shipping_pincode,
+          }),
+        );
+      }
+
       const billingList = res?.party_address?.filter(
         x => x?.address_type_name === 'BILLING',
       );
@@ -290,7 +299,7 @@ const OrderDetail = ({ initialValues }) => {
       setFieldValue('billing_addrees_list', billingList);
       setFieldValue('shipping_addrees_list', shippingList);
       setFieldValue('gst', res?.gst);
-
+      setFieldValue('tripta_due_amount', res?.tripta_due_amount);
       // if (locationPath?.[1] === 'add-new-order') {
       setFieldValue('shipping_address', [{ ...shippingList?.[0] }]);
       setFieldValue('billing_address', [{ ...billingList?.[0] }]);
@@ -500,6 +509,28 @@ const OrderDetail = ({ initialValues }) => {
       : [...filteredList];
   };
 
+  const transporterPartyListItemTemplate = option => {
+    return (
+      <div className="flex align-items-center justify-content-between w-full">
+        <span>{option.label}</span>
+        {option.suggested && (
+          <Tag
+            value="Suggested"
+            severity="success"
+            style={{
+              background: '#d4edda',
+              color: '#155724',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              marginLeft: '5px',
+              fontSize: '0.75rem',
+            }}
+          />
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       {(salesOrderLoading ||
@@ -510,7 +541,7 @@ const OrderDetail = ({ initialValues }) => {
         <div className="addnew_order_wrap border rounded-3 bg_white p-3">
           <Row>
             {values?.order_no ? (
-              <Col lg={3} md={4} sm={6}>
+              <Col lg={4} md={4} sm={6}>
                 <div className="form_group mb-3">
                   <label htmlFor="OrderNo">Order No</label>
                   <InputText
@@ -542,7 +573,12 @@ const OrderDetail = ({ initialValues }) => {
                   value={values?.party_name || ''}
                   options={allUserPartyList}
                   onChange={e => {
-                    dispatch(getPreviousTransporter(e.value));
+                    dispatch(
+                      getPreviousTransporter({
+                        party_name: e.value,
+                        type: 1,
+                      }),
+                    );
                     setFieldValue(e.target.name, e.target.value);
                     handlePartiesData(e);
                   }}
@@ -633,6 +669,7 @@ const OrderDetail = ({ initialValues }) => {
                   }}
                   onBlur={handleBlur}
                   placeholder="Transporter"
+                  itemTemplate={transporterPartyListItemTemplate}
                 />
                 {touched?.transporter && errors?.transporter && (
                   <p className="text-danger">{errors?.transporter}</p>
@@ -719,191 +756,194 @@ const OrderDetail = ({ initialValues }) => {
             </Col>
           </Row>
           <Row>
-            <Col xl={3}>
-              <div className="order_radio_wrap">
-                <Row>
-                  <div className="col-xxxl-6 custom_col">
-                    <div className="form_group">
-                      <label>CC Attach ?</label>
-                      {touched?.is_cc_attach && errors?.is_cc_attach && (
-                        <p className="text-danger">{errors?.is_cc_attach}</p>
-                      )}
-                      <div className="d-flex flex-wrap gap-3 custom_radio_wrappper">
-                        <div className="d-flex align-items-center">
-                          <RadioButton
-                            inputId="AttachYes"
-                            name="is_cc_attach"
-                            value={1}
-                            onChange={e => {
-                              commonUpdateFieldValue(e.target.name, 1);
-                            }}
-                            onBlur={handleBlur}
-                            checked={values?.is_cc_attach === 1}
-                          />
-                          <label htmlFor="AttachYes" className="ms-2">
-                            Yes
-                          </label>
-                        </div>
-                        <div className="d-flex align-items-center">
-                          <RadioButton
-                            inputId="AttachNo"
-                            name="is_cc_attach"
-                            value={0}
-                            onChange={e => {
-                              commonUpdateFieldValue(e.target.name, 0);
-                            }}
-                            checked={values?.is_cc_attach === 0}
-                          />
-                          <label htmlFor="AttachNo" className="ms-2">
-                            No
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-xxxl-6 custom_col">
-                    <div className="form_group">
-                      <label>Multiple Billing For Order ?</label>
-                      {touched?.multiple_billing &&
-                        errors?.multiple_billing && (
-                          <p className="text-danger">
-                            {errors?.multiple_billing}
-                          </p>
-                        )}
-                      <div className="d-flex flex-wrap gap-3 custom_radio_wrappper">
-                        <div className="d-flex align-items-center">
-                          <RadioButton
-                            inputId="MultiOrderYes"
-                            name="multiple_billing"
-                            value={1}
-                            onChange={e => {
-                              commonUpdateFieldValue(e.target.name, 1);
-                            }}
-                            checked={values?.multiple_billing === 1}
-                            onBlur={handleBlur}
-                          />
-                          <label htmlFor="MultiOrderYes" className="ms-2">
-                            Yes
-                          </label>
-                        </div>
-                        <div className="d-flex align-items-center">
-                          <RadioButton
-                            inputId="MultiOrderNo"
-                            name="multiple_billing"
-                            value={0}
-                            onChange={e => {
-                              commonUpdateFieldValue(e.target.name, 0);
-                              // setAddressList([' ']);
-                              commonUpdateFieldValue('address_list', ['']);
-                              setFieldValue('shipping_address', [
-                                { ...values?.shipping_addrees_list?.[0] },
-                              ]);
-                              setFieldValue('billing_address', [
-                                { ...values?.billing_addrees_list?.[0] },
-                              ]);
-                            }}
-                            checked={values?.multiple_billing === 0}
-                            onBlur={handleBlur}
-                          />
-                          <label htmlFor="MultiOrderNo" className="ms-2">
-                            No
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-xxxl-6 custom_col">
-                    <div className="form_group">
-                      <label>Dispatch After Payment ?</label>
-                      {touched?.dispatch_after_payment &&
-                        errors?.dispatch_after_payment && (
-                          <p className="text-danger">
-                            {errors?.dispatch_after_payment}
-                          </p>
-                        )}
-                      <div className="d-flex flex-wrap gap-3 custom_radio_wrappper">
-                        <div className="d-flex align-items-center">
-                          <RadioButton
-                            inputId="PaymentYes"
-                            name="dispatch_after_payment"
-                            value={1}
-                            onChange={e => {
-                              commonUpdateFieldValue(e.target.name, 1);
-                            }}
-                            checked={values?.dispatch_after_payment === 1}
-                            onBlur={handleBlur}
-                          />
-                          <label htmlFor="PaymentYes" className="ms-2">
-                            Yes
-                          </label>
-                        </div>
-                        <div className="d-flex align-items-center">
-                          <RadioButton
-                            inputId="PaymentNo"
-                            name="dispatch_after_payment"
-                            value={0}
-                            onChange={e => {
-                              commonUpdateFieldValue(e.target.name, 0);
-                            }}
-                            checked={values?.dispatch_after_payment === 0}
-                            onBlur={handleBlur}
-                          />
-                          <label htmlFor="PaymentNo" className="ms-2">
-                            No
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-xxxl-6 custom_col">
-                    <div className="form_group">
-                      <label>Dispatch on Customer Invoice ?</label>
-                      {touched?.dispatch_on_invoice &&
-                        errors?.dispatch_on_invoice && (
-                          <p className="text-danger">
-                            {errors?.dispatch_on_invoice}
-                          </p>
-                        )}
-                      <div className="d-flex flex-wrap gap-3 custom_radio_wrappper">
-                        <div className="d-flex align-items-center">
-                          <RadioButton
-                            inputId="InvoiceYes"
-                            name="dispatch_on_invoice"
-                            value={1}
-                            onChange={e => {
-                              commonUpdateFieldValue(e.target.name, 1);
-                            }}
-                            checked={values?.dispatch_on_invoice === 1}
-                            onBlur={handleBlur}
-                          />
-                          <label htmlFor="InvoiceYes" className="ms-2">
-                            Yes
-                          </label>
-                        </div>
-                        <div className="d-flex align-items-center">
-                          <RadioButton
-                            inputId="InvoiceNo"
-                            name="dispatch_on_invoice"
-                            value={0}
-                            onChange={e => {
-                              commonUpdateFieldValue(e.target.name, 0);
-                            }}
-                            checked={values?.dispatch_on_invoice === 0}
-                            onBlur={handleBlur}
-                          />
-                          <label htmlFor="InvoiceNo" className="ms-2">
-                            No
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Row>
-              </div>
-            </Col>
-            <Col xl={6} lg={8}>
+            <Col lg={9} md={8} sm={6}>
               <Row>
-                <Col sm={6}>
+                {/* <Col lg={4} md={4} sm={6}> */}
+                <Col lg={4} md={6}>
+                  <div className="order_radio_wrap d-xxl-flex">
+                    <div className="col-xxxl-6">
+                      <div className="form_group">
+                        <label>CC Attach ?</label>
+                        {touched?.is_cc_attach && errors?.is_cc_attach && (
+                          <p className="text-danger">{errors?.is_cc_attach}</p>
+                        )}
+                        <div className="d-flex flex-wrap gap-3 custom_radio_wrappper">
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="AttachYes"
+                              name="is_cc_attach"
+                              value={1}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 1);
+                              }}
+                              onBlur={handleBlur}
+                              checked={values?.is_cc_attach === 1}
+                            />
+                            <label htmlFor="AttachYes" className="ms-2">
+                              YES
+                            </label>
+                          </div>
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="AttachNo"
+                              name="is_cc_attach"
+                              value={0}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 0);
+                              }}
+                              checked={values?.is_cc_attach === 0}
+                            />
+                            <label htmlFor="AttachNo" className="ms-2">
+                              NO
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-xxxl-6">
+                      <div className="form_group">
+                        <label>Multiple Billing For Order ?</label>
+                        {touched?.multiple_billing &&
+                          errors?.multiple_billing && (
+                            <p className="text-danger">
+                              {errors?.multiple_billing}
+                            </p>
+                          )}
+                        <div className="d-flex flex-wrap gap-3 custom_radio_wrappper">
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="MultiOrderYes"
+                              name="multiple_billing"
+                              value={1}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 1);
+                              }}
+                              checked={values?.multiple_billing === 1}
+                              onBlur={handleBlur}
+                            />
+                            <label htmlFor="MultiOrderYes" className="ms-2">
+                              YES
+                            </label>
+                          </div>
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="MultiOrderNo"
+                              name="multiple_billing"
+                              value={0}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 0);
+                                // setAddressList([' ']);
+                                commonUpdateFieldValue('address_list', ['']);
+                                setFieldValue('shipping_address', [
+                                  { ...values?.shipping_addrees_list?.[0] },
+                                ]);
+                                setFieldValue('billing_address', [
+                                  { ...values?.billing_addrees_list?.[0] },
+                                ]);
+                              }}
+                              checked={values?.multiple_billing === 0}
+                              onBlur={handleBlur}
+                            />
+                            <label htmlFor="MultiOrderNo" className="ms-2">
+                              NO
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+                <Col lg={4} md={6}>
+                  <div className="order_radio_wrap d-xxl-flex">
+                    <div className="col-xxxl-6">
+                      <div className="form_group">
+                        <label>Dispatch After Payment ?</label>
+                        {touched?.dispatch_after_payment &&
+                          errors?.dispatch_after_payment && (
+                            <p className="text-danger">
+                              {errors?.dispatch_after_payment}
+                            </p>
+                          )}
+                        <div className="d-flex flex-wrap gap-3 custom_radio_wrappper">
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="PaymentYes"
+                              name="dispatch_after_payment"
+                              value={1}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 1);
+                              }}
+                              checked={values?.dispatch_after_payment === 1}
+                              onBlur={handleBlur}
+                            />
+                            <label htmlFor="PaymentYes" className="ms-2">
+                              YES
+                            </label>
+                          </div>
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="PaymentNo"
+                              name="dispatch_after_payment"
+                              value={0}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 0);
+                              }}
+                              checked={values?.dispatch_after_payment === 0}
+                              onBlur={handleBlur}
+                            />
+                            <label htmlFor="PaymentNo" className="ms-2">
+                              NO
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-xxxl-6">
+                      <div className="form_group">
+                        <label>Dispatch on Customer Invoice ?</label>
+                        {touched?.dispatch_on_invoice &&
+                          errors?.dispatch_on_invoice && (
+                            <p className="text-danger">
+                              {errors?.dispatch_on_invoice}
+                            </p>
+                          )}
+                        <div className="d-flex flex-wrap gap-3 custom_radio_wrappper">
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="InvoiceYes"
+                              name="dispatch_on_invoice"
+                              value={1}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 1);
+                              }}
+                              checked={values?.dispatch_on_invoice === 1}
+                              onBlur={handleBlur}
+                            />
+                            <label htmlFor="InvoiceYes" className="ms-2">
+                              YES
+                            </label>
+                          </div>
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="InvoiceNo"
+                              name="dispatch_on_invoice"
+                              value={0}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 0);
+                              }}
+                              checked={values?.dispatch_on_invoice === 0}
+                              onBlur={handleBlur}
+                            />
+                            <label htmlFor="InvoiceNo" className="ms-2">
+                              NO
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+                <Col lg={4} md={6}>
                   <div className="form_group mb-3">
                     <label htmlFor="AdvanceAmount">Advance Amount</label>
                     <InputText
@@ -919,26 +959,12 @@ const OrderDetail = ({ initialValues }) => {
                     />
                   </div>
                 </Col>
-                <Col sm={6}>
-                  <div className="form_group mb-3">
-                    <label htmlFor="Comment">Comment</label>
-                    <InputTextarea
-                      placeholder="Comment"
-                      type="textarea"
-                      rows={1}
-                      name="comment"
-                      value={values?.comment || ''}
-                      onChange={e => {
-                        commonUpdateFieldValue(e.target.name, e.target.value);
-                      }}
-                      onBlur={handleBlur}
-                    />
-                    {touched?.comment && errors?.comment && (
-                      <p className="text-danger">{errors?.comment}</p>
-                    )}
-                  </div>
+              </Row>
+              <Row>
+                <Col className="mb-4 d-flex align-items-center gap-2">
+                  <h4 className="m-0">Total due amount:</h4>
+                  <span>{values?.tripta_due_amount || 0}</span>
                 </Col>
-
                 {values?.address_list?.map((x, i) => {
                   return (
                     <React.Fragment key={i}>
@@ -971,7 +997,7 @@ const OrderDetail = ({ initialValues }) => {
                           )
                         ) : null}
                       </div>
-                      <Col md={6}>
+                      <Col lg={4} md={6}>
                         <div className="form_group mb-3">
                           <label>Business Billing Address</label>
                           <div className="address_select_wrap">
@@ -1005,6 +1031,12 @@ const OrderDetail = ({ initialValues }) => {
                             />
                             {values?.billing_address?.[i]?.address ? (
                               <div className="address_wrap">
+                                {`Due Amount: ${
+                                  values?.billing_address?.[i]
+                                    ?.party_address_due || 0
+                                }`}
+                                <br />
+                                <br />
                                 {values?.billing_address?.[i]?.address},<br />
                                 {values?.billing_address?.[i]?.city_name},
                                 {values?.billing_address?.[i]?.state_name},
@@ -1018,7 +1050,7 @@ const OrderDetail = ({ initialValues }) => {
                           </div>
                         </div>
                       </Col>
-                      <Col md={6}>
+                      <Col lg={4} md={6}>
                         <div className="form_group mb-3">
                           <label>Business Shipping Address</label>
                           <div className="address_select_wrap">
@@ -1051,6 +1083,9 @@ const OrderDetail = ({ initialValues }) => {
                             />
                             {values?.shipping_address?.[i]?.address ? (
                               <div className="address_wrap">
+                                {`Due Amount: ${values?.shipping_address?.[i]?.party_address_due}`}
+                                <br />
+                                <br />
                                 {values?.shipping_address?.[i]?.address},<br />
                                 {values?.shipping_address?.[i]?.city_name},
                                 {values?.shipping_address?.[i]?.state_name},
@@ -1067,36 +1102,18 @@ const OrderDetail = ({ initialValues }) => {
                     </React.Fragment>
                   );
                 })}
-              </Row>
-            </Col>
-            {/* <Col xl={6} lg={8}>
-              <Row>
-                <Col sm={6}>
-                  <div className="form_group mb-3">
-                    <label htmlFor="AdvanceAmount">Advance Amount</label>
-                    <InputText
-                      id="AdvanceAmount"
-                      type="number"
-                      placeholder="Advance Amount"
-                      name="advance_amount"
-                      value={values?.advance_amount || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                    />
-                    {touched?.advance_amount && errors?.advance_amount && (
-                      <p className="text-danger">{errors?.advance_amount}</p>
-                    )}
-                  </div>
-                </Col>
-                <Col sm={6}>
+                <Col lg={4} md={6}>
                   <div className="form_group mb-3">
                     <label htmlFor="Comment">Comment</label>
                     <InputTextarea
                       placeholder="Comment"
-                      rows={1}
+                      type="textarea"
+                      rows={4}
                       name="comment"
                       value={values?.comment || ''}
-                      onChange={handleChange}
+                      onChange={e => {
+                        commonUpdateFieldValue(e.target.name, e.target.value);
+                      }}
                       onBlur={handleBlur}
                     />
                     {touched?.comment && errors?.comment && (
@@ -1104,133 +1121,15 @@ const OrderDetail = ({ initialValues }) => {
                     )}
                   </div>
                 </Col>
-                {addressList?.map((x, i) => {
-                  return (
-                    <React.Fragment key={i}>
-                      <div className="plus_address_wrap d-flex align-items-center mb-3">
-                        <h3 className="m-0">Address Details {i + 1}</h3>{' '}
-                        {values?.multiple_billing === 1 ? (
-                          i === 0 ? (
-                            <Button
-                              className="btn_primary ms-2"
-                              onClick={onAddPartyAddress}
-                              disabled={addressList?.length === 3}
-                            >
-                              <img
-                                src={PlusIcon}
-                                alt="Plus Icon"
-                                className="plus_btn m-0"
-                              />
-                            </Button>
-                          ) : (
-                            <Button
-                              className="btn_primary ms-2 p-1"
-                              onClick={() => onRemovePartyAddress(i)}
-                            >
-                              <img
-                                src={MinusIcon}
-                                alt="Minus Icon"
-                                className="plus_btn m-0"
-                              />
-                            </Button>
-                          )
-                        ) : null}
-                      </div>
-                      <Col md={6}>
-                        <div className="form_group mb-3">
-                          <label>Business Billing Address</label>
-                          <div className="address_select_wrap">
-                            <ReactSelectSingle
-                              name={'billing_address'}
-                              value={values?.billing_address[i]?.value || ''}
-                              onChange={e =>
-                                onCustomChange('billing_address', e.value, i)
-                              }
-                              options={
-                                i === 0
-                                  ? billingList
-                                  : [
-                                      ...billingList?.filter(
-                                        obj =>
-                                          !values?.billing_address?.some(
-                                            obj2 => obj?._id === obj2?._id,
-                                          ),
-                                      ),
-                                      billingList?.find(
-                                        x =>
-                                          x?._id ===
-                                          values?.billing_address[i]?.value,
-                                      ),
-                                    ]
-                              }
-                              placeholder="Business"
-                            />
-                            {values?.billing_address[i]?.address ? (
-                              <div className="address_wrap">
-                                {values?.billing_address[i]?.address},<br />
-                                {values?.billing_address[i]?.city_name},
-                                {values?.billing_address[i]?.state_name},
-                                {values?.billing_address[i]?.pincode},
-                                <br />
-                                {values?.billing_address[i]?.country_name}
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                      </Col>
-                      <Col md={6}>
-                        <div className="form_group mb-3">
-                          <label>Business Shipping Address</label>
-                          <div className="address_select_wrap">
-                            <ReactSelectSingle
-                              value={values?.shipping_address[i]?.value || ''}
-                              onChange={e =>
-                                onCustomChange('shipping_address', e.value, i)
-                              }
-                              options={
-                                i === 0
-                                  ? shippingList
-                                  : [
-                                      ...shippingList?.filter(
-                                        obj =>
-                                          !values?.shipping_address?.some(
-                                            obj2 => obj?._id === obj2?._id,
-                                          ),
-                                      ),
-                                      shippingList?.find(
-                                        x =>
-                                          x?._id ===
-                                          values?.shipping_address[i]?.value,
-                                      ),
-                                    ]
-                              }
-                              placeholder="Business"
-                            />
-                            {values?.billing_address[i]?.address ? (
-                              <div className="address_wrap">
-                                {values?.billing_address[i]?.address},<br />
-                                {values?.billing_address[i]?.city_name},
-                                {values?.billing_address[i]?.state_name},
-                                {values?.billing_address[i]?.pincode},
-                                <br />
-                                {values?.billing_address[i]?.country_name}
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                      </Col>
-                    </React.Fragment>
-                  );
-                })}
               </Row>
-            </Col> */}
-            <Col xl={3} lg={4} md={6}>
+            </Col>
+            <Col lg={3} md={4} sm={6}>
               {/* <DropZone
                 module="sales"
                 value={values?.attachment || ''}
                 setFieldValue={setFieldValue}
                 fieldName={'attachment'}
-              /> */}
+                /> */}
 
               <FileDrop
                 ref={ref}
@@ -1250,20 +1149,40 @@ const OrderDetail = ({ initialValues }) => {
                     onChange={e => fileHandler(e.target.files)}
                     // disabled={disabled}
                   />
-                  <label htmlFor="UploadFile">
+                  <label
+                    htmlFor="UploadFile"
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
                     <img
                       src={UploadIcon}
                       alt=""
                       className="img-fluid"
                       style={{
-                        height: '75px',
-                        width: '100%',
+                        height: '60px',
                         objectFit: 'contain',
+                        margin: '0',
                       }}
                     />
-                    <div className="upload_text">Upload your files</div>
+                    <div
+                      className="upload_text"
+                      style={{
+                        margin: '0',
+                        marginLeft: '15px',
+                        maxWidth: 'auto',
+                      }}
+                    >
+                      Upload your files
+                    </div>
                   </label>
-                  <div className="uploaded_img_main">
+                  <div
+                    className={
+                      values?.attachment?.length > 0 ? 'uploaded_img_main' : ''
+                    }
+                  >
                     {values?.attachment &&
                       values?.attachment?.map((d, i) => {
                         return (

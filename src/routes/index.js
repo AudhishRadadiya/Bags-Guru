@@ -59,6 +59,12 @@ import {
   RolesSales,
   RolePurchase,
   RoleMonthlyTurnover,
+  RoleNLRequirement,
+  RoleBrokerMargin,
+  RoleCollection,
+  COLLECTION,
+  RoleThumbnail,
+  RoleDesigner,
 } from 'Global/Constants';
 import Loader from 'Components/Common/Loader';
 import PublicRoutes from './PublicRoutes';
@@ -71,6 +77,9 @@ import Purchase from 'Components/Common/Reports/Purchase';
 import MonthlyTurnover from 'Components/Common/Reports/MonthlyTurnover/MonthlyTurnover';
 
 const HomePage = React.lazy(() => import('Components/Parties/index'));
+const TriptaAmount = React.lazy(() =>
+  import('Components/TriptaAmount/TriptaAmount'),
+);
 const ImportPartiesStepOne = React.lazy(() =>
   import('Components/Parties/ImportPartiesStepOne'),
 );
@@ -275,6 +284,14 @@ const SalesDashboard = React.lazy(() =>
 const OldCustomer = React.lazy(() =>
   import('Components/BusinessDevelopment/OldCustomer'),
 );
+const SalesTrends = React.lazy(() =>
+  import('Components/BusinessDevelopment/SalesTrends/SalesTrends'),
+);
+const CustomerDashboard = React.lazy(() =>
+  import('Components/BusinessDevelopment/CustomerDashboard/CustomerDashboard'),
+);
+const Thumbnail = React.lazy(() => import('Components/Thumbnail/Thumbnail'));
+const Designer = React.lazy(() => import('Components/Common/Reports/Designer'));
 
 export default function Index() {
   const popcorn = document.querySelector('#popcorn');
@@ -327,6 +344,16 @@ export default function Index() {
                 <ProtectedRoutes>
                   <HomePage
                     role={{ mainModule: PARTIES, subModule: RoleParties }}
+                  />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/collection"
+              element={
+                <ProtectedRoutes>
+                  <TriptaAmount
+                    role={{ mainModule: COLLECTION, subModule: RoleCollection }}
                   />
                 </ProtectedRoutes>
               }
@@ -854,6 +881,16 @@ export default function Index() {
               }
             />
             <Route
+              path="/thumbnail"
+              element={
+                <ProtectedRoutes>
+                  <Thumbnail
+                    role={{ mainModule: SALES, subModule: RoleThumbnail }}
+                  />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
               path="/consumption-dashboard"
               element={
                 <ProtectedRoutes>
@@ -1311,7 +1348,7 @@ export default function Index() {
                   <NLRequirement
                     role={{
                       mainModule: PURCHASES,
-                      subModule: RolePpPriceHistory,
+                      subModule: RoleNLRequirement,
                     }}
                   />
                 </ProtectedRoutes>
@@ -1411,7 +1448,7 @@ export default function Index() {
                   <BrokerMargin
                     role={{
                       mainModule: FINANCIALS,
-                      subModule: RoleProfitAnalysis,
+                      subModule: RoleBrokerMargin,
                     }}
                   />
                 </ProtectedRoutes>
@@ -1452,6 +1489,26 @@ export default function Index() {
                       mainModule: DASHBOARD,
                       subModule: RoleOldCustFollowUps,
                     }}
+                  />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/sales-trends"
+              element={
+                <ProtectedRoutes>
+                  <SalesTrends
+                    role={{ mainModule: COLLECTION, subModule: RoleCollection }}
+                  />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/customer-dashboard"
+              element={
+                <ProtectedRoutes>
+                  <CustomerDashboard
+                    role={{ mainModule: COLLECTION, subModule: RoleCollection }}
                   />
                 </ProtectedRoutes>
               }
@@ -1542,6 +1599,20 @@ export default function Index() {
                     role={{
                       mainModule: REPORT,
                       subModule: RoleMonthlyTurnover,
+                    }}
+                  />
+                </ProtectedRoutes>
+              }
+            />
+
+            <Route
+              path="/designer"
+              element={
+                <ProtectedRoutes>
+                  <Designer
+                    role={{
+                      mainModule: REPORT,
+                      subModule: RoleDesigner,
                     }}
                   />
                 </ProtectedRoutes>

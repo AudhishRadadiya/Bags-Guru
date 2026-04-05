@@ -141,7 +141,7 @@ export const getSalesInvoicePdf = sales_invoice_id => async dispatch => {
     const { msg, err, data } = response.data;
 
     if (err === 0) {
-      window.open(data?.file, '_blank');
+      window.open(data, '_blank');
       return true;
     } else if (err === 1) {
       toast.error(msg);

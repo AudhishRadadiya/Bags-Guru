@@ -184,6 +184,8 @@ let initialState = {
     item_attribute: attributes,
   },
   // viewSelectedItemData: {},
+  sortRawMaterialItemField: '',
+  sortRawMaterialItemOrder: 1,
 };
 
 const userSlice = createSlice({
@@ -248,6 +250,12 @@ const userSlice = createSlice({
     // clearViewSelectedItemData: state => {
     //   state.viewSelectedItemData = initialState.initialRawItemData;
     // },
+    setSortRawMaterialItemField: (state, action) => {
+      state.sortRawMaterialItemField = action.payload;
+    },
+    setSortRawMaterialItemOrder: (state, action) => {
+      state.sortRawMaterialItemOrder = action.payload;
+    },
   },
 });
 
@@ -271,6 +279,8 @@ export const {
   clearUpdateSelectedItemData,
   // setViewSelectedItemData,
   // clearViewSelectedItemData,
+  setSortRawMaterialItemField,
+  setSortRawMaterialItemOrder,
 } = userSlice.actions;
 
 export default userSlice.reducer;

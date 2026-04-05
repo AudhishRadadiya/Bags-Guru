@@ -38,6 +38,10 @@ import CustomPaginator from 'Components/Common/CustomPaginator';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 import DateRangeCalender from 'Components/Common/DateRangeCalender';
 import { getActiveWarehouseList } from 'Services/Settings/MiscMasterService';
+import {
+  setSortProductTransferField,
+  setSortProductTransferOrder,
+} from 'Store/Reducers/Products/ProductSlice';
 
 const filterDetails = [
   { label: 'Product Code', value: 'product_code', type: 'inputBox' },
@@ -63,8 +67,13 @@ export default function ProductTransfer({ hasAccess }) {
   const { listFilter } = useSelector(({ parties }) => parties);
   const { allFilters, allCommon } = useSelector(({ common }) => common);
   const { activeWarehouseList } = useSelector(({ miscMaster }) => miscMaster);
-  const { productLoading, productTransferList, productTransferCount } =
-    useSelector(({ product }) => product);
+  const {
+    productLoading,
+    sortProductTransferField,
+    sortProductTransferOrder,
+    productTransferList,
+    productTransferCount,
+  } = useSelector(({ product }) => product);
 
   const { filterToggle, searchQuery, productTransferFilters } =
     allCommon?.productTransfer;
@@ -502,30 +511,32 @@ export default function ProductTransfer({ hasAccess }) {
 
   const onPageChange = useCallback(
     page => {
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
 
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          productTransfer: {
-            ...allFilters?.productTransfer,
-            currentPage: pageIndex,
-          },
-        }),
-      );
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            productTransfer: {
+              ...allFilters?.productTransfer,
+              currentPage: pageIndex,
+            },
+          }),
+        );
 
-      dispatch(
-        getProductTransferList(
-          pageLimit,
-          pageIndex,
-          searchQuery,
-          applied,
-          dates,
-        ),
-      );
+        dispatch(
+          getProductTransferList(
+            pageLimit,
+            pageIndex,
+            searchQuery,
+            applied,
+            dates,
+          ),
+        );
+      }
     },
     [currentPage, dispatch, allFilters, pageLimit, searchQuery, applied, dates],
   );
@@ -598,6 +609,11 @@ export default function ProductTransfer({ hasAccess }) {
     dispatch(
       getProductTransferList(pageLimit, currentPage, searchQuery, applied, e),
     );
+  };
+
+  const onSort = e => {
+    dispatch(setSortProductTransferField(e.sortField));
+    dispatch(setSortProductTransferOrder(e.sortOrder));
   };
 
   return (
@@ -812,9 +828,10 @@ export default function ProductTransfer({ hasAccess }) {
             <DataTable
               value={productTransferList}
               sortMode="single"
-              sortField="name"
               filterDisplay="row"
-              sortOrder={1}
+              onSort={onSort}
+              sortField={sortProductTransferField}
+              sortOrder={sortProductTransferOrder}
               filters={productTransferFilters}
               onFilter={event => {
                 dispatch(

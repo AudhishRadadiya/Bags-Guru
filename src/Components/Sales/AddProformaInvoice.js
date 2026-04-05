@@ -934,7 +934,12 @@ export default function AddProformaInvoice() {
                         disabled={state?.isView || proformaId}
                         options={allUserPartyList}
                         onChange={e => {
-                          dispatch(getPreviousTransporter(e.value));
+                          dispatch(
+                            getPreviousTransporter({
+                              party_name: e.value,
+                              type: 2,
+                            }),
+                          );
                           setFieldValue('party_name', e.value);
                         }}
                         onBlur={handleBlur}

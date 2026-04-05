@@ -6,6 +6,8 @@ let initialState = {
   trendingProductExportLoading: false,
   trendingProductList: [],
   trendingProductCount: 0,
+  sortTrendingProductsField: '',
+  sortTrendingProductsOrder: 1,
 };
 
 const TrendingProductSlice = createSlice({
@@ -27,6 +29,12 @@ const TrendingProductSlice = createSlice({
     setTrendingProductExportLoading: (state, action) => {
       state.trendingProductExportLoading = action.payload;
     },
+    setSortTrendingProductsField: (state, action) => {
+      state.sortTrendingProductsField = action.payload;
+    },
+    setSortTrendingProductsOrder: (state, action) => {
+      state.sortTrendingProductsOrder = action.payload;
+    },
   },
 });
 
@@ -36,6 +44,8 @@ export const {
   setTrendingProductList,
   setTrendingProductCount,
   setTrendingProductExportLoading,
+  setSortTrendingProductsField,
+  setSortTrendingProductsOrder,
 } = TrendingProductSlice.actions;
 
 export default TrendingProductSlice.reducer;

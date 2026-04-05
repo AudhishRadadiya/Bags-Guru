@@ -18,6 +18,12 @@ let initialState = {
     disabled: true,
   },
   isStockTransfer: false,
+  sortRollConsumptionField: null,
+  sortRollConsumptionOrder: null,
+  sortInkConsumptionField: null,
+  sortInkConsumptionOrder: null,
+  sortStockRawMaterialField: null,
+  sortStockRawMaterialOrder: null,
 };
 
 const StockRowMaterial = createSlice({
@@ -66,6 +72,24 @@ const StockRowMaterial = createSlice({
     setIsStockTransfer: (state, action) => {
       state.isStockTransfer = action.payload;
     },
+    setSortRollConsumptionField: (state, action) => {
+      state.sortRollConsumptionField = action.payload;
+    },
+    setSortRollConsumptionOrder: (state, action) => {
+      state.sortRollConsumptionOrder = action.payload;
+    },
+    setSortInkConsumptionField: (state, action) => {
+      state.sortInkConsumptionField = action.payload;
+    },
+    setSortInkConsumptionOrder: (state, action) => {
+      state.sortInkConsumptionOrder = action.payload;
+    },
+    setSortStockRawMaterialOrder: (state, action) => {
+      state.sortStockRawMaterialOrder = action.payload;
+    },
+    setSortStockRawMaterialField: (state, action) => {
+      state.sortStockRawMaterialField = action.payload;
+    },
   },
 });
 
@@ -84,6 +108,12 @@ export const {
   setSelectedStockTransferData,
   setIsStockTransfer,
   setStockRawListingLoading,
+  setSortInkConsumptionField,
+  setSortInkConsumptionOrder,
+  setSortRollConsumptionField,
+  setSortRollConsumptionOrder,
+  setSortStockRawMaterialField,
+  setSortStockRawMaterialOrder,
 } = StockRowMaterial.actions;
 
 export default StockRowMaterial.reducer;

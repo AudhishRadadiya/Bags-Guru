@@ -75,7 +75,7 @@ export default function AddNewOrder() {
 
   const loadRequiredData = useCallback(() => {
     dispatch(getPartiesAdvisor());
-    dispatch(getTransporterPartyList());
+    // dispatch(getTransporterPartyList());
     dispatch(getAllUserPartyList());
   }, [dispatch]);
 
@@ -259,12 +259,21 @@ export default function AddNewOrder() {
 
   useEffect(() => {
     if (previousTransporter) {
-      let transporter = transporterPartyList?.find(
-        x => x?._id === previousTransporter?.transporter,
-      );
-      setFieldValue('transporter', transporter?._id);
+      // let transporter = transporterPartyList?.find(
+      //   x => x?._id === previousTransporter?.transporter,
+      // );
+      // setFieldValue('transporter', transporter?._id);
+
+      if (previousTransporter?.shipping_pincode) {
+        dispatch(
+          getTransporterPartyList({
+            pincode: previousTransporter?.shipping_pincode,
+          }),
+        );
+      }
     }
   }, [previousTransporter, transporterPartyList, setFieldValue]);
+
   const onCancel = useCallback(() => {
     dispatch(clearSelectedSalesOrder());
     navigate('/order');
@@ -376,7 +385,13 @@ export default function AddNewOrder() {
                   disabled={order_id}
                   options={allUserPartyList} // for party name
                   onChange={e => {
-                    dispatch(getPreviousTransporter(e.value));
+                    dispatch(
+                      getPreviousTransporter({
+                        party_name: e.value,
+                        type: 1,
+                      }),
+                    );
+                    dispatch(getTransporterPartyList());
                     setFieldValue('party_name', e.value);
                   }}
                   onBlur={handleBlur}

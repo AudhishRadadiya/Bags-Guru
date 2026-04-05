@@ -115,6 +115,8 @@ let initialState = {
     selected_roll: {},
   },
   // viewSelectedUserData: {},
+  sortUsersField: '',
+  sortUsersOrder: 1,
 };
 
 const userSlice = createSlice({
@@ -167,6 +169,12 @@ const userSlice = createSlice({
     // clearViewSelectedUserData: state => {
     //   state.viewSelectedUserData = initialState.userInitialValues;
     // },
+    setSortUsersField: (state, action) => {
+      state.sortUsersField = action.payload;
+    },
+    setSortUsersOrder: (state, action) => {
+      state.sortUsersOrder = action.payload;
+    },
   },
 });
 
@@ -175,6 +183,8 @@ export const {
   setUserLoading,
   setUserList,
   setUserCount,
+  setSortUsersField,
+  setSortUsersOrder,
   clearSelectedUser,
   setUserListFilter,
   setUsersCRUDLoading,

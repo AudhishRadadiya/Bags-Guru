@@ -5,6 +5,8 @@ let initialState = {
   ppPriceHistoryListLoading: false,
   ppPriceHistoryList: [],
   ppPriceHistoryCount: 0,
+  sortPriceHistoryField: null,
+  sortPriceHistoryOrder: null,
 };
 
 const ppPriceHistorySlice = createSlice({
@@ -23,6 +25,12 @@ const ppPriceHistorySlice = createSlice({
     setPpPriceHistoryCount: (state, action) => {
       state.ppPriceHistoryCount = action.payload;
     },
+    setSortPriceHistoryField: (state, action) => {
+      state.sortPriceHistoryField = action.payload;
+    },
+    setSortPriceHistoryOrder: (state, action) => {
+      state.sortPriceHistoryOrder = action.payload;
+    },
   },
 });
 
@@ -31,6 +39,8 @@ export const {
   setPpPriceHistoryListLoading,
   setPpPriceHistoryList,
   setPpPriceHistoryCount,
+  setSortPriceHistoryField,
+  setSortPriceHistoryOrder,
 } = ppPriceHistorySlice.actions;
 
 export default ppPriceHistorySlice.reducer;

@@ -15,23 +15,28 @@ const ReactSelectSingle = ({
   optionGroupChildren,
   optionGroupTemplate,
   className,
+  itemTemplate,
+  showClear,
+  ...props
 }) => {
   return (
     <Dropdown
       value={value}
       filter={filter}
       disabled={disabled}
-      // showClear
+      showClear={showClear}
       options={options}
       onChange={onChange}
       placeholder={placeholder}
       style={style}
       name={name}
       onBlur={onBlur}
+      itemTemplate={itemTemplate}
       optionGroupLabel={optionGroupLabel}
       optionGroupChildren={optionGroupChildren}
       optionGroupTemplate={optionGroupTemplate}
       className={className}
+      {...props}
     />
   );
 };

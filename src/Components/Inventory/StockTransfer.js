@@ -31,6 +31,10 @@ import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 import DateRangeCalender from 'Components/Common/DateRangeCalender';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import moment from 'moment';
+import {
+  setSortStockTransferField,
+  setSortStockTransferOrder,
+} from 'Store/Reducers/Inventory/StockTransferSlice';
 
 const filterDetails = [
   { label: 'Item Name', value: 'item_name', type: 'inputBox' },
@@ -59,6 +63,8 @@ export default function StockTransfer({ hasAccess }) {
     stockTransferExportLoading,
     stockTransferList,
     stockTransferCount,
+    sortStockTransferField,
+    sortStockTransferOrder,
   } = useSelector(({ stockTransfer }) => stockTransfer);
   const { miscMasterLoading, activeWarehouseList } = useSelector(
     ({ miscMaster }) => miscMaster,
@@ -134,24 +140,32 @@ export default function StockTransfer({ hasAccess }) {
 
   const onPageChange = useCallback(
     page => {
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
 
-      dispatch(
-        getStockTransferList(pageLimit, pageIndex, searchQuery, applied, dates),
-      );
+        dispatch(
+          getStockTransferList(
+            pageLimit,
+            pageIndex,
+            searchQuery,
+            applied,
+            dates,
+          ),
+        );
 
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          stockTransfer: {
-            ...allFilters?.stockTransfer,
-            currentPage: pageIndex,
-          },
-        }),
-      );
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            stockTransfer: {
+              ...allFilters?.stockTransfer,
+              currentPage: pageIndex,
+            },
+          }),
+        );
+      }
     },
     [currentPage, dispatch, pageLimit, searchQuery, applied, dates, allFilters],
   );
@@ -574,6 +588,11 @@ export default function StockTransfer({ hasAccess }) {
     );
   };
 
+  const onSort = e => {
+    dispatch(setSortStockTransferField(e.sortField));
+    dispatch(setSortStockTransferOrder(e.sortOrder));
+  };
+
   return (
     <>
       <div className="main_Wrapper">
@@ -785,7 +804,9 @@ export default function StockTransfer({ hasAccess }) {
             <DataTable
               value={stockTransferList}
               sortMode="single"
-              sortField="name"
+              onSort={onSort}
+              sortField={sortStockTransferField}
+              sortOrder={sortStockTransferOrder}
               filterDisplay="row"
               dataKey="_id"
               filters={stockTransferFilters}
@@ -800,7 +821,6 @@ export default function StockTransfer({ hasAccess }) {
                   }),
                 );
               }}
-              sortOrder={1}
               emptyMessage={
                 stockTransferLoading ? <Skeleton count={10} /> : false
               }

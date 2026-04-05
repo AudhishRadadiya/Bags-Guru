@@ -36,9 +36,73 @@
 .pie_chart_wrap .highcharts-container {
   height: 250px !important;
 }
-
-.sales_comparison_chart_wrap .highcharts-container {
-  height: 293px !important;
+.sales_comparison_wrap,
+.customer_source_wrap,
+.customer_source_details_wrap,
+.industry_wrap,
+.state_wise_turnover_wrap,
+.pending_payment_amount_wrap {
+  .sales_comparison_top {
+    min-height: 70px;
+    height: 100%;
+  }
+  &.advisor_teams_chart {
+    height: 100%;
+    .sales_comparison_chart_wrap {
+      height: 550px;
+      @media (max-width: 1115px) {
+        height: 539px;
+      }
+    }
+  }
+  &.advisor_team_average_sales {
+    height: 100%;
+    .sales_comparison_chart_wrap {
+      height: 675px;
+      @media (max-width: 1650px) {
+        height: 655px;
+      }
+      @media (max-width: 1450px) {
+        height: 600px;
+      }
+      @media (max-width: 1400px) {
+        height: 570px;
+      }
+    }
+  }
+  .sales_comparison_chart_wrap,
+  .customer_source_chart_wrap,
+  .customer_source_details_chart_wrap,
+  .industry_chart_wrap,
+  .state_wise_turnover_chart_wrap,
+  .pending_payment_amount_chart_wrap {
+    // height: 630px;
+    height: 1100px;
+    &.admin_dashboard_chart {
+      height: 1185px;
+    }
+    .sales_comparison,
+    .customer_source,
+    .customer_source_details,
+    .industry,
+    .state_wise_turnover,
+    .pending_payment_amount {
+      height: 100%;
+    }
+  }
+}
+.custom_dashboard_wrap {
+  .average_ticket_size_wrap,
+  .average_revenue_per_customer_wrap,
+  .total_orders_count_wrap,
+  .unique_customers_count_wrap {
+    .average_ticket_size,
+    .average_revenue_per_customer,
+    .total_orders_count,
+    .unique_customers_count {
+      height: 400px;
+    }
+  }
 }
 
 .sales_calculation {
@@ -98,6 +162,10 @@
   .table_scroll_wrapper {
     &.Customers_table_wrapper {
       height: 323px;
+      &.custom_table_scroll {
+        max-height: none;
+        height: auto;
+      }
       tbody {
         tr {
           th {
@@ -122,6 +190,9 @@
     &.admin_dashboars_table_wrapper {
       height: 312px;
       max-height: inherit;
+      &.custom_height {
+        height: 350px;
+      }
       thead {
         tr {
           th {
@@ -174,6 +245,63 @@
   font-size: 12px;
   min-width: 210px;
 }
+
+.sales_dashboard_main_wrap {
+  .sales_Comparison_col {
+    .review_comparision {
+      .custom_height {
+        height: 435px;
+        @media (max-width: 1750px) {
+          height: 385px;
+        }
+        @media (max-width: 1650px) {
+          height: 465px;
+        }
+        @media (max-width: 1450px) {
+          height: 520px;
+        }
+        @media (max-width: 1400px) {
+          height: 545px;
+        }
+        @media (max-width: 1118px) {
+          height: 520px;
+        }
+        @media (max-width: 991px) {
+          height: 350px;
+        }
+      }
+    }
+  }
+}
+
+// =========================================================
+.admin_dashboard_wrap {
+  .state_wise_table,
+  .pending_jobs_table {
+    margin-bottom: 0 !important;
+    .table_wrapper {
+      .admin_dashboars_table_wrapper {
+        height: 420px;
+      }
+    }
+  }
+  .sales_comparison_wrap {
+    height: 100%;
+    .sales_comparison_chart_wrap {
+      height: 1255px;
+    }
+  }
+}
+.admin_dashboard_wrap {
+  .state_wise_table {
+    .state_table {
+      .state_wise_turnover_table {
+        height: 410px !important;
+      }
+    }
+  }
+}
+// =========================================================
 
 @media (max-width: 1800px) {
   .sales_dashboard_main_wrap .chart_wrap .pie_chart_wrap {
@@ -241,6 +369,21 @@
   }
   .table_wrapper .table_scroll_wrapper.Customers_table_wrapper tbody tr td {
     padding: 10px 10px;
+  }
+  .sales_comparison_wrap,
+  .customer_source_wrap,
+  .customer_source_details_wrap,
+  .industry_wrap,
+  .state_wise_turnover_wrap,
+  .pending_payment_amount_wrap {
+    .sales_comparison_chart_wrap,
+    .customer_source_chart_wrap,
+    .customer_source_details_chart_wrap,
+    .industry_chart_wrap,
+    .state_wise_turnover_chart_wrap,
+    .pending_payment_amount_chart_wrap {
+      height: 530px;
+    }
   }
 }
 
@@ -347,6 +490,21 @@
   .chart_wrap .chart_list_wrap {
     width: 40%;
   }
+  .sales_comparison_wrap,
+  .customer_source_wrap,
+  .customer_source_details_wrap,
+  .industry_wrap,
+  .state_wise_turnover_wrap,
+  .pending_payment_amount_wrapsales_comparison_wrap {
+    .sales_comparison_chart_wrap,
+    .customer_source_chart_wrap,
+    .customer_source_details_chart_wrap,
+    .industry_chart_wrap,
+    .state_wise_turnover_chart_wrap,
+    .pending_payment_amount_chart_wrap {
+      height: 430px;
+    }
+  }
 }
 
 @media (max-width: 600px) {
@@ -364,6 +522,21 @@
   }
   .pie_chart_wrap .highcharts-container {
     height: 180px !important;
+  }
+  .sales_comparison_wrap,
+  .customer_source_wrap,
+  .customer_source_details_wrap,
+  .industry_wrap,
+  .state_wise_turnover_wrap,
+  .pending_payment_amount_wrap {
+    .sales_comparison_chart_wrap,
+    .customer_source_chart_wrap,
+    .customer_source_details_chart_wrap,
+    .industry_chart_wrap,
+    .state_wise_turnover_chart_wrap,
+    .pending_payment_amount_chart_wrap {
+      height: 330px;
+    }
   }
 }
 
@@ -404,5 +577,19 @@
   }
   .chart_wrap .pie_chart_wrap {
     width: 180px;
+  }
+}
+.custom_width {
+  width: 200px;
+  text-wrap: auto;
+}
+
+.custom_view {
+  &.view_detail {
+    color: #322972 !important;
+    cursor: pointer;
+    &:hover {
+      color: #ed701e !important;
+    }
   }
 }

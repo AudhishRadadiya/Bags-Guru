@@ -545,6 +545,25 @@ export let permission = {
         },
       ],
     },
+    {
+      isSelectedAll: 0,
+      main_module_id: '',
+      name: 'Tripta Amount',
+      is_active: true,
+      sub_module_permission: [
+        {
+          _id: '',
+          name: 'All',
+          create: 0,
+          edit: 0,
+          view: 0,
+          export: 0,
+          import: 0,
+          delete: 0,
+          print: 0,
+        },
+      ],
+    },
   ],
 };
 
@@ -597,7 +616,7 @@ let initialState = {
   },
   activeUnitList: [],
   activeItemGroupList: [],
-  selectedRolePermission: permission,
+  selectedRolePermission: {},
 };
 
 const settingsSlice = createSlice({

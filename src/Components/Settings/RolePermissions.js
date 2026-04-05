@@ -1,5 +1,5 @@
 import { Col, Dropdown, Row } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import PlusIcon from '../../Assets/Images/plus.svg';
 import TrashIcon from '../../Assets/Images/trash.svg';
 import EditIcon from '../../Assets/Images/edit.svg';
@@ -18,6 +18,10 @@ import { Button } from 'primereact/button';
 import { getUserRolesList } from 'Services/baseService';
 import ConfirmDialog from 'Components/Common/ConfirmDialog';
 import { deleteRoleWisePermission } from 'Services/Settings/RolePermissionService';
+import {
+  setSortRolesPermissionField,
+  setSortRolesPermissionOrder,
+} from 'Store/Reducers/Settings/RoleAndPermissionSlice';
 
 const statusBodyTemplate = rowData => {
   return (
@@ -37,6 +41,9 @@ export default function RolePermissions({ hasAccess }) {
 
   const { loading: settingLoading, userRoles } = useSelector(
     ({ settings }) => settings,
+  );
+  const { sortRolesPermissionField, sortRolesPermissionOrder } = useSelector(
+    ({ roleAndPermission }) => roleAndPermission,
   );
   const { allCommon } = useSelector(({ common }) => common);
   const { filterToggle, rollFilters } = allCommon?.rollPermissions;
@@ -113,6 +120,11 @@ export default function RolePermissions({ hasAccess }) {
     );
   };
 
+  const customSort = e => {
+    dispatch(setSortRolesPermissionField(e.sortField));
+    dispatch(setSortRolesPermissionOrder(e.sortOrder));
+  };
+
   return (
     <>
       {/* {settingLoading && <Loader />} */}
@@ -175,8 +187,10 @@ export default function RolePermissions({ hasAccess }) {
             </button>
             <DataTable
               value={userRoles}
-              sortMode="multiple"
-              sortField="name"
+              sortMode="single"
+              onSort={customSort}
+              sortField={sortRolesPermissionField}
+              sortOrder={sortRolesPermissionOrder}
               dataKey="_id"
               filters={rollFilters}
               onFilter={event => {
@@ -190,7 +204,6 @@ export default function RolePermissions({ hasAccess }) {
                   }),
                 );
               }}
-              sortOrder={1}
               filterDisplay="row"
               emptyMessage={settingLoading && <Skeleton count={10} />}
             >

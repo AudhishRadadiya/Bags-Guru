@@ -12,6 +12,7 @@ let initialState = {
   selectedUnit: { name: '', code: '', is_active: 1 },
   bankList: [],
   bankCount: 0,
+  allActiveBankList: [],
   selectedBank: {
     name: '',
     account_name: '',
@@ -135,7 +136,12 @@ let initialState = {
   selectedCustomerSource: { name: '', is_active: 1 },
   customerSourceDetailList: [],
   customerSourceDetailCount: 0,
-  selectedCustomerSourceDetail: { name: '', is_active: 1 },
+  selectedCustomerSourceDetail: {
+    name: '',
+    budget: '',
+    advisor: [],
+    is_active: 1,
+  },
   addressTypeList: [],
   addressTypeCount: 0,
   selectedAddressType: { name: '', is_active: 1 },
@@ -202,6 +208,23 @@ let initialState = {
   activeCustomerRatingList: [],
   selectedVelcro: { size: '', is_active: 1 },
   selectedCustomerRating: { star_rating: '', percentage: '', is_active: 1 },
+  exhibitionList: [],
+  exhibitionListCount: 0,
+  advisorTeamList: [],
+  advisorTeamCount: 0,
+  unassignedAdvisorsList: [],
+  exhibitionData: {
+    name: '',
+    year: '',
+    budget: '',
+    leads_acquired: '',
+    advisor_id: '',
+    linked_customer_source_detail: '',
+  },
+  customerRevenueTierList: [],
+  customerRevenueTierCount: 0,
+  OKRDetailsList: [],
+  OKRDetailsCount: 0,
 };
 
 const miscMasterSlice = createSlice({
@@ -229,6 +252,15 @@ const miscMasterSlice = createSlice({
     setSelectedWarehouse: (state, action) => {
       state.selectedWarehouse = action.payload;
     },
+    setAdvisorTeamList: (state, action) => {
+      state.advisorTeamList = action.payload;
+    },
+    setAdvisorTeamCount: (state, action) => {
+      state.advisorTeamCount = action.payload;
+    },
+    setUnassignedAdvisorsList: (state, action) => {
+      state.unassignedAdvisorsList = action.payload;
+    },
     setUnitList: (state, action) => {
       state.unitList = action.payload;
     },
@@ -243,6 +275,9 @@ const miscMasterSlice = createSlice({
     },
     setBankCount: (state, action) => {
       state.bankCount = action.payload;
+    },
+    setAllActiveBankList: (state, action) => {
+      state.allActiveBankList = action.payload;
     },
     setSelectedBank: (state, action) => {
       state.selectedBank = action.payload;
@@ -606,6 +641,27 @@ const miscMasterSlice = createSlice({
     setSelectedCustomerRating: (state, action) => {
       state.selectedCustomerRating = action.payload;
     },
+    setExhibitionList: (state, action) => {
+      state.exhibitionList = action.payload;
+    },
+    setExhibitionData: (state, action) => {
+      state.exhibitionData = action.payload;
+    },
+    setExhibitionListCount: (state, action) => {
+      state.exhibitionListCount = action.payload;
+    },
+    setCustomerRevenueTierList: (state, action) => {
+      state.customerRevenueTierList = action.payload;
+    },
+    setCustomerRevenueTierCount: (state, action) => {
+      state.customerRevenueTierCount = action.payload;
+    },
+    setOKRDetailsList: (state, action) => {
+      state.OKRDetailsList = action.payload;
+    },
+    setOKRDetailsCount: (state, action) => {
+      state.OKRDetailsCount = action.payload;
+    },
   },
 });
 
@@ -617,11 +673,15 @@ export const {
   setWarehouseList,
   setWarehouseCount,
   setSelectedWarehouse,
+  setAdvisorTeamList,
+  setAdvisorTeamCount,
+  setUnassignedAdvisorsList,
   setUnitCount,
   setUnitList,
   setSelectedUnit,
   setBankList,
   setBankCount,
+  setAllActiveBankList,
   setSelectedBank,
   setBagTypeList,
   setActiveBagTypeList,
@@ -742,6 +802,13 @@ export const {
   setActiveCustomerRatingList,
   setSelectedVelcro,
   setSelectedCustomerRating,
+  setExhibitionList,
+  setExhibitionData,
+  setExhibitionListCount,
+  setCustomerRevenueTierList,
+  setCustomerRevenueTierCount,
+  setOKRDetailsList,
+  setOKRDetailsCount,
 } = miscMasterSlice.actions;
 
 export default miscMasterSlice.reducer;

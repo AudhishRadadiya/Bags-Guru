@@ -6,10 +6,10 @@ import { setPendingJobsLoading } from 'Store/Reducers/Report/SalesTurnoverSlice'
 /**
  * @desc Printing-Jobs PDF Export:
  */
-export const printingJobsExportPDF = payload => async dispatch => {
+export const printingJobsExportPDF = type => async dispatch => {
   try {
     dispatch(setPendingJobsLoading(true));
-    const response = await axios.get(`/list/report/printingJobs/pdf`);
+    const response = await axios.get(`/list/report/printingJobs/${type}/pdf`);
     const { msg, err, data } = response.data;
 
     if (err === 0) {
@@ -30,11 +30,11 @@ export const printingJobsExportPDF = payload => async dispatch => {
 /**
  * @desc Printing-Jobs Excel Export:
  */
-export const printingJobsExportExcel = payload => async dispatch => {
+export const printingJobsExportExcel = type => async dispatch => {
   try {
     dispatch(setPendingJobsLoading(true));
 
-    const response = await axios.get(`/list/report/printingJobs/excel`);
+    const response = await axios.get(`/list/report/printingJobs/${type}/excel`);
     const { msg, err, data } = response.data;
 
     if (err === 0) {

@@ -26,7 +26,8 @@ import {
 } from 'Services/partiesService';
 import {
   setImporttedPurchaseReceive,
-  setIsGetInitialValuesReceivePurchaseOrder,
+  setSortPurchaseReceiveField,
+  setSortPurchaseReceiveOrder,
 } from 'Store/Reducers/Purchase/PurchaseOrderSlice';
 import EditIcon from '../../Assets/Images/edit.svg';
 import TrashIcon from '../../Assets/Images/trash.svg';
@@ -70,6 +71,8 @@ export default function PurchaseEntry({ hasAccess }) {
     purchaseOrderReceivedEntryList,
     purchaseOrderReceivedEntryCount,
     purchaseOrderLoading,
+    sortPurchaseReceiveField,
+    sortPurchaseReceiveOrder,
     isGetInitialValuesReceivePurchaseOrder,
   } = useSelector(({ purchaseOrder }) => purchaseOrder);
   const { listFilter } = useSelector(({ parties }) => parties);
@@ -584,6 +587,11 @@ export default function PurchaseEntry({ hasAccess }) {
     );
   };
 
+  const customSort = e => {
+    dispatch(setSortPurchaseReceiveField(e.sortField));
+    dispatch(setSortPurchaseReceiveOrder(e.sortOrder));
+  };
+
   return (
     <>
       {/* {purchaseOrderLoading && <Loader />} */}
@@ -811,8 +819,9 @@ export default function PurchaseEntry({ hasAccess }) {
             <DataTable
               value={purchaseOrderReceivedEntryList}
               sortMode="single"
-              sortField="name"
-              sortOrder={1}
+              onSort={customSort}
+              sortField={sortPurchaseReceiveField}
+              sortOrder={sortPurchaseReceiveOrder}
               dataKey="data_id"
               filterDisplay="row"
               filters={purchaseReceiveFilters}

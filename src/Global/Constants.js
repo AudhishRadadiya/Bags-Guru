@@ -11,12 +11,16 @@ export const FINANCIALS = 'Financials';
 export const PRODUCT = 'Product';
 export const SETTINGS = 'Settings';
 export const REPORT = 'Report';
+export const COLLECTION = 'Collection';
 
 /**
  * @ desc Sub Modules
  */
 /************************* Parties ********************/
 export const RoleParties = 'All';
+
+/************************* Tripta-Amount ********************/
+export const RoleCollection = 'Collection';
 
 /************************* Dashboard ********************/
 export const RoleAdminDashboard = 'Admin Dashboard';
@@ -37,12 +41,14 @@ export const RolePurchaseOrderOperator = 'Purchase Order Operator';
 export const RolePurchaseEntry = 'Purchase Entry';
 export const RolePrePrinted = 'Pre-Printed P.O. Status';
 export const RolePpPriceHistory = 'PP Price History';
+export const RoleNLRequirement = 'NL Requirement';
 
 /************************* Sales ********************/
 export const RoleOrders = 'Orders';
 export const RoleOrdersOperator = 'Order Operator';
 export const RoleProformaInvoice = 'Pro-forma Invoice';
 export const RoleTaxInvoice = 'Tax Invoice';
+export const RoleThumbnail = 'Thumbnail';
 
 /************************* Production ********************/
 export const RoleMFGLive = 'MFG Live';
@@ -72,6 +78,7 @@ export const RoleFinance = 'Finance';
 export const RolesSales = 'Sales';
 export const RolePurchase = 'Purchase';
 export const RoleMonthlyTurnover = 'Monthly Turnover';
+export const RoleDesigner = 'Designer';
 
 /************************* Settings ********************/
 export const RoleCompany = 'Company';

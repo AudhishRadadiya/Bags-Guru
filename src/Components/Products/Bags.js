@@ -31,6 +31,8 @@ import {
   setIsGetInitialValuesForEditBag,
   setSelectedBagForDuplicate,
   setSelectedBagForEdit,
+  setSortBagsField,
+  setSortBagsOrder,
 } from 'Store/Reducers/Products/BagsSlice';
 import {
   getActiveBagCapacityList,
@@ -128,7 +130,8 @@ export default function Bags(props) {
 
   const { listFilter } = useSelector(({ parties }) => parties);
   const { allFilters, allCommon } = useSelector(({ common }) => common);
-  const { bagLoading, bagList, bagCount } = useSelector(({ bag }) => bag);
+  const { bagLoading, sortBagsField, sortBagsOrder, bagList, bagCount } =
+    useSelector(({ bag }) => bag);
   const {
     activeMaterialList,
     activeFormList,
@@ -505,18 +508,20 @@ export default function Bags(props) {
 
   const onPageChange = useCallback(
     page => {
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
 
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          bags: { ...allFilters?.bags, currentPage: pageIndex },
-        }),
-      );
-      dispatch(getBagList(pageLimit, pageIndex, searchQuery, applied));
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            bags: { ...allFilters?.bags, currentPage: pageIndex },
+          }),
+        );
+        dispatch(getBagList(pageLimit, pageIndex, searchQuery, applied));
+      }
     },
     [currentPage, dispatch, allFilters, pageLimit, searchQuery, applied],
   );
@@ -764,6 +769,11 @@ export default function Bags(props) {
     [],
   );
 
+  const onSort = e => {
+    dispatch(setSortBagsField(e.sortField));
+    dispatch(setSortBagsOrder(e.sortOrder));
+  };
+
   return (
     <>
       {/* {(miscMasterLoading || bagExportLoading || bagLoading) && <Loader />} */}
@@ -890,9 +900,10 @@ export default function Bags(props) {
             <DataTable
               value={bagList}
               filterDisplay="row"
-              sortMode="multiple"
-              sortField="name"
-              sortOrder={1}
+              sortMode="single"
+              onSort={onSort}
+              sortField={sortBagsField}
+              sortOrder={sortBagsOrder}
               filters={bagFilters}
               onFilter={event => {
                 dispatch(

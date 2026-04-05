@@ -42,6 +42,7 @@ export const getPrePrintedPurchaseOrderList =
               const obj = prePrintedStatus?.selectedRollsData?.find(
                 item2 => item2?._id === item?._id,
               );
+
               if (obj) {
                 return {
                   ...item,
@@ -51,6 +52,8 @@ export const getPrePrintedPurchaseOrderList =
                   proof_rcv_date: obj?.proof_rcv_date,
                   received_date: obj?.received_date,
                   unique_id: generateUniqueId(),
+                  old_str_str:
+                    obj?.old_str === '' ? '-' : obj?.old_str ? 'YES' : 'NO',
                 };
               }
 
@@ -64,6 +67,8 @@ export const getPrePrintedPurchaseOrderList =
             updatedData[key] = updatedData[key].map(value => {
               return {
                 ...value,
+                old_str_str:
+                  value?.old_str === '' ? '-' : value?.old_str ? 'YES' : 'NO',
                 select_preprinted_roll: false,
                 unique_id: generateUniqueId(),
               };
@@ -113,6 +118,8 @@ export const getCompletedPrePrintedOrderList =
             return {
               ...value,
               unique_id: generateUniqueId(),
+              old_str_str:
+                value?.old_str === '' ? '-' : value?.old_str ? 'YES' : 'NO',
             };
           });
         }
@@ -162,3 +169,74 @@ export const savePrePrintedOrder = payload => async dispatch => {
     dispatch(setPrePrintedStatusLoading(false));
   }
 };
+
+/**
+ * @desc Export list Pre-Printed Rolls excel
+ */
+
+export const getExportPrePrintedRollsExcel =
+  (query = '', filter = {}, dates) =>
+  async dispatch => {
+    try {
+      dispatch(setPrePrintedStatusLoading(true));
+
+      let obj = {};
+
+      for (const key in filter) {
+        if (
+          (Array.isArray(filter[key]) && filter[key]?.length > 0) ||
+          (typeof filter[key] === 'string' && filter[key] !== '')
+        ) {
+          obj[key] = filter[key];
+        }
+      }
+
+      const response = await axios.post(`export/prePrintedPurchseOrder/excel`, {
+        filter: filter,
+        search: query,
+        start_date: dates?.startDate ? getDMYDateFormat(dates?.startDate) : '',
+        end_date: dates?.endDate ? getDMYDateFormat(dates?.endDate) : '',
+      });
+
+      const { msg, err, data } = response.data;
+
+      if (err === 0) {
+        window.open(data, '_blank');
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    } catch (e) {
+      roastError(e);
+      return false;
+    } finally {
+      dispatch(setPrePrintedStatusLoading(false));
+    }
+  };
+
+export const updateUrgentPrePrintedPurchaseOrder =
+  payload => async dispatch => {
+    try {
+      dispatch(setPrePrintedStatusLoading(true));
+
+      const response = await axios.post(
+        `urgent/prePrintedPurchseOrder`,
+        payload,
+      );
+
+      const { msg, err, data } = response.data;
+
+      if (err === 0) {
+        return data;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    } catch (e) {
+      roastError(e);
+      return false;
+    } finally {
+      dispatch(setPrePrintedStatusLoading(false));
+    }
+  };

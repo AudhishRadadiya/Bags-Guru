@@ -4,13 +4,16 @@ import { getDMYDateFormat, roastError } from 'Helper/Common';
 import {
   setAdvisorReportData,
   setAdvisorTurnoverReportData,
+  setLaminatedAndNonLaminatedList,
   setLaminationChartData,
+  setNewAndRepeatOrderBusinessData,
   setPartyTypeChartData,
   setPendingJobBagTypeReportData,
   setPendingJobPrintTechnologyReportData,
   setProductStockChartData,
   setRawMaterialChartData,
   setStateTurnoverReportData,
+  setTraderAndEndUserReportData,
 } from 'Store/Reducers/Business/AdminDashboardSlice';
 
 const todayDate = new Date();
@@ -132,9 +135,15 @@ export const getLaminationReportList =
   };
 
 export const getAdvisorReportList = payload => async dispatch => {
+  let url = `/list/advisor/dashboard/advisorReport`;
+
+  if (payload) {
+    url = `/list/advisor/dashboard/advisorReport?partyType=${payload}`;
+  }
+
   try {
     // dispatch(setAdminDashboardLoading(true));
-    const response = await axios.get(`/list/advisor/dashboard/advisorReport`);
+    const response = await axios.get(url);
 
     const { msg, err, data } = response?.data;
     if (err === 0) {
@@ -259,5 +268,65 @@ export const getAdvisorTurnoverReportList = payload => async dispatch => {
     return false;
   } finally {
     //  dispatch(setAdminDashboardLoading(false));
+  }
+};
+
+export const getNewAndRepeatOrderReportList = () => async dispatch => {
+  try {
+    const response = await axios.get(
+      `/list/admin/dashboard/newAndRepeatOrderRatioReport`,
+    );
+
+    const { msg, err, data } = response?.data;
+    if (err === 0) {
+      dispatch(setNewAndRepeatOrderBusinessData(data || {}));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  }
+};
+
+export const getTraderAndEndUserReportList = () => async dispatch => {
+  try {
+    const response = await axios.get(
+      `/list/admin/dashboard/traderAndEndUserRatioReport`,
+    );
+
+    const { msg, err, data } = response?.data;
+    if (err === 0) {
+      dispatch(setTraderAndEndUserReportData(data || {}));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  }
+};
+
+export const getLaminatedAndNonLaminatedReport = () => async dispatch => {
+  try {
+    const response = await axios.get(
+      `/list/admin/dashboard/laminatedAndNonlaminatedMonthWiseRatioReport`,
+    );
+
+    const { msg, err, data } = response?.data;
+    if (err === 0) {
+      dispatch(setLaminatedAndNonLaminatedList(data || {}));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
   }
 };

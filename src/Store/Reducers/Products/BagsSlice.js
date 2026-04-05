@@ -18,6 +18,8 @@ let initialState = {
   isGetInitialValuesForEditBag: false,
   isGetInitialValuesForDuplicateBag: false,
   isGetInitialValuesForAddBag: false,
+  sortBagsField: '',
+  sortBagsOrder: 1,
 };
 
 const BagSlice = createSlice({
@@ -75,6 +77,12 @@ const BagSlice = createSlice({
     setIsGetInitialValuesForAddBag: (state, action) => {
       state.isGetInitialValuesForAddBag = action.payload;
     },
+    setSortBagsField: (state, action) => {
+      state.sortBagsField = action.payload;
+    },
+    setSortBagsOrder: (state, action) => {
+      state.sortBagsOrder = action.payload;
+    },
   },
 });
 
@@ -96,6 +104,8 @@ export const {
   setIsGetInitialValuesForDuplicateBag,
   setIsGetInitialValuesForAddBag,
   setSelectedBagForView,
+  setSortBagsField,
+  setSortBagsOrder,
 } = BagSlice.actions;
 
 export default BagSlice.reducer;

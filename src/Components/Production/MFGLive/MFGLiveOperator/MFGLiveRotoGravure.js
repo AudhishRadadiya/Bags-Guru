@@ -88,8 +88,8 @@ const MFGLiveFlexoFilterDetails = [
 ];
 
 const commonStatusObj = [
-  { label: 'Old', value: true },
-  { label: 'New', value: false },
+  { label: 'OLD', value: true },
+  { label: 'NEW', value: false },
 ];
 
 const rollOption = [
@@ -1752,6 +1752,10 @@ export default function MFGLiveRotoGravure() {
             dispatch(
               setAllCommon({
                 ...allCommon,
+                mfgLive: {
+                  ...allCommon?.mfgLive,
+                  print_field_filter: blank_print_field_filter,
+                },
                 mfgLiveFlexo: {
                   ...allCommon?.mfgLiveFlexo,
                   mfgLiveRotoGravure: {

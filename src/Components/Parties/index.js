@@ -59,8 +59,11 @@ import {
   setImporttedParties,
   setIsGetInitialValuesParty,
   setOnlyTransporterPartyList,
+  setSortPartiesField,
+  setSortPartiesOrder,
 } from 'Store/Reducers/Parties/parties.slice';
 import Loader from 'Components/Common/Loader';
+import { getMfgProcessFilterList } from 'Services/Production/mfgLiveServices';
 
 const partiesFilterDetails = [
   { label: 'Party Type', value: 'party_type', type: 'dropDown' },
@@ -69,6 +72,7 @@ const partiesFilterDetails = [
   { label: 'State', value: 'state_name', type: 'dropDown' },
   { label: 'City', value: 'city_name', type: 'dropDown' },
   { label: 'Present Advisor', value: 'present_advisor', type: 'dropDown' },
+  { label: 'Original Advisor', value: 'original_advisor', type: 'dropDown' },
   { label: 'Industry', value: 'industry', type: 'dropDown' },
   { label: 'Customer Source', value: 'customer_source', type: 'dropDown' },
   {
@@ -86,6 +90,7 @@ const transporterFilterDetails = [
   { label: 'State', value: 'state_name', type: 'dropDown' },
   { label: 'City', value: 'city_name', type: 'dropDown' },
   { label: 'Present Advisor', value: 'present_advisor', type: 'dropDown' },
+  { label: 'Original Advisor', value: 'original_advisor', type: 'dropDown' },
   { label: 'Industry', value: 'industry', type: 'dropDown' },
   { label: 'Customer Source', value: 'customer_source', type: 'dropDown' },
   {
@@ -110,6 +115,8 @@ const HomePage = ({ hasAccess }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const {
+    sortPartiesField,
+    sortPartiesOrder,
     listParties,
     partiesListCount,
     partiesLoading,
@@ -130,6 +137,7 @@ const HomePage = ({ hasAccess }) => {
   const { singleListGC, gCLoading } = useSelector(
     ({ generalConfiguration }) => generalConfiguration,
   );
+  const { mfgLiveFilterList } = useSelector(({ mfgLive }) => mfgLive);
 
   const { allFilters, allCommon } = useSelector(({ common }) => common);
   const {
@@ -233,12 +241,31 @@ const HomePage = ({ hasAccess }) => {
     dispatch(getPartiesCustomerSource());
     dispatch(getPartiesCustomerSourceDetail());
     dispatch(getSingleListGC());
+    dispatch(getMfgProcessFilterList());
   }, [dispatch, handleListingData]);
 
   useEffect(() => {
     loadRequiredData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const customSort = e => {
+    dispatch(setSortPartiesField(e.sortField));
+    dispatch(setSortPartiesOrder(e.sortOrder));
+  };
+
+  const originalAdvisorFilterOptions = useMemo(() => {
+    let updatedOriginalAdvisor = [];
+    if (mfgLiveFilterList?.advisorList?.length > 0) {
+      updatedOriginalAdvisor = mfgLiveFilterList.advisorList.map(item => {
+        return {
+          label: item.label,
+          value: item._id,
+        };
+      });
+    }
+    return updatedOriginalAdvisor;
+  }, [mfgLiveFilterList]);
 
   const customerSourceDetailOptions = useMemo(() => {
     return partiesCustomerSourceDetail?.map(customerSource => ({
@@ -250,49 +277,56 @@ const HomePage = ({ hasAccess }) => {
   const onPageChange = useCallback(
     page => {
       // dispatch(setListParties([]));
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
 
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          parties: { ...allFilters?.parties, currentPage: pageIndex },
-        }),
-      );
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            parties: { ...allFilters?.parties, currentPage: pageIndex },
+          }),
+        );
 
-      dispatch(getPartiesList(pageLimit, pageIndex, searchQuery, applied));
+        dispatch(getPartiesList(pageLimit, pageIndex, searchQuery, applied));
+      }
     },
     [currentPage, dispatch, allFilters, searchQuery, applied, pageLimit],
   );
 
   const onTransporterPageChange = useCallback(
     page => {
-      dispatch(
-        setOnlyTransporterPartyList({ ...onlyTransporterPartyList, list: [] }),
-      );
-      let pageIndex = transporterCurrentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          parties: {
-            ...allFilters?.parties,
-            transporterCurrentPage: pageIndex,
-          },
-        }),
-      );
-      dispatch(
-        getTransporterPartiesList(
-          transporterPageLimit,
-          pageIndex,
-          searchQuery,
-          applied,
-        ),
-      );
+      if (page !== transporterCurrentPage) {
+        dispatch(
+          setOnlyTransporterPartyList({
+            ...onlyTransporterPartyList,
+            list: [],
+          }),
+        );
+        let pageIndex = transporterCurrentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            parties: {
+              ...allFilters?.parties,
+              transporterCurrentPage: pageIndex,
+            },
+          }),
+        );
+        dispatch(
+          getTransporterPartiesList(
+            transporterPageLimit,
+            pageIndex,
+            searchQuery,
+            applied,
+          ),
+        );
+      }
     },
     [
       dispatch,
@@ -847,6 +881,7 @@ const HomePage = ({ hasAccess }) => {
       state_name: partiesStateWithoutCountry,
       city_name: partiesCitiesWithoutState,
       present_advisor: partiesAdvisor,
+      original_advisor: originalAdvisorFilterOptions,
       industry: partiesActiveIndustry,
       customer_source: partiesCustomerSource,
       status: statusObj,
@@ -863,6 +898,7 @@ const HomePage = ({ hasAccess }) => {
     partiesStateWithoutCountry,
     rateListObj,
     customerSourceDetailOptions,
+    originalAdvisorFilterOptions,
   ]);
 
   const partyNameTemplate = data => {
@@ -910,12 +946,13 @@ const HomePage = ({ hasAccess }) => {
 
         <DataTable
           value={listParties?.list}
-          sortMode="multiple"
-          sortField="name"
-          sortOrder={1}
+          sortMode="single" // multiple
           dataKey="_id"
           filterDisplay="row"
           filters={partyFilters}
+          onSort={customSort}
+          sortField={sortPartiesField}
+          sortOrder={sortPartiesOrder}
           onFilter={event => {
             dispatch(
               setAllCommon({
@@ -947,6 +984,12 @@ const HomePage = ({ hasAccess }) => {
             className="view_detail"
             body={partyNameTemplate}
           ></Column>
+          {/* <Column
+            field="tripta_due_amount"
+            header="Tripta Due Amount"
+            sortable
+            filter={filterToggle}
+          ></Column> */}
           <Column
             field="personal_contact_no"
             header="Contact Number"
@@ -1073,9 +1116,10 @@ const HomePage = ({ hasAccess }) => {
         </button>
         <DataTable
           value={onlyTransporterPartyList?.list}
-          sortMode="multiple"
-          sortField="name"
-          sortOrder={1}
+          sortMode="single" //multiple
+          onSort={customSort}
+          sortField={sortPartiesField}
+          sortOrder={sortPartiesOrder}
           dataKey="_id"
           filterDisplay="row"
           filters={transporterFilters}
@@ -1110,6 +1154,12 @@ const HomePage = ({ hasAccess }) => {
             className="view_detail"
             body={partyNameTemplate}
           ></Column>
+          {/* <Column
+            field="tripta_due_amount"
+            header="Tripta Due Amount"
+            sortable
+            filter={transporterFilterToggle}
+          ></Column> */}
           <Column
             field="personal_contact_no"
             header="Contact Number"

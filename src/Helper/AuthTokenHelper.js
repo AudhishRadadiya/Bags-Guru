@@ -25,3 +25,21 @@ export const clearToken = () => {
 const clearAuthToken = () => {
   delete axios.defaults.headers.common['Authorization'];
 };
+
+export const setVerificationSessionData = data => {
+  sessionStorage.setItem('EmailVerification', JSON.stringify(data));
+};
+
+export const getVerificationSessionData = () => {
+  let emailVerificationData = sessionStorage.getItem('EmailVerification');
+
+  if (emailVerificationData) {
+    emailVerificationData = JSON.parse(emailVerificationData);
+  }
+
+  return emailVerificationData;
+};
+
+export const removeVerificationSessionData = () => {
+  sessionStorage.removeItem('EmailVerification');
+};

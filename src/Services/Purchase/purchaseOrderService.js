@@ -20,6 +20,9 @@ import {
   setRollRequirementList,
   setRollRequirementListLoading,
   setRollRequirementLoading,
+  setRollStockConsumptionHistory,
+  setRollStockHistory,
+  setRollStockWithoutOrderCount,
   setRollStockWithoutOrderList,
   setSupplierList,
   setViewPurchaseOrderList,
@@ -400,8 +403,20 @@ export const getNlRollRequirement =
 
       const { data, msg, err } = response.data;
 
+      const updatedArray = data?.list?.map(item => {
+        return {
+          ...item,
+          opening_stock: item?.opening_stock ?? '',
+          buffering_stock: item?.buffering_stock ?? '',
+          opening_stock_date: item?.opening_stock_date
+            ? new Date(item?.opening_stock_date)
+            : new Date(),
+          unique_id: generateUniqueId(),
+        };
+      });
+
       if (err === 0) {
-        dispatch(setRollRequirementList(data?.list || []));
+        dispatch(setRollRequirementList(updatedArray || []));
         dispatch(setRollRequirementCount(data?.count || 0));
         return true;
       } else if (err === 1) {
@@ -439,8 +454,19 @@ export const getRollStockWithoutOrderList =
 
       const { msg, err, data } = response.data;
 
+      const updatedArray = data?.list?.map(item => {
+        return {
+          ...item,
+          opening_stock_date: item?.opening_stock_date
+            ? new Date(item?.opening_stock_date)
+            : new Date(),
+          unique_id: generateUniqueId(),
+        };
+      });
+
       if (err === 0) {
-        dispatch(setRollStockWithoutOrderList(data));
+        dispatch(setRollStockWithoutOrderList(updatedArray));
+        dispatch(setRollStockWithoutOrderCount(data?.count || 0));
         return true;
       } else if (err === 1) {
         toast.error(msg);
@@ -786,7 +812,7 @@ export const generatePrePrintedRollPDF = id => async dispatch => {
     });
     const { err, data, msg } = response.data;
     if (err === 0) {
-      window.open(data?.file, '_blank');
+      window.open(data, '_blank');
       return data;
     } else if (err === 1) {
       toast.error(msg);
@@ -811,7 +837,84 @@ export const generateCommonItemGroupPDF = id => async dispatch => {
     });
     const { err, data, msg } = response.data;
     if (err === 0) {
-      window.open(data?.file, '_blank');
+      window.open(data, '_blank');
+      return data;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setPurchaseOrderLoading(false));
+  }
+};
+
+/**
+ * @desc Save Opening Stock
+ */
+export const updateRollStocks = payload => async dispatch => {
+  try {
+    dispatch(setPurchaseOrderLoading(true));
+
+    const response = await axios.post(`/update/upsertRollStockConfig`, payload);
+    const { err, data, msg } = response.data;
+
+    if (err === 0) {
+      toast.success(msg);
+      return data;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setPurchaseOrderLoading(false));
+  }
+};
+
+/**
+ * @desc Get Roll Stock History
+ */
+export const getRollStockHistory = payload => async dispatch => {
+  try {
+    dispatch(setPurchaseOrderLoading(true));
+
+    const response = await axios.post(`/view/getRollStockHistory`, payload);
+    const { err, data, msg } = response.data;
+
+    if (err === 0) {
+      dispatch(setRollStockHistory(data || []));
+
+      return data;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setPurchaseOrderLoading(false));
+  }
+};
+
+/**
+ * @desc Get Roll Stock History
+ */
+export const getRollStockConsumptionHistory = payload => async dispatch => {
+  try {
+    dispatch(setPurchaseOrderLoading(true));
+
+    const response = await axios.post(`/view/getRollStockConsumption`, payload);
+    const { err, data, msg } = response.data;
+
+    if (err === 0) {
+      dispatch(setRollStockConsumptionHistory(data || []));
+
       return data;
     } else if (err === 1) {
       toast.error(msg);

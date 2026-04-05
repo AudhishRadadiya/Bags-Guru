@@ -7,7 +7,10 @@ import {
   setUpdateSelectedProductData,
 } from 'Store/Reducers/Products/ProductSlice';
 import { useParams } from 'react-router-dom';
-import { getProductItem } from 'Services/Products/ProductService';
+import {
+  getProductHistoryDetail,
+  getProductItem,
+} from 'Services/Products/ProductService';
 import { getFullBagTagList } from 'Services/Products/BagService';
 
 function EditProduct() {
@@ -29,6 +32,12 @@ function EditProduct() {
 
     const bagTagListRes = await dispatch(getFullBagTagList('', {}));
     const response = await dispatch(getProductItem(product_id));
+    dispatch(
+      getProductHistoryDetail({
+        product_id: response._id,
+        field: 'designer_name',
+      }),
+    );
 
     setInitialData(response);
     dispatch(setUpdateSelectedProductData(response));

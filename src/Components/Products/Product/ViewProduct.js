@@ -1,4 +1,7 @@
-import { getProductItem } from 'Services/Products/ProductService';
+import {
+  getProductHistoryDetail,
+  getProductItem,
+} from 'Services/Products/ProductService';
 import {
   setIsGetInitialValuesProduct,
   setViewSelectedProductData,
@@ -28,6 +31,14 @@ function ViewProduct() {
     // );
     const res = await dispatch(getProductItem(product_id));
     const bagTagListRes = await dispatch(getAllBagTagList());
+
+    dispatch(
+      getProductHistoryDetail({
+        product_id: res._id,
+        field: 'designer_name',
+      }),
+    );
+
     setInitialData(res);
     dispatch(setViewSelectedProductData(res));
   };

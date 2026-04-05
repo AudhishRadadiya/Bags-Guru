@@ -28,6 +28,14 @@ const initialProformaInvoice = {
   proforma_item: [],
   billing_addrees_list: [],
   shipping_addrees_list: [],
+  tripta_0_to_15_amount: '₹0',
+  tripta_16_to_30_amount: '₹0',
+  tripta_31_to_45_amount: '₹0',
+  tripta_46_to_90_amount: '₹0',
+  tripta_above_90_amount: '₹0',
+  tripta_total_due: '₹0',
+  tripta_last_updated_date: '',
+  bank: '',
 };
 
 let initialState = {
@@ -76,6 +84,8 @@ let initialState = {
   },
   updateSelectedProformaInvoiceData: {},
   // viewSelectedProformaInvoiceData: {},
+  sortProformaInvoiceField: null,
+  sortProformaInvoiceOrder: null,
 };
 
 const ProformaInvoiceSlice = createSlice({
@@ -135,6 +145,12 @@ const ProformaInvoiceSlice = createSlice({
     setProformaDetailsPage: (state, action) => {
       state.proformaDetailsPage = action.payload;
     },
+    setSortProformaInvoiceField: (state, action) => {
+      state.sortProformaInvoiceField = action.payload;
+    },
+    setSortProformaInvoiceOrder: (state, action) => {
+      state.sortProformaInvoiceOrder = action.payload;
+    },
   },
 });
 export const {
@@ -154,6 +170,8 @@ export const {
   setAddProformaPage,
   setUpdateProformaPage,
   setProformaDetailsPage,
+  setSortProformaInvoiceField,
+  setSortProformaInvoiceOrder,
 } = ProformaInvoiceSlice.actions;
 
 export default ProformaInvoiceSlice.reducer;

@@ -64,6 +64,7 @@ import {
   setUpdateSelectedPurchaseOrderData,
 } from 'Store/Reducers/Purchase/PurchaseOrderSlice';
 import Skeleton from 'react-loading-skeleton';
+import moment from 'moment';
 
 const gsmPartitionList = {
   gsm: 0,
@@ -204,6 +205,8 @@ export default function PurchaseOrderDetail({ initialValues }) {
           } else {
             const payload = {
               ...finalValue,
+              due_date: moment(values?.due_date).format('YYYY-MM-DD'),
+              purchase_date: moment(values?.purchase_date).format('YYYY-MM-DD'),
               purchase_id: finalValue?._id,
               bill_to_address: finalValue?.bill_to_address[0]?.address,
               ship_to_address: finalValue?.ship_to_address[0]?.address,
@@ -226,6 +229,8 @@ export default function PurchaseOrderDetail({ initialValues }) {
         } else {
           const payload = {
             ...values,
+            due_date: moment(values?.due_date).format('YYYY-MM-DD'),
+            purchase_date: moment(values?.purchase_date).format('YYYY-MM-DD'),
             bill_to_address: values?.bill_to_address[0]?.address,
             ship_to_address: values?.ship_to_address[0]?.address,
             bill_to: values?.bill_to_address[0]?._id,
@@ -324,6 +329,8 @@ export default function PurchaseOrderDetail({ initialValues }) {
           } else {
             const payload = {
               ...finalValue,
+              due_date: moment(values?.due_date).format('YYYY-MM-DD'),
+              purchase_date: moment(values?.purchase_date).format('YYYY-MM-DD'),
               purchase_id: finalValue?._id,
               bill_to_address: finalValue?.bill_to_address[0]?.address,
               ship_to_address: finalValue?.ship_to_address[0]?.address,
@@ -349,6 +356,8 @@ export default function PurchaseOrderDetail({ initialValues }) {
         } else {
           const payload = {
             ...values,
+            due_date: moment(values?.due_date).format('YYYY-MM-DD'),
+            purchase_date: moment(values?.purchase_date).format('YYYY-MM-DD'),
             bill_to_address: values?.bill_to_address[0]?.address,
             ship_to_address: values?.ship_to_address[0]?.address,
             bill_to: values?.bill_to_address[0]?._id,
@@ -1748,6 +1757,9 @@ export default function PurchaseOrderDetail({ initialValues }) {
         'new_coloured_cylinder_total_amount',
         // reengraved_cylinder_amount: 0, // This colum is not showing on display but passed to API.
         'reengraved_cylinder_total_amount',
+        // 'inside_laminated_field',
+        // 'inner_foil',
+        // 'inner_bopp',
       ]);
 
       return Object.keys(data).map(key => ({

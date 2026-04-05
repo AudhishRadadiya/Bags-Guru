@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Col, Dropdown, OverlayTrigger, Row, Tooltip } from 'react-bootstrap';
@@ -14,6 +14,10 @@ import CustomPaginator from 'Components/Common/CustomPaginator';
 import Skeleton from 'react-loading-skeleton';
 import Loader from 'Components/Common/Loader';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
+import {
+  setSortInkConsumptionField,
+  setSortInkConsumptionOrder,
+} from 'Store/Reducers/Inventory/StockRawMaterialSlice';
 
 const InkConsumption = ({ accessPermission }) => {
   const dispatch = useDispatch();
@@ -24,6 +28,8 @@ const InkConsumption = ({ accessPermission }) => {
   const { currentPage, pageLimit } = allFilters?.inkConsumption;
   const {
     stockRawLoading,
+    sortInkConsumptionField,
+    sortInkConsumptionOrder,
     stockRawExportLoading,
     inkConsumptionList,
     inkConsumptionCount,
@@ -76,6 +82,11 @@ const InkConsumption = ({ accessPermission }) => {
     },
     [allFilters, dispatch],
   );
+
+  const onSort = e => {
+    dispatch(setSortInkConsumptionField(e.sortField));
+    dispatch(setSortInkConsumptionOrder(e.sortOrder));
+  };
 
   return (
     <>
@@ -144,6 +155,10 @@ const InkConsumption = ({ accessPermission }) => {
             filterDisplay="row"
             dataKey="id"
             filters={inkFilters}
+            sortMode="single"
+            onSort={onSort}
+            sortField={sortInkConsumptionField}
+            sortOrder={sortInkConsumptionOrder}
             onFilter={event => {
               dispatch(
                 setAllCommon({

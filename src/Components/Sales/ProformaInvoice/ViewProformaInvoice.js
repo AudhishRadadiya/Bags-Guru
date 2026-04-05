@@ -22,6 +22,7 @@ export default function ViewProformaInvoice() {
     let newShippingList = [];
     let billingList = [];
     let shippingList = [];
+    let partiesData = {};
 
     // await dispatch(
     //   getProductList(productDataPageLimit, productDataCurrentPage),
@@ -31,6 +32,8 @@ export default function ViewProformaInvoice() {
       const parties_res = await dispatch(
         getSingleListParties(salesdata?.party_name),
       );
+
+      partiesData = { ...parties_res };
 
       billingList = parties_res?.party_address?.filter(
         x => x?.address_type_name === 'BILLING',
@@ -52,7 +55,7 @@ export default function ViewProformaInvoice() {
         newBillingList = upated;
       } else {
         newBillingList = billingList?.filter(x =>
-          salesdata?.billing_address.includes(x?._id),
+          salesdata?.billing_address?.includes(x?._id),
         );
       }
 
@@ -68,7 +71,7 @@ export default function ViewProformaInvoice() {
         newShippingList = upated;
       } else {
         newShippingList = shippingList?.filter(x =>
-          salesdata?.shipping_address.includes(x?._id),
+          salesdata?.shipping_address?.includes(x?._id),
         );
       }
     }
@@ -78,6 +81,13 @@ export default function ViewProformaInvoice() {
       shipping_addrees_list: shippingList,
       billing_address: newBillingList,
       shipping_address: newShippingList,
+      tripta_total_due: partiesData?.tripta_total_due,
+      tripta_0_to_15_amount: partiesData?.tripta_0_to_15_amount,
+      tripta_16_to_30_amount: partiesData?.tripta_16_to_30_amount,
+      tripta_31_to_45_amount: partiesData?.tripta_31_to_45_amount,
+      tripta_46_to_90_amount: partiesData?.tripta_46_to_90_amount,
+      tripta_above_90_amount: partiesData?.tripta_above_90_amount,
+      tripta_last_updated_date: partiesData?.tripta_last_updated_date,
     };
   };
 
@@ -144,6 +154,9 @@ export default function ViewProformaInvoice() {
       invoice_date: new Date(moment(res?.invoice_date, 'DD-MM-YYYY').format()),
       streo_charge: res?.final_stereo_charge
         ? res?.final_stereo_charge?.toFixed(2)
+        : '0.00',
+      packaging_charge: res?.final_packaging_charge
+        ? res?.final_packaging_charge?.toFixed(2)
         : '0.00',
       proforma_item: table_data,
     };

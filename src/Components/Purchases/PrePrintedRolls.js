@@ -1,4 +1,5 @@
 import React, {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -30,14 +31,17 @@ import {
   updateFilter,
 } from 'Services/partiesService';
 import {
-  setCompletedPrePrintedOrderList,
-  setPrePrintedPurchaseOrderList,
   setSelectedRollsData,
+  setSortPrePrintedField,
+  setSortPrePrintedOrder,
+  setPrePrintedPurchaseOrderList,
+  setCompletedPrePrintedOrderList,
 } from 'Store/Reducers/Purchase/PrePrintedStatusSlice';
 import {
   getCompletedPrePrintedOrderList,
   getPrePrintedPurchaseOrderList,
   savePrePrintedOrder,
+  updateUrgentPrePrintedPurchaseOrder,
 } from 'Services/Purchase/PrePrintedStatusService';
 import { getDMYDateFormat } from 'Helper/Common';
 import EditIcon from '../../Assets/Images/edit.svg';
@@ -46,12 +50,12 @@ import FilterIcon from '../../Assets/Images/filter.svg';
 import SearchIcon from '../../Assets/Images/search.svg';
 import FilterOverlay from 'Components/Common/FilterOverlay';
 import CustomPaginator from 'Components/Common/CustomPaginator';
-import CheckGreen from '../../Assets/Images/check-round-green.svg';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 import DateRangeCalender from 'Components/Common/DateRangeCalender';
 import { getActiveLaminationTypeList } from 'Services/Settings/MiscMasterService';
 import { toast } from 'react-toastify';
 import Loader from 'Components/Common/Loader';
+import PrePrintedRollsExport from './PrePrintedRolls/PrePrintedRollsExport';
 
 const moment = require('moment');
 const imageTemplate = row => {
@@ -157,11 +161,55 @@ const laminationTemplate = item => {
   );
 };
 
-export default function PrePrintedRolls() {
+const rollWidthTemplate = rowItem => {
+  return (
+    <span>
+      {rowItem?.is_mm
+        ? !!rowItem?.roll_width_mm
+          ? `${rowItem.roll_width_mm} mm`
+          : '-'
+        : !!rowItem?.roll_width
+        ? `${rowItem.roll_width}”`
+        : '-'}
+    </span>
+  );
+};
+
+const circumTemplete = rowItem => {
+  return (
+    <span>
+      {rowItem?.is_mm
+        ? !!rowItem?.cylinder_mm
+          ? `${rowItem.cylinder_mm} mm`
+          : '-'
+        : !!rowItem?.cylinder
+        ? `${rowItem.cylinder}”`
+        : '-'}
+    </span>
+  );
+};
+
+const UrgentCheckboxCell = memo(({ row, field, onCommit }) => {
+  const [checked, setChecked] = useState(row[field]);
+
+  return (
+    <Checkbox
+      checked={checked}
+      onChange={e => {
+        const value = e.checked;
+        setChecked(value);
+        onCommit(row, field, value);
+      }}
+    />
+  );
+});
+
+export default function PrePrintedRolls({ hasAccess }) {
   const op = useRef(null);
   const dateRef = useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { is_export_access } = hasAccess;
 
   const [isEdit, setIsEdit] = useState(false);
   const [filterId, setFilterId] = useState('');
@@ -189,6 +237,8 @@ export default function PrePrintedRolls() {
     completedPrePrintedOrderList,
     selectedRollsData,
     savedPrePrintedOrder,
+    sortPrePrintedField,
+    sortPrePrintedOrder,
   } = useSelector(({ prePrintedStatus }) => prePrintedStatus);
   const { activeLaminationTypeList } = useSelector(
     ({ miscMaster }) => miscMaster,
@@ -225,6 +275,11 @@ export default function PrePrintedRolls() {
     const fieldDate = orderDate || purchaseDate;
     const daysDifference = fieldDate ? receivedDate.diff(fieldDate, 'days') : 0;
     return daysDifference === days;
+  };
+
+  const customSort = e => {
+    dispatch(setSortPrePrintedField(e.sortField));
+    dispatch(setSortPrePrintedOrder(e.sortOrder));
   };
 
   const CustomFilterTemplate = (data, { filter, setFilter }) => {
@@ -591,7 +646,8 @@ export default function PrePrintedRolls() {
   const bedgeBodyTemplate = rowItem => {
     return (
       <span className={`bedge_${getSeverity(rowItem?.old_str)}`}>
-        {rowItem?.old_str === '' ? '-' : rowItem?.old_str ? 'YES' : 'NO'}
+        {/* {rowItem?.old_str === '' ? '-' : rowItem?.old_str ? 'YES' : 'NO'} */}
+        {rowItem?.old_str_str}
       </span>
     );
   };
@@ -606,7 +662,6 @@ export default function PrePrintedRolls() {
 
   const statusRowFilterTemplate = options => {
     const commonMenuOption = ['YES', 'NO'];
-
     return (
       <div className="form_group">
         <Dropdown
@@ -1269,6 +1324,43 @@ export default function PrePrintedRolls() {
     );
   };
 
+  const onUrgentFieldChange = useCallback(
+    (selectedRow, field, value) => {
+      const source = isCompleted
+        ? completedPrePrintedOrderList
+        : prePrintedPurchaseOrderList;
+
+      const updatedList = source.list.map(item =>
+        item._id === selectedRow._id ? { ...item, [field]: value } : item,
+      );
+
+      dispatch(
+        updateUrgentPrePrintedPurchaseOrder({
+          purchase_id: selectedRow?._id,
+          item_id: selectedRow?.item_id,
+          is_urgent: value,
+        }),
+      );
+
+      const action = isCompleted
+        ? setCompletedPrePrintedOrderList
+        : setPrePrintedPurchaseOrderList;
+
+      dispatch(
+        action({
+          ...source,
+          list: updatedList,
+        }),
+      );
+    },
+    [
+      dispatch,
+      isCompleted,
+      completedPrePrintedOrderList,
+      prePrintedPurchaseOrderList,
+    ],
+  );
+
   const handleSaveSelectedRoll = () => {
     const generateSelectedList = selectedRollsData?.map(item => {
       const payload = {
@@ -1493,12 +1585,16 @@ export default function PrePrintedRolls() {
                         </Button>
                       </li>
                     )}
+                    <li>
+                      <PrePrintedRollsExport exportAccess={is_export_access} />
+                    </li>
                   </ul>
                 </div>
               </Col>
             </Row>
           </div>
-          <div className="data_table_wrapper cell_padding_large with_colspan_head break_header is_filter">
+
+          <div className="data_table_wrapper cell_padding_large with_colspan_head break_header is_filter pre_printed_filter">
             <button
               type="button"
               className="table_filter_btn"
@@ -1527,8 +1623,10 @@ export default function PrePrintedRolls() {
                   : prePrintedPurchaseOrderList?.list
               }
               sortMode="single"
-              sortField="name"
               filterDisplay="row"
+              onSort={customSort}
+              sortField={sortPrePrintedField}
+              sortOrder={sortPrePrintedOrder}
               dataKey="unique_id"
               // currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
               // onSelectionChange={e => handleCheckboxTemplate(e.value)}
@@ -1584,6 +1682,20 @@ export default function PrePrintedRolls() {
                   frozen
                 ></Column>
               )}
+              <Column
+                field="is_urgent"
+                header="Urgent"
+                style={{ zIndex: '10', minWidth: '82px' }}
+                body={(rowData, column) => (
+                  <UrgentCheckboxCell
+                    key={rowData._id}
+                    row={rowData}
+                    field={column.field}
+                    onCommit={onUrgentFieldChange}
+                  />
+                )}
+                frozen
+              ></Column>
               <Column
                 field="order_date"
                 header="Order"
@@ -1705,13 +1817,35 @@ export default function PrePrintedRolls() {
                 filter={filterToggle}
               ></Column>
               <Column
-                field="old_str"
+                field="roll_width"
+                header="Roll Width"
+                filter={filterToggle}
+                sortable
+                body={rollWidthTemplate}
+              ></Column>
+              <Column
+                field="circum"
+                header="Circum"
+                filter={filterToggle}
+                sortable
+                body={circumTemplete}
+              ></Column>
+              <Column
+                field="old_str_str"
                 header="OLD STR"
                 sortable
                 showFilterMenu={false}
                 filter={filterToggle}
-                filterElement={e => statusRowFilterTemplate(e, 'old_str')}
+                filterElement={e => statusRowFilterTemplate(e)}
                 body={bedgeBodyTemplate}
+                frozen
+              ></Column>
+              <Column
+                field="po_net_weight"
+                header="PO Qty"
+                sortable
+                showFilterMenu={false}
+                filter={filterToggle}
                 frozen
               ></Column>
               <Column

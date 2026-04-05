@@ -7,6 +7,7 @@ import {
   setProductCount,
   setProductExportLoading,
   setProductForProforma,
+  setProductHistoryDetails,
   setProductList,
   setProductLoading,
   setProductRateCount,
@@ -301,6 +302,30 @@ export const getProductItem = (product_id, isDuplicated) => async dispatch => {
     dispatch(setProductLoading(false));
   }
 };
+
+/**
+ * @desc get product history by id
+ */
+export const getProductHistoryDetail = payload => async dispatch => {
+  try {
+    const response = await axios.post(`/product/history`, payload);
+    const { msg, err, data } = response.data;
+
+    if (err === 0) {
+      dispatch(setProductHistoryDetails(data || {}));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    // dispatch(setProductLoading(false));
+  }
+};
+
 /**
  * @desc view product detail by id
  */

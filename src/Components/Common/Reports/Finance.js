@@ -1,23 +1,26 @@
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
-import React, { memo, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import ReportIcon from '../../../Assets/Images/reports.svg';
 import Download from '../../../Assets/Images/download.svg';
 import { Col, Row } from 'react-bootstrap';
 import { Calendar } from 'primereact/calendar';
 import {
-  customerSouceDetailReportExportExcel,
-  customerSouceReportExportExcel,
-  industrySouceReportExportExcel,
+  customerSourceDetailReportExportExcel,
+  customerSourceDetailWithNameReportExportExcel,
+  customerSourceReportExportExcel,
+  customerSourceWithNameReportExportExcel,
+  industrySourceReportExportExcel,
+  industrySourceWithNameReportExportExcel,
 } from 'Services/Report/FinanceReportService';
 import { useDispatch } from 'react-redux';
-import moment from 'moment';
 
 function Finance() {
   const dispatch = useDispatch();
 
   const todayDate = new Date();
-  const oneYearAgoDate = moment().subtract(1, 'years').toDate();
+  let oneYearAgoDate = new Date(todayDate);
+  oneYearAgoDate.setMonth(todayDate.getMonth() - 1);
 
   const [reportModal, setReportModal] = useState(false);
   const [reportData, setReportData] = useState('');
@@ -26,15 +29,28 @@ function Finance() {
     end_date: todayDate,
   });
 
-  const handleXLSReport = report => {
-    if (report?.toLowerCase() === 'industry source') {
-      dispatch(industrySouceReportExportExcel(selectedDate));
-    } else if (report?.toLowerCase() === 'customer source') {
-      dispatch(customerSouceReportExportExcel(selectedDate));
-    } else if (report?.toLowerCase() === 'customer source detail') {
-      dispatch(customerSouceDetailReportExportExcel(selectedDate));
-    }
-  };
+  const reportActions = useMemo(() => {
+    return {
+      'industry source': industrySourceReportExportExcel,
+      'customer source': customerSourceReportExportExcel,
+      'customer source detail': customerSourceDetailReportExportExcel,
+      'industry source with name': industrySourceWithNameReportExportExcel,
+      'customer source with name': customerSourceWithNameReportExportExcel,
+      'customer source detail with name':
+        customerSourceDetailWithNameReportExportExcel,
+    };
+  }, []);
+
+  const handleXLSReport = useCallback(
+    report => {
+      const action = reportActions[report?.toLowerCase()];
+
+      if (action) {
+        dispatch(action(selectedDate));
+      }
+    },
+    [dispatch, selectedDate, reportActions],
+  );
 
   return (
     <div className="main_Wrapper">
@@ -78,6 +94,46 @@ function Finance() {
               >
                 <img src={ReportIcon} alt="" />
                 Customer Source Detail
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div className="report_list_wrapper p-3">
+          <div className="row g-4">
+            <div className="col-md-3">
+              <Button
+                className="btn_border"
+                onClick={() => {
+                  setReportModal(true);
+                  setReportData('Industry Source with name');
+                }}
+              >
+                <img src={ReportIcon} alt="" />
+                Industry Source with name
+              </Button>
+            </div>
+            <div className="col-md-3">
+              <Button
+                className="btn_border"
+                onClick={() => {
+                  setReportModal(true);
+                  setReportData('Customer Source with name');
+                }}
+              >
+                <img src={ReportIcon} alt="" />
+                Customer Source with name
+              </Button>
+            </div>
+            <div className="col-md-3">
+              <Button
+                className="btn_border"
+                onClick={() => {
+                  setReportModal(true);
+                  setReportData('Customer Source Detail with name');
+                }}
+              >
+                <img src={ReportIcon} alt="" />
+                Customer Source Detail with name
               </Button>
             </div>
           </div>

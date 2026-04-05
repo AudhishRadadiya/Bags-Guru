@@ -1,9 +1,15 @@
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import Highcharts from 'highcharts';
 import { useSelector } from 'react-redux';
 import HighchartsReact from 'highcharts-react-official';
 import accessibility from 'highcharts/modules/accessibility';
 import { thousandSeparator } from 'Helper/Common';
+import { Col, Row } from 'react-bootstrap';
+import ReactSelectSingle from '../ReactSelectSingle';
+import { setAllCommon } from 'Store/Reducers/Common';
+import { useDispatch } from 'react-redux';
+import { getAdvisorReportList } from 'Services/Business/AdminDashboardServices';
+import { setAdvisorReportData } from 'Store/Reducers/Business/AdminDashboardSlice';
 
 accessibility(Highcharts);
 
@@ -25,9 +31,29 @@ const color_code = [
   '#DCDCDC',
 ];
 
-const SalesComparison = () => {
+const PartyTypeOptions = [
+  { label: 'Both', value: 'Both' },
+  { label: 'END USER', value: 1 },
+  { label: 'TRADER', value: 2 },
+];
+
+const SalesComparison = ({ from }) => {
+  const dispatch = useDispatch();
+
   const { advisorReportData } = useSelector(
     ({ adminDashBoard }) => adminDashBoard,
+  );
+  const { allCommon } = useSelector(({ common }) => common);
+  const { partyType } = allCommon?.adminDashboard;
+
+  const handleLoadData = useCallback(
+    selectedPartyType => {
+      const partyType = selectedPartyType !== 'Both' ? selectedPartyType : '';
+
+      dispatch(setAdvisorReportData({}));
+      dispatch(getAdvisorReportList(partyType));
+    },
+    [dispatch],
   );
 
   const SalesComparisonoptions = useMemo(() => {
@@ -48,7 +74,7 @@ const SalesComparison = () => {
 
     const modifiedSalesComparisonData = {
       chart: {
-        type: 'line',
+        type: 'spline',
       },
       title: {
         text: '',
@@ -65,8 +91,21 @@ const SalesComparison = () => {
       credits: {
         enabled: false,
       },
+
+      // legend: {
+      //   enabled: false,
+      // },
+
       legend: {
-        enabled: false,
+        layout: 'horizontal',
+        align: 'left',
+        verticalAlign: 'top',
+        width: 840,
+        itemWidth: 210,
+        itemMarginTop: 6,
+        itemMarginBottom: 2,
+        floating: false,
+        padding: 8,
       },
 
       series: salesComparisonChartData,
@@ -119,7 +158,38 @@ const SalesComparison = () => {
 
   return (
     <div className="sales_comparison_wrap p-3 bg_white rounded-3 border">
-      <div className="sales_comparison_top mb-3">
+      <Row className="justify-content-between align-items-center mb-3">
+        <Col md={6} sm={5}>
+          <div className="chart_head_wrapper">
+            <h3 className="m-0 fw-bold">Sales Comparison</h3>
+          </div>
+        </Col>
+        {from === 'adminDashboard' && (
+          <Col xxl={3} xl={3} md={4} sm={5}>
+            <div className="chart_input_wrap">
+              <ReactSelectSingle
+                BrokerSelect
+                value={partyType}
+                placeholder="Party Type"
+                options={PartyTypeOptions}
+                onChange={e => {
+                  dispatch(
+                    setAllCommon({
+                      ...allCommon,
+                      adminDashboard: {
+                        ...allCommon?.adminDashboard,
+                        partyType: e.target.value,
+                      },
+                    }),
+                  );
+                  handleLoadData(e.target.value);
+                }}
+              />
+            </div>
+          </Col>
+        )}
+      </Row>
+      {/* <div className="sales_comparison_top mb-3">
         <ul>
           <li>
             <h3 className="text-nowrap">Sales Comparison</h3>
@@ -143,11 +213,12 @@ const SalesComparison = () => {
             </div>
           </li>
         </ul>
-      </div>
-      <div className="sales_comparison_chart_wrap">
+      </div> */}
+      <div className="sales_comparison_chart_wrap admin_dashboard_chart">
         <HighchartsReact
           highcharts={Highcharts}
           options={SalesComparisonoptions}
+          containerProps={{ className: 'sales_comparison' }}
         />
       </div>
     </div>

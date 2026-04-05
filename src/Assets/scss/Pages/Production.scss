@@ -141,6 +141,13 @@
 }
 
 .total_hr_list {
+  &.fast_status_list {
+    ul {
+      li {
+        width: 100%;
+      }
+    }
+  }
   ul {
     display: flex;
     border-radius: 6px;

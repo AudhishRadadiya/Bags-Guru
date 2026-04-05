@@ -30,7 +30,6 @@ import BagCapacity from './ProductMaster/BagCapacity';
 import Form from './ProductMaster/Form';
 import Material from './ProductMaster/Material';
 import FabricColor from './ProductMaster/FabricColor';
-import { useLocation } from 'react-router-dom';
 import BagTypeCollection from './BagTypeCollection';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
@@ -42,6 +41,10 @@ import RawMaterialGroup from './RawMaterialGroup';
 import Velcro from './Velcro';
 import CustomerRating from './CustomerRating';
 import TargetMaster from './TargetMaster';
+import ExhibitionMaster from './ExhibitionMaster';
+import AdvisorTeam from './AdvisorTeam/AdvisorTeam';
+import CustomerRevenueTier from './CustomerRevenueTier/CustomerRevenueTier';
+import OKRSection from './OKRSection/OKRSection';
 
 export const miscMasterLabelList = [
   'Warehouse',
@@ -83,6 +86,10 @@ export const miscMasterLabelList = [
   'Velcro',
   'Customer Rating',
   'Advisor Target',
+  'Exhibition Master',
+  'Advisor Team',
+  'Customer Revenue Tier',
+  'OKR',
 ];
 
 const getMiscMasters = (index, permission) => {
@@ -159,6 +166,14 @@ const getMiscMasters = (index, permission) => {
       return <CustomerRating hasAccess={permission} />;
     case 35:
       return <TargetMaster hasAccess={permission} />;
+    case 36:
+      return <ExhibitionMaster hasAccess={permission} />;
+    case 37:
+      return <AdvisorTeam hasAccess={permission} />;
+    case 38:
+      return <CustomerRevenueTier hasAccess={permission} />;
+    case 39:
+      return <OKRSection hasAccess={permission} />;
     default:
       return;
   }
@@ -166,11 +181,11 @@ const getMiscMasters = (index, permission) => {
 
 export default function MiscMaster({ hasAccess }) {
   const dispatch = useDispatch();
-  const { pathname } = useLocation();
 
   const { allCommon } = useSelector(({ common }) => common);
   const { masterName, filteredList, searchQuery, activeIndex } =
     allCommon?.miscMasters;
+
   const handleChange = useCallback(
     val => {
       const filtered = miscMasterLabelList?.filter(x =>
@@ -190,6 +205,7 @@ export default function MiscMaster({ hasAccess }) {
     },
     [dispatch, allCommon],
   );
+
   useEffect(() => {
     if (filteredList?.length === 0) {
       dispatch(
@@ -203,6 +219,7 @@ export default function MiscMaster({ hasAccess }) {
       );
     }
   }, []);
+
   const onChange = useCallback(
     val => {
       const index = miscMasterLabelList?.findIndex(x => x === val);

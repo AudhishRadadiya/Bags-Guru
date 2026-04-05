@@ -4,6 +4,8 @@ let initialState = {
   roleAndPermissionLoading: false,
   roleAndPermissionCRUDLoading: false,
   roleAndPermissionList: [],
+  sortRolesPermissionField: '',
+  sortRolesPermissionOrder: 1,
 };
 
 const roleAndPermissionSlice = createSlice({
@@ -19,6 +21,12 @@ const roleAndPermissionSlice = createSlice({
     setRoleAndPermissionSliceCRUDLoading: (state, action) => {
       state.roleAndPermissionCRUDLoading = action.payload;
     },
+    setSortRolesPermissionField: (state, action) => {
+      state.sortRolesPermissionField = action.payload;
+    },
+    setSortRolesPermissionOrder: (state, action) => {
+      state.sortRolesPermissionOrder = action.payload;
+    },
   },
 });
 
@@ -26,6 +34,8 @@ export const {
   setRoleAndPermissionSliceLoading,
   setRoleAndPermissionSliceList,
   setRoleAndPermissionSliceCRUDLoading,
+  setSortRolesPermissionField,
+  setSortRolesPermissionOrder,
 } = roleAndPermissionSlice.actions;
 
 export default roleAndPermissionSlice.reducer;

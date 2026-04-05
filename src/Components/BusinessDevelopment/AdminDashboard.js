@@ -17,17 +17,24 @@ import DateRangeCalender from 'Components/Common/DateRangeCalender';
 import {
   getAdvisorReportList,
   getAdvisorTurnoverReportList,
+  getLaminatedAndNonLaminatedReport,
   getLaminationReportList,
+  getNewAndRepeatOrderReportList,
   getPartyTypeReportList,
   getPendingJobBagTypeReportList,
   getPendingJobPrintTechnologyReportList,
   getProductStockReportList,
   getRawMaterialReportList,
   getStateTurnoverReportList,
+  getTraderAndEndUserReportList,
 } from 'Services/Business/AdminDashboardServices';
 import { getActiveWarehouseList } from 'Services/Settings/MiscMasterService';
 import variablePie from 'highcharts/modules/variable-pie.js';
 import Highcharts from 'highcharts';
+import NewVsRepeatBusiness from './AdminDashboard/NewVsRepeatBusiness';
+import TraderVsEndUser from './AdminDashboard/TraderVsEndUser';
+import NonLaminatedVsLaminated from './AdminDashboard/NonLaminatedVsLaminated';
+import OKRReports from './SalesDashboard/OKRReports';
 
 variablePie(Highcharts);
 
@@ -111,6 +118,9 @@ const AdminDashboard = () => {
         stateTurnoverReport?.dates?.endDate,
       ),
     );
+    dispatch(getNewAndRepeatOrderReportList());
+    dispatch(getTraderAndEndUserReportList());
+    dispatch(getLaminatedAndNonLaminatedReport());
     dispatch(getAdvisorTurnoverReportList());
   }, [
     dispatch,
@@ -177,8 +187,290 @@ const AdminDashboard = () => {
           </div>
         </Col>
       </Row>
+      <Row className="pb-3">
+        <Col xl={4} md={6} className="mb-xl-0 mb-3">
+          <SalesRatioChart handleDateManage={handleDateManage} />
+        </Col>
+        <Col xl={4} md={6} className="mb-xl-0 mb-3">
+          <LaminationRatio handleDateManage={handleDateManage} />
+        </Col>
+        <Col xl={4} lg={12}>
+          <div className="okr-reports table_main_Wrapper bg-white px-0 h-100">
+            <OKRReports />
+          </div>
+        </Col>
+      </Row>
+      <Row>
+        <Col xxl={6} className="pb-3">
+          <SalesComparison from="adminDashboard" />
+        </Col>
+        <Col xxl={6} className="pb-3">
+          <Row>
+            <Col xxl={12} lg={6}>
+              <div className="table_main_Wrapper bg-white mb-3">
+                <div className="top_filter_wrap">
+                  <Row className="align-items-center">
+                    <Col xxl={5} xl={6} lg={5} md={8} sm={6}>
+                      <div className="page_title">
+                        <h3 className="m-0">Pending Jobs</h3>
+                      </div>
+                    </Col>
+                    <Col xxl={5} xl={6} lg={7} md={4} sm={6}>
+                      <ul>
+                        <li>
+                          <div className="form_group date_range_wrapper">
+                            <div
+                              className="date_range_select"
+                              onClick={e => {
+                                pendingJobPrintDateRef.current.toggle(e);
+                              }}
+                            >
+                              <span>
+                                {pendingJobPrintTechnologyReport?.dates
+                                  ?.startDate
+                                  ? moment(
+                                      pendingJobPrintTechnologyReport?.dates
+                                        .startDate,
+                                    ).format('DD-MM-yyyy')
+                                  : ''}{' '}
+                                {pendingJobPrintTechnologyReport?.dates
+                                  ?.startDate &&
+                                  pendingJobPrintTechnologyReport?.dates
+                                    ?.endDate &&
+                                  '-'}{' '}
+                                {pendingJobPrintTechnologyReport?.dates?.endDate
+                                  ? moment(
+                                      pendingJobPrintTechnologyReport?.dates
+                                        .endDate,
+                                    ).format('DD-MM-yyyy')
+                                  : 'Select Date Range'}
+                              </span>
+                            </div>
+                            <OverlayPanel ref={pendingJobPrintDateRef}>
+                              <div className="date_range_wrap">
+                                <DateRangeCalender
+                                  ranges={[
+                                    pendingJobPrintTechnologyReport?.dates,
+                                  ]}
+                                  onChange={e => {
+                                    handleDateManage(
+                                      'pendingJobPrintTechnologyReport',
+                                      e,
+                                    );
+                                    dispatch(
+                                      getPendingJobPrintTechnologyReportList(
+                                        e?.startDate,
+                                        e?.endDate,
+                                      ),
+                                    );
+                                  }}
+                                />
+                                <Button
+                                  className="btn_transperant"
+                                  onClick={e => {
+                                    pendingJobPrintDateRef.current.toggle(e);
+                                    dispatch(
+                                      setAllFilters({
+                                        ...allFilters,
+                                        adminDashboard: {
+                                          ...allFilters?.adminDashboard,
+                                          pendingJobPrintTechnologyReport: {
+                                            ...allFilters?.adminDashboard
+                                              ?.pendingJobPrintTechnologyReport,
+                                            dates: {
+                                              ...allFilters?.adminDashboard
+                                                ?.pendingJobPrintTechnologyReport
+                                                ?.dates,
+                                              startDate: oneMonthAgoDate,
+                                              endDate: todayDate,
+                                            },
+                                          },
+                                        },
+                                      }),
+                                    );
+
+                                    dispatch(
+                                      getPendingJobPrintTechnologyReportList(),
+                                    );
+                                  }}
+                                >
+                                  Clear
+                                </Button>
+                              </div>
+                            </OverlayPanel>
+                          </div>
+                        </li>
+                      </ul>
+                    </Col>
+                  </Row>
+                </div>
+                <div className="table_wrapper">
+                  <div className="table_scroll_wrapper Customers_table_wrapper admin_dashboars_table_wrapper custom_height">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th rowSpan={2}>Printing Technology</th>
+                          <th className="p-0 py-2 text-center" colSpan={2}>
+                            Pending
+                          </th>
+                          {/* <th className="p-0 py-2 text-center" colSpan={2}>
+                            Manufacturing
+                          </th> */}
+                        </tr>
+                        <tr>
+                          <th>Total Bags</th>
+                          <th>Weight (KG)</th>
+                          {/* <th>Total Bags (Per Day)</th>
+                          <th>Weight Per Day (KG)</th> */}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingJobPrintTechnologyReportData?.map((item, i) => {
+                          return (
+                            <tr key={i}>
+                              <th>{item?.print_technology}</th>
+                              <td>{item?.total_bag}</td>
+                              <td>{item?.total_weight}</td>
+                              {/* <td>{item?.bag_per_day}</td>
+                              <td>{item?.weight_per_day}</td> */}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </Col>
+            <Col xxl={12} lg={6}>
+              <div className="table_main_Wrapper bg-white mb-3">
+                <div className="top_filter_wrap">
+                  <Row className="align-items-center">
+                    <Col xxl={5} xl={6} lg={5} md={8} sm={6}>
+                      <div className="page_title">
+                        <h3 className="m-0">State Wise Turnover</h3>
+                      </div>
+                    </Col>
+                    <Col xxl={5} xl={6} lg={7} md={4} sm={6}>
+                      <ul>
+                        <li>
+                          <div className="form_group date_range_wrapper">
+                            <div
+                              className="date_range_select"
+                              onClick={e => {
+                                stateTurnOverDateRef.current.toggle(e);
+                              }}
+                            >
+                              <span>
+                                {stateTurnoverReport?.dates?.startDate
+                                  ? moment(
+                                      stateTurnoverReport?.dates.startDate,
+                                    ).format('DD-MM-yyyy')
+                                  : ''}{' '}
+                                {stateTurnoverReport?.dates?.startDate &&
+                                  stateTurnoverReport?.dates?.endDate &&
+                                  '-'}{' '}
+                                {stateTurnoverReport?.dates?.endDate
+                                  ? moment(
+                                      stateTurnoverReport?.dates.endDate,
+                                    ).format('DD-MM-yyyy')
+                                  : 'Select Date Range'}
+                              </span>
+                            </div>
+                            <OverlayPanel ref={stateTurnOverDateRef}>
+                              <div className="date_range_wrap">
+                                <DateRangeCalender
+                                  ranges={[stateTurnoverReport?.dates]}
+                                  onChange={e => {
+                                    handleDateManage('stateTurnoverReport', e);
+                                    dispatch(
+                                      getStateTurnoverReportList(
+                                        e?.startDate,
+                                        e?.endDate,
+                                      ),
+                                    );
+                                  }}
+                                />
+                                <Button
+                                  className="btn_transperant"
+                                  onClick={e => {
+                                    stateTurnOverDateRef.current.toggle(e);
+                                    // handleDateManage('stateTurnoverReport', {
+                                    //   startDate: oneMonthAgoDate,
+                                    //   endDate: todayDate,
+                                    //   key: 'selection',
+                                    // });
+
+                                    dispatch(
+                                      setAllFilters({
+                                        ...allFilters,
+                                        adminDashboard: {
+                                          ...allFilters?.adminDashboard,
+                                          stateTurnoverReport: {
+                                            ...allFilters?.adminDashboard
+                                              ?.stateTurnoverReport,
+                                            dates: {
+                                              ...allFilters?.adminDashboard
+                                                ?.stateTurnoverReport?.dates,
+                                              startDate: oneMonthAgoDate,
+                                              endDate: todayDate,
+                                            },
+                                          },
+                                        },
+                                      }),
+                                    );
+
+                                    dispatch(getStateTurnoverReportList());
+                                  }}
+                                >
+                                  Clear
+                                </Button>
+                              </div>
+                            </OverlayPanel>
+                          </div>
+                        </li>
+                      </ul>
+                    </Col>
+                  </Row>
+                </div>
+                <div className="data_table_wrapper with_colspan_head cell_padding_large break_header max_height state_Wise_turnover state_table custom_height">
+                  <DataTable
+                    value={stateTurnoverReportData}
+                    sortMode="single"
+                    sortField="name"
+                    sortOrder={1}
+                    rows={10}
+                    dataKey="id"
+                    scrollable
+                    rowGroupMode="rowspan"
+                    className="min_height state_wise_turnover_table"
+                  >
+                    <Column field="state" header="State" sortable></Column>
+                    <Column field="customer" header="No. of Customers"></Column>
+                    <Column
+                      field="amountstring"
+                      header="Total Turnover"
+                      sortable
+                    ></Column>
+                    <Column
+                      field="share"
+                      header="% Share"
+                      body={shareTemplate}
+                      sortable
+                    ></Column>
+                  </DataTable>
+                </div>
+              </div>
+            </Col>
+            <Col xxl={12}>
+              <NewVsRepeatBusiness />
+            </Col>
+          </Row>
+        </Col>
+      </Row>
+
       <Row className="g-3">
-        <Col xxl={3} xl={4} md={6}>
+        {/* <Col xxl={3} xl={4} md={6}>
           <RawMaterialChart />
         </Col>
         <Col xxl={3} xl={4} md={6}>
@@ -192,7 +484,7 @@ const AdminDashboard = () => {
         </Col>
         <Col xxl={6} xl={8}>
           <SalesComparison />
-        </Col>
+        </Col> */}
         {/* <Col xxl={5} xl={8}>
           <BagCategory />
         </Col>
@@ -338,7 +630,7 @@ const AdminDashboard = () => {
             </div>
           </div>
         </Col> */}
-        <Col xxl={6} lg={6}>
+        {/* <Col xxl={6} lg={6}>
           <div className="table_main_Wrapper bg-white">
             <div className="top_filter_wrap">
               <Row className="align-items-center">
@@ -469,9 +761,16 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
+        </Col> */}
+
+        <Col xxl={6}>
+          <TraderVsEndUser />
         </Col>
-        <Col xxl={6} lg={6}>
-          <div className="table_main_Wrapper bg-white">
+        <Col xxl={6}>
+          <NonLaminatedVsLaminated />
+        </Col>
+        <Col xxl={12}>
+          <div className="table_main_Wrapper bg-white pending_jobs_table mb-3">
             <div className="top_filter_wrap">
               <Row className="align-items-center justify-content-between">
                 <Col xxl={7} xl={6} lg={5} md={8} sm={6}>
@@ -523,12 +822,6 @@ const AdminDashboard = () => {
                               className="btn_transperant"
                               onClick={e => {
                                 pendingJobBagDateRef.current.toggle(e);
-                                // handleDateManage('pendingJobBagTypeReport', {
-                                //   startDate: oneMonthAgoDate,
-                                //   endDate: todayDate,
-                                //   key: 'selection',
-                                // });
-
                                 dispatch(
                                   setAllFilters({
                                     ...allFilters,
@@ -570,15 +863,15 @@ const AdminDashboard = () => {
                       <th className="p-0 py-2 text-center" colSpan={2}>
                         Pending
                       </th>
-                      <th className="p-0 py-2 text-center" colSpan={2}>
+                      {/* <th className="p-0 py-2 text-center" colSpan={2}>
                         Manufacturing
-                      </th>
+                      </th> */}
                     </tr>
                     <tr>
                       <th>Total Bags</th>
                       <th>Weight (KG)</th>
-                      <th>Total Bags (Per Day)</th>
-                      <th>Weight Per Day (KG)</th>
+                      {/* <th>Total Bags (Per Day)</th>
+                      <th>Weight Per Day (KG)</th> */}
                     </tr>
                   </thead>
                   <tbody>
@@ -588,8 +881,8 @@ const AdminDashboard = () => {
                           <th>{item?.bag_type}</th>
                           <td>{item?.total_bag}</td>
                           <td>{item?.total_weight}</td>
-                          <td>{item?.bag_per_day}</td>
-                          <td>{item?.weight_per_day}</td>
+                          {/* <td>{item?.bag_per_day}</td>
+                          <td>{item?.weight_per_day}</td> */}
                         </tr>
                       );
                     })}
@@ -599,125 +892,7 @@ const AdminDashboard = () => {
             </div>
           </div>
         </Col>
-        <Col xxl={6} lg={12}>
-          <div className="table_main_Wrapper bg-white mb-3">
-            <div className="top_filter_wrap">
-              <Row className="align-items-center">
-                <Col xxl={7} xl={6} lg={5} md={8} sm={6}>
-                  <div className="page_title">
-                    <h3 className="m-0">State Wise Turnover</h3>
-                  </div>
-                </Col>
-                <Col xxl={5} xl={6} lg={7} md={4} sm={6}>
-                  <ul>
-                    <li>
-                      <div className="form_group date_range_wrapper">
-                        <div
-                          className="date_range_select"
-                          onClick={e => {
-                            stateTurnOverDateRef.current.toggle(e);
-                          }}
-                        >
-                          <span>
-                            {stateTurnoverReport?.dates?.startDate
-                              ? moment(
-                                  stateTurnoverReport?.dates.startDate,
-                                ).format('DD-MM-yyyy')
-                              : ''}{' '}
-                            {stateTurnoverReport?.dates?.startDate &&
-                              stateTurnoverReport?.dates?.endDate &&
-                              '-'}{' '}
-                            {stateTurnoverReport?.dates?.endDate
-                              ? moment(
-                                  stateTurnoverReport?.dates.endDate,
-                                ).format('DD-MM-yyyy')
-                              : 'Select Date Range'}
-                          </span>
-                        </div>
-                        <OverlayPanel ref={stateTurnOverDateRef}>
-                          <div className="date_range_wrap">
-                            <DateRangeCalender
-                              ranges={[stateTurnoverReport?.dates]}
-                              onChange={e => {
-                                handleDateManage('stateTurnoverReport', e);
-                                dispatch(
-                                  getStateTurnoverReportList(
-                                    e?.startDate,
-                                    e?.endDate,
-                                  ),
-                                );
-                              }}
-                            />
-                            <Button
-                              className="btn_transperant"
-                              onClick={e => {
-                                stateTurnOverDateRef.current.toggle(e);
-                                // handleDateManage('stateTurnoverReport', {
-                                //   startDate: oneMonthAgoDate,
-                                //   endDate: todayDate,
-                                //   key: 'selection',
-                                // });
 
-                                dispatch(
-                                  setAllFilters({
-                                    ...allFilters,
-                                    adminDashboard: {
-                                      ...allFilters?.adminDashboard,
-                                      stateTurnoverReport: {
-                                        ...allFilters?.adminDashboard
-                                          ?.stateTurnoverReport,
-                                        dates: {
-                                          ...allFilters?.adminDashboard
-                                            ?.stateTurnoverReport?.dates,
-                                          startDate: oneMonthAgoDate,
-                                          endDate: todayDate,
-                                        },
-                                      },
-                                    },
-                                  }),
-                                );
-
-                                dispatch(getStateTurnoverReportList());
-                              }}
-                            >
-                              Clear
-                            </Button>
-                          </div>
-                        </OverlayPanel>
-                      </div>
-                    </li>
-                  </ul>
-                </Col>
-              </Row>
-            </div>
-            <div className="data_table_wrapper with_colspan_head cell_padding_large break_header max_height state_Wise_turnover">
-              <DataTable
-                value={stateTurnoverReportData}
-                sortMode="single"
-                sortField="name"
-                sortOrder={1}
-                rows={10}
-                dataKey="id"
-                scrollable
-                rowGroupMode="rowspan"
-              >
-                <Column field="state" header="State" sortable></Column>
-                <Column field="customer" header="No. of Customers"></Column>
-                <Column
-                  field="amountstring"
-                  header="Total Turnover"
-                  sortable
-                ></Column>
-                <Column
-                  field="share"
-                  header="% Share"
-                  body={shareTemplate}
-                  sortable
-                ></Column>
-              </DataTable>
-            </div>
-          </div>
-        </Col>
         <Col sm={12}>
           <div className="table_main_Wrapper bg-white">
             <div className="top_filter_wrap">
@@ -726,7 +901,7 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="table_wrapper">
-              <div className="table_scroll_wrapper Customers_table_wrapper">
+              <div className="table_scroll_wrapper Customers_table_wrapper custom_table_scroll">
                 <table>
                   <thead>
                     <tr>

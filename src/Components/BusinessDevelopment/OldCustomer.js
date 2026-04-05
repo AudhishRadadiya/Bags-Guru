@@ -124,6 +124,10 @@ const OldCustomer = () => {
 
   useEffect(() => {
     loadRequiredData();
+
+    return () => {
+      dispatch(setCustomerList([]));
+    };
   }, []);
 
   // useEffect(() => {
@@ -581,26 +585,28 @@ const OldCustomer = () => {
 
   const onPageChange = useCallback(
     page => {
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          customer: { ...allFilters?.customer, currentPage: pageIndex },
-        }),
-      );
-      dispatch(
-        getShowCustomerList(
-          typeSelect,
-          pageLimit,
-          pageIndex,
-          searchQuery,
-          applied,
-          field_filter,
-        ),
-      );
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            customer: { ...allFilters?.customer, currentPage: pageIndex },
+          }),
+        );
+        dispatch(
+          getShowCustomerList(
+            typeSelect,
+            pageLimit,
+            pageIndex,
+            searchQuery,
+            applied,
+            field_filter,
+          ),
+        );
+      }
     },
     [
       currentPage,
@@ -882,6 +888,12 @@ const OldCustomer = () => {
               <Column
                 field="customer_group"
                 header="Customer Group"
+                sortable
+                filter={filterToggle}
+              ></Column>
+              <Column
+                field="party_type"
+                header="Customer Type"
                 sortable
                 filter={filterToggle}
               ></Column>

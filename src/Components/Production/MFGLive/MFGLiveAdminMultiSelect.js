@@ -30,7 +30,7 @@ function MFGLiveAdminMultiSelect() {
   return (
     <div className="mfg_filter_wrrap p-2">
       <Row className="g-2">
-        <Col md={2}>
+        <Col xs="auto">
           <div className="form_group">
             <MultiSelect
               filter
@@ -56,7 +56,7 @@ function MFGLiveAdminMultiSelect() {
             />
           </div>
         </Col>
-        <Col md={2}>
+        <Col xs="auto">
           <div className="form_group">
             <MultiSelect
               filter
@@ -82,8 +82,8 @@ function MFGLiveAdminMultiSelect() {
             />
           </div>
         </Col>
-        <Col xs="auto" className="flex-grow-1">
-          <div className="form_group">
+        <Col sm="auto" xs={6} className="flex-grow-1">
+          <div className="form_group custom_filter_width">
             <MultiSelect
               filter
               maxSelectedLabels={1}
@@ -108,8 +108,8 @@ function MFGLiveAdminMultiSelect() {
             />
           </div>
         </Col>
-        <Col xs="auto" className="flex-grow-1">
-          <div className="form_group">
+        <Col sm="auto" xs={6} className="flex-grow-1">
+          <div className="form_group custom_filter_width">
             <MultiSelect
               filter
               maxSelectedLabels={1}
@@ -134,8 +134,8 @@ function MFGLiveAdminMultiSelect() {
             />
           </div>
         </Col>
-        <Col xs="auto" className="flex-grow-1">
-          <div className="form_group">
+        <Col sm="auto" xs={6} className="flex-grow-1">
+          <div className="form_group custom_filter_width">
             <MultiSelect
               filter
               maxSelectedLabels={1}
@@ -160,34 +160,9 @@ function MFGLiveAdminMultiSelect() {
             />
           </div>
         </Col>
-        <Col xs="auto" className="flex-grow-1">
-          <div className="form_group">
-            <MultiSelect
-              filter
-              maxSelectedLabels={1}
-              placeholder="Print"
-              className="w-100"
-              options={mfgLiveFilterList?.printTypeList}
-              value={field_filter?.print_type_name}
-              onChange={e => {
-                dispatch(
-                  setAllCommon({
-                    ...allCommon,
-                    mfgLive: {
-                      ...allCommon?.mfgLive,
-                      field_filter: {
-                        ...allCommon?.mfgLive?.field_filter,
-                        print_type_name: e.target.value,
-                      },
-                    },
-                  }),
-                );
-              }}
-            />
-          </div>
-        </Col>
-        <Col xs="auto" className="flex-grow-1">
-          <div className="form_group">
+
+        <Col sm="auto" xs={6} className="flex-grow-1">
+          <div className="form_group custom_filter_width">
             <MultiSelect
               filter
               maxSelectedLabels={1}
@@ -212,8 +187,34 @@ function MFGLiveAdminMultiSelect() {
             />
           </div>
         </Col>
-        <Col xs="auto" className="flex-grow-1">
-          <div className="form_group">
+        <Col sm="auto" xs={4} className="flex-grow-1">
+          <div className="form_group custom_filter_width">
+            <MultiSelect
+              filter
+              maxSelectedLabels={1}
+              placeholder="Print"
+              className="w-100"
+              options={mfgLiveFilterList?.printTypeList}
+              value={field_filter?.print_type_name}
+              onChange={e => {
+                dispatch(
+                  setAllCommon({
+                    ...allCommon,
+                    mfgLive: {
+                      ...allCommon?.mfgLive,
+                      field_filter: {
+                        ...allCommon?.mfgLive?.field_filter,
+                        print_type_name: e.target.value,
+                      },
+                    },
+                  }),
+                );
+              }}
+            />
+          </div>
+        </Col>
+        <Col sm="auto" xs={4} className="flex-grow-1">
+          <div className="form_group custom_filter_width">
             <MultiSelect
               filter
               maxSelectedLabels={1}
@@ -239,8 +240,8 @@ function MFGLiveAdminMultiSelect() {
             />
           </div>
         </Col>
-        <Col xs="auto" className="flex-grow-1">
-          <div className="form_group">
+        <Col sm="auto" xs={4} className="flex-grow-1">
+          <div className="form_group custom_filter_width">
             <ReactSelectSingle
               filter
               name="suggested_product_id"

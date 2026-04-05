@@ -15,8 +15,8 @@ import { toast } from 'react-toastify';
  * @desc  Get User(Employee) List
  */
 export const getUserList =
-  (limit = 30, start = 1, query = '', filter = {}) =>
-  async (dispatch, getState) => {
+  ({ limit = 30, start = 1, query = '', filter = {}, active = false }) =>
+  async dispatch => {
     try {
       dispatch(setUserLoading(true));
       // let updated = {};
@@ -48,6 +48,7 @@ export const getUserList =
       const response = await axios.post(`list/employee/${start}/${limit}`, {
         filter: filter || {},
         search: query,
+        ...(!!active && { active: active }),
       });
       const { data, err, msg } = response.data;
 

@@ -2,6 +2,7 @@ import { roastError } from 'Helper/Common';
 import {
   setAllModules,
   setOperatorpermissionList,
+  setSelectedRolePermissions,
   setSettingLoading,
   setUserRoles,
   setUserpermissionList,
@@ -56,7 +57,37 @@ export const getMainModuleWithSubModule = () => async dispatch => {
     const response = await axios.get(`/list/mainModuleWithSubModule`);
     const { data } = response.data;
     if (data) {
+      const updatedData = data?.map(item => {
+        return {
+          isSelectedAll: 0,
+          main_module_id: item?._id,
+          name: item?.name,
+          is_active: true,
+          sub_module_permission: item?.sub_module?.map(data => {
+            return {
+              _id: data?._id,
+              name: data?.name,
+              create: 0,
+              edit: 0,
+              view: 0,
+              export: 0,
+              import: 0,
+              delete: 0,
+              print: 0,
+            };
+          }),
+        };
+      });
+
       dispatch(setAllModules(data));
+      dispatch(
+        setSelectedRolePermissions({
+          comment: '',
+          is_active: 1,
+          name: '',
+          permission: updatedData,
+        }),
+      );
       return true;
     }
   } catch (e) {

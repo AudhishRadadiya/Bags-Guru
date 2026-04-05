@@ -83,6 +83,8 @@ function EditPurchaseOrder() {
       ...companyEditDetails,
       new_item_data: {},
       dummy_newItem_data: {},
+      due_date: new Date(res?.due_date),
+      purchase_date: new Date(res?.purchase_date),
     };
 
     // if (companyEditDetails?.company_address?.length > 0) {

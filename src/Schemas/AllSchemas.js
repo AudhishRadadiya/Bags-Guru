@@ -46,13 +46,8 @@ export const setPasswordSchema = Yup.object().shape({
 
 export const addPartiesSchema = Yup.object().shape({
   party_type: Yup.string().required('Party Type is required'),
+  party_type_label: Yup.string().notRequired(),
   party_name: Yup.string().required('Party Name is required'),
-  // personal_email: Yup.string().email('Invalid Personal Email'),
-  // personal_contact_no: Yup.string().matches(
-  //   /^\d{10}$/,
-  //   'Personal Contact Number must be a 10-digit number',
-  // ),
-  // website: Yup.string().url('Invalid Website URL'),
   pan_no: Yup.string().matches(
     /^([a-zA-Z]){5}([0-9]){4}([a-zA-Z]){1}?$/,
     'Invalid PAN Number',
@@ -61,14 +56,6 @@ export const addPartiesSchema = Yup.object().shape({
     /^([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})?$/,
     'Invalid GST',
   ),
-  // collection_person_whatsapp_no: Yup.string().matches(
-  //   /^\d{10}$/,
-  //   'Invalid WhatsApp Mobile Number',
-  // ),
-  // collection_person_other_mobile_no: Yup.string().matches(
-  //   /^\d{10}$/,
-  //   'Invalid Other Mobile Number',
-  // ),
   gstin: Yup.string().matches(
     /^([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})?$/,
     'Invalid GSTIN',
@@ -81,6 +68,59 @@ export const addPartiesSchema = Yup.object().shape({
           .required('Register mobile no. is required')
       : Yup.array().notRequired();
   }),
+  original_advisor: Yup.string().when('party_type_label', party_type_label => {
+    return party_type_label.includes('TRADER') ||
+      party_type_label.includes('END USER')
+      ? Yup.string().required('Original Advisor is required')
+      : Yup.string().notRequired();
+  }),
+  present_advisor: Yup.string().when('party_type_label', party_type_label => {
+    return party_type_label.includes('TRADER') ||
+      party_type_label.includes('END USER')
+      ? Yup.string().required('Present Advisor is required')
+      : Yup.string().notRequired();
+  }),
+  // market: Yup.string().when('party_type_label', party_type_label) => {
+  //     return (party_type_label?.includes('TRADER') ||
+  //       party_type_label?.includes('END USER'))
+  //       ? Yup.string().required('Market is required')
+  //       : Yup.string().notRequired();
+  //   },
+  // ),
+  industry: Yup.string().when('party_type_label', party_type_label => {
+    return party_type_label.includes('TRADER') ||
+      party_type_label.includes('END USER')
+      ? Yup.string().required('Industry is required')
+      : Yup.string().notRequired();
+  }),
+  customer_source: Yup.string().when('party_type_label', party_type_label => {
+    return party_type_label.includes('TRADER') ||
+      party_type_label.includes('END USER')
+      ? Yup.string().required('Customer Source is required')
+      : Yup.string().notRequired();
+  }),
+  customer_source_detail: Yup.string().when(
+    'party_type_label',
+    party_type_label => {
+      return party_type_label.includes('TRADER') ||
+        party_type_label.includes('END USER')
+        ? Yup.string().required('Customer Source Detail is required')
+        : Yup.string().notRequired();
+    },
+  ),
+  transporter_attachment_file_name: Yup.string().notRequired(),
+  collection_note: Yup.string().notRequired(),
+  is_reviewed: Yup.boolean()
+    .nullable()
+    .oneOf([true, false, null], 'Invalid option'),
+  review_snapshot: Yup.string().when('is_reviewed', is_reviewed => {
+    return is_reviewed.includes(true)
+      ? Yup.string()
+          .url('Invalid Logo URL')
+          .required('Review Snapshot is required')
+      : Yup.string().notRequired();
+  }),
+  no_of_outlets: Yup.string().notRequired(),
 });
 
 export const addCompanySchema = Yup.object().shape({

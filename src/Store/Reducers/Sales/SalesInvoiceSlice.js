@@ -85,6 +85,8 @@ let initialState = {
   },
   updateSelectedSalesInvoiceData: {},
   // viewSelectedSalesInvoiceData: {},
+  sortSalesInvoiceField: null,
+  sortSalesInvoiceOrder: null,
 };
 
 const SalesInvoiceSlice = createSlice({
@@ -133,6 +135,12 @@ const SalesInvoiceSlice = createSlice({
     setOrderJobByPartyList: (state, action) => {
       state.orderJobByPartyList = action.payload;
     },
+    setSortSalesInvoiceField: (state, action) => {
+      state.sortSalesInvoiceField = action.payload;
+    },
+    setSortSalesInvoiceOrder: (state, action) => {
+      state.sortSalesInvoiceOrder = action.payload;
+    },
   },
 });
 export const {
@@ -150,6 +158,8 @@ export const {
   setSalesInvoiceDetail,
   clearSalesInvoiceDetail,
   setOrderJobByPartyList,
+  setSortSalesInvoiceField,
+  setSortSalesInvoiceOrder,
 } = SalesInvoiceSlice.actions;
 
 export default SalesInvoiceSlice.reducer;

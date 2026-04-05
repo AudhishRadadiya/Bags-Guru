@@ -2,6 +2,8 @@ import { getStatusText } from 'Components/Sales/Order';
 import { getDMYDateFormat, roastError } from 'Helper/Common';
 import { setAllCommon } from 'Store/Reducers/Common';
 import {
+  setOrderAuditLogsDetail,
+  setOrderRateHistoryDetails,
   setPreviousTransporter,
   setProductFromBagSizeList,
   setProductSizeList,
@@ -15,6 +17,8 @@ import {
   setSalesOrderListLoading,
   setSalesOrderLoading,
   setSalesOrderOnlyJobsList,
+  setSalesTotalAmount,
+  setSalesTotalQty,
   setSelectedAddSalesIvoiceData,
   setSelectedOrder,
 } from 'Store/Reducers/Sales/SalesOrderSlice';
@@ -50,6 +54,13 @@ export const getSalesOrdersList =
       const { err, data, msg } = response.data;
 
       if (err === 0) {
+        if (!response && data?.list?.length === 0) {
+          dispatch(setSalesOrderList([]));
+          dispatch(setSalesOrderCount(0));
+          dispatch(setSalesTotalAmount(0));
+          dispatch(setSalesTotalQty(0));
+        }
+
         let updated = data?.list?.map((x, i) => {
           return {
             ...x,
@@ -69,6 +80,7 @@ export const getSalesOrdersList =
                 pc_rate: y?.pc_rate ? y?.pc_rate : '',
                 rate: y?.rate ? y?.rate : '',
                 qty: y?.qty ? y?.qty : '',
+                party_name: x?.party_name ?? '',
               };
             }),
           };
@@ -76,6 +88,8 @@ export const getSalesOrdersList =
 
         dispatch(setSalesOrderList(updated || []));
         dispatch(setSalesOrderCount(data?.count || []));
+        dispatch(setSalesTotalAmount(data?.sum_total_amount || 0));
+        dispatch(setSalesTotalQty(data?.sum_total_order_qty || ''));
         return true;
       } else if (err === 1) {
         toast.error(msg);
@@ -120,6 +134,11 @@ export const getSalesOrderJobsList =
       const { err, data, msg } = response.data;
 
       if (err === 0) {
+        if (!response && data?.list?.length === 0) {
+          dispatch(setSalesOrderOnlyJobsList([]));
+          dispatch(setSalesOrderJobsCount(0));
+        }
+
         let updated = data?.list?.map((x, i) => {
           return {
             ...x,
@@ -336,7 +355,7 @@ export const updateStatusSalesOrder = (order_id, status) => async dispatch => {
       const { msg, err } = response.data;
 
       if (err === 0) {
-        toast.success(msg);
+        // toast.success(msg);
         return true;
       } else if (err === 1) {
         toast.error(msg);
@@ -367,7 +386,7 @@ export const updateStatusSalesOrderJob = (job_id, status) => async dispatch => {
       const { msg, err } = response.data;
 
       if (err === 0) {
-        toast.success(msg);
+        // toast.success(msg);
         return true;
       } else if (err === 1) {
         toast.error(msg);
@@ -470,7 +489,7 @@ export const getSalesOrdersItem = id => async dispatch => {
                 ? y?.mfgProcess?.roll_available
                 : 0,
               hndl: y?.mfgProcess?.hndl ? y?.mfgProcess?.hndl : false,
-              oldStr: y?.mfgProcess?.old_str ? y?.mfgProcess?.old_str : false,
+              oldStr: y?.old_stereo ? y?.old_stereo : false,
               strOrd: y?.mfgProcess?.str_ord ? y?.mfgProcess?.str_ord : 0,
               strRcv: y?.mfgProcess?.str_rcv ? y?.mfgProcess?.str_rcv : false,
               print: y?.mfgProcess?.print ? y?.mfgProcess?.print : false,
@@ -488,7 +507,7 @@ export const getSalesOrdersItem = id => async dispatch => {
                   ? 'YES'
                   : 'NO',
               hndl_str: y?.mfgProcess?.hndl ? 'YES' : 'NO',
-              old_str_str: y?.mfgProcess?.old_str ? 'YES' : 'NO',
+              old_str_str: y?.old_stereo ? 'YES' : 'NO',
               str_ord_str:
                 y?.mfgProcess?.str_ord === 2
                   ? 'SENT'
@@ -595,6 +614,7 @@ export const getJobItem = job_id => async dispatch => {
           ...data,
           old_stereo: data?.old_stereo === true ? 1 : 0,
           unit_pc: data?.unit_pc === true ? 1 : 0,
+          broker_unit_pc: data?.broker_unit_pc === true ? 1 : 0,
           freight_inclusive_rate: data?.freight_inclusive_rate === true ? 1 : 0,
           notification_to_print: data?.notification_to_print === true ? 1 : 0,
         };
@@ -796,24 +816,20 @@ export const addBagOrderJob = payload => async dispatch => {
  * @desc get Previous Transporter
  */
 
-export const getPreviousTransporter = party_name => async dispatch => {
+export const getPreviousTransporter = payload => async dispatch => {
   try {
-    if (party_name) {
-      dispatch(setSalesOrderCRUDLoading(true));
-      const response = await axios.post(`previous/transporter`, {
-        party_name,
-      });
+    dispatch(setSalesOrderCRUDLoading(true));
+    const response = await axios.post(`previous/transporter`, payload);
 
-      const { msg, err, data } = response.data;
+    const { msg, err, data } = response.data;
 
-      if (err === 0) {
-        dispatch(setPreviousTransporter(data));
-        return true;
-      } else if (err === 1) {
-        toast.error(msg);
-        return false;
-      } else return false;
-    }
+    if (err === 0) {
+      dispatch(setPreviousTransporter(data));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
   } catch (e) {
     roastError(e);
     return false;
@@ -904,4 +920,46 @@ export const setFilteredListAction = data => async (dispatch, getState) => {
       },
     }),
   );
+};
+
+/**
+ * @desc get order rate history by id
+ */
+export const getOrderRateHistoryDetail = payload => async dispatch => {
+  try {
+    const response = await axios.post(`/view/productRateHistory`, payload);
+    const { msg, err, data } = response.data;
+
+    if (err === 0) {
+      dispatch(setOrderRateHistoryDetails(data || {}));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  }
+};
+
+/**
+ * @desc Get Order Audit Logs
+ */
+export const getOrderAuditLogsDetail = payload => async dispatch => {
+  try {
+    const response = await axios.post(`/view/getOrderAuditLog`, payload);
+    const { msg, err, data } = response.data;
+
+    if (err === 0) {
+      dispatch(setOrderAuditLogsDetail(data || []));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  }
 };

@@ -27,13 +27,16 @@ export default function CreateProformaInvoice() {
     let billingList = [];
     let shippingList = [];
     let presentAdvisor = '';
+    let partiesData = {};
 
     if (salesdata?.party_name) {
       const parties_res = await dispatch(
         getSingleListParties(salesdata?.party_name),
       );
 
+      partiesData = { ...parties_res };
       presentAdvisor = parties_res?.present_advisor;
+
       await dispatch(
         getProductList(productDataPageLimit, productDataCurrentPage),
       );
@@ -85,6 +88,13 @@ export default function CreateProformaInvoice() {
       billing_address: newBillingList,
       shipping_address: newShippingList,
       present_advisor: presentAdvisor,
+      tripta_total_due: partiesData?.tripta_total_due,
+      tripta_0_to_15_amount: partiesData?.tripta_0_to_15_amount,
+      tripta_16_to_30_amount: partiesData?.tripta_16_to_30_amount,
+      tripta_31_to_45_amount: partiesData?.tripta_31_to_45_amount,
+      tripta_46_to_90_amount: partiesData?.tripta_46_to_90_amount,
+      tripta_above_90_amount: partiesData?.tripta_above_90_amount,
+      tripta_last_updated_date: partiesData?.tripta_last_updated_date,
     };
   };
 

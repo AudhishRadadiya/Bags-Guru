@@ -1,11 +1,9 @@
-import { createSlice } from '@reduxjs/toolkit';
 import { subMonths } from 'date-fns';
+import { createSlice } from '@reduxjs/toolkit';
 
 const currentDate = new Date();
-// const defaultStartDate = currentDate;
 const defaultEndDate = subMonths(currentDate, 12);
 const defaultStartDate = subMonths(defaultEndDate, 1);
-// const lastYear = currentDate.getFullYear() - 1;
 
 // Set the first date of the current month of the previous year
 // const firstDateOfLastYearMonth = new Date(lastYear, currentDate.getMonth(), 1);
@@ -13,6 +11,9 @@ const defaultStartDate = subMonths(defaultEndDate, 1);
 const todayDate = new Date();
 let oneMonthAgoDate = new Date(todayDate);
 oneMonthAgoDate.setMonth(todayDate.getMonth() - 1);
+
+let oneYearAgoDate = new Date(todayDate);
+oneYearAgoDate.setFullYear(todayDate.getFullYear() - 1);
 
 // Set the last date of the current month of the previous year
 // const lastDateOfLastYearMonth = new Date(
@@ -69,6 +70,16 @@ let initialState = {
           key: 'selection',
         },
       },
+      reviewComparisonDetailReport: {
+        dates: {
+          startDate: oneMonthAgoDate,
+          endDate: todayDate,
+          key: 'selection',
+        },
+      },
+      OKRReport: {
+        user: '',
+      },
     },
 
     adminDashboard: {
@@ -108,6 +119,24 @@ let initialState = {
         },
       },
     },
+    customerDashboard: {
+      currentPage: 1,
+      pageLimit: 100,
+      dates: {
+        startDate: oneYearAgoDate,
+        endDate: todayDate,
+        key: 'selection',
+      },
+    },
+    reports: {
+      designerReport: {
+        dates: {
+          startDate: oneMonthAgoDate,
+          endDate: todayDate,
+          key: 'selection',
+        },
+      },
+    },
 
     parties: {
       applied: {},
@@ -117,6 +146,18 @@ let initialState = {
       transporterPageLimit: 30,
       transporterCurrentPage: 1,
       selectedItemIndex: '',
+    },
+    triptaAmount: {
+      applied: {},
+      filters: [],
+      currentPage: 1,
+      pageLimit: 30,
+    },
+    thumbnail: {
+      applied: {},
+      filters: [],
+      currentPage: 1,
+      pageLimit: 32,
     },
     rollConsumption: {
       currentPage: 1,
@@ -250,6 +291,24 @@ let initialState = {
       currentPage: 1,
       pageLimit: 30,
     },
+    advisorTeam: {
+      applied: {},
+      filters: [],
+      currentPage: 1,
+      pageLimit: 30,
+    },
+    customerRevenueTier: {
+      applied: {},
+      filters: [],
+      currentPage: 1,
+      pageLimit: 30,
+    },
+    OKR: {
+      applied: {},
+      filters: [],
+      currentPage: 1,
+      pageLimit: 30,
+    },
     unit: {
       applied: {},
       filters: [],
@@ -315,6 +374,11 @@ let initialState = {
     },
     customerRating: {
       applied: {},
+      filters: [],
+      currentPage: 1,
+      pageLimit: 30,
+    },
+    exhibition: {
       filters: [],
       currentPage: 1,
       pageLimit: 30,
@@ -587,9 +651,9 @@ let initialState = {
     nlRequirement: {
       applied: {},
       filters: [],
-      pageLimit: 30,
+      pageLimit: 100,
       currentPage: 1,
-      isStockWithoutOrderPageLimit: 30,
+      isStockWithoutOrderPageLimit: 100,
       isStockWithoutOrderCurrentPage: 1,
       selectedItemIndex: '',
       dates: {
@@ -621,6 +685,7 @@ let initialState = {
       partyFilters: {
         party_type_name: { value: '', matchMode: 'contains' },
         party_name: { value: '', matchMode: 'contains' },
+        tripta_due_amount: { value: '', matchMode: 'contains' },
         personal_contact_no: { value: '', matchMode: 'contains' },
         state_name: { value: '', matchMode: 'contains' },
         city_name: { value: '', matchMode: 'contains' },
@@ -635,6 +700,7 @@ let initialState = {
       transporterFilters: {
         party_type_name: { value: '', matchMode: 'contains' },
         party_name: { value: '', matchMode: 'contains' },
+        tripta_due_amount: { value: '', matchMode: 'contains' },
         personal_contact_no: { value: '', matchMode: 'contains' },
         state_name: { value: '', matchMode: 'contains' },
         city_name: { value: '', matchMode: 'contains' },
@@ -649,6 +715,47 @@ let initialState = {
       },
       searchQuery: '',
       isTransporterOnly: false,
+    },
+    triptaAmount: {
+      searchQuery: '',
+      filterToggle: false,
+      triptaAmountFilters: {
+        party_type_name: { value: '', matchMode: 'contains' },
+        party_name: { value: '', matchMode: 'contains' },
+        present_advisor_name: { value: '', matchMode: 'contains' },
+        personal_contact_no: { value: '', matchMode: 'contains' },
+        state_name: { value: '', matchMode: 'contains' },
+        city_name: { value: '', matchMode: 'contains' },
+        tripta_total_due: { value: '', matchMode: 'contains' },
+        tripta_0_to_15_amount: { value: '', matchMode: 'contains' },
+        tripta_16_to_30_amount: { value: '', matchMode: 'contains' },
+        tripta_31_to_45_amount: { value: '', matchMode: 'contains' },
+        tripta_46_to_90_amount: { value: '', matchMode: 'contains' },
+        tripta_above_90_amount: { value: '', matchMode: 'contains' },
+      },
+      field_filter: {
+        party_name: [],
+        present_advisor: [],
+        city_name: [],
+        state_name: [],
+      },
+      blank_field_filter: {
+        party_name: [],
+        present_advisor: [],
+        city_name: [],
+        state_name: [],
+      },
+    },
+    thumbnail: {
+      searchQuery: '',
+      field_filter: {
+        city_name: [],
+        state_name: [],
+      },
+      blank_field_filter: {
+        city_name: [],
+        state_name: [],
+      },
     },
     rollConsumption: {
       filterToggle: false,
@@ -931,6 +1038,9 @@ let initialState = {
         out_of_stock: { value: '', matchMode: 'contains' },
         gsm: { value: '', matchMode: 'contains' },
         size: { value: '', matchMode: 'contains' },
+        'product_rate_list.kg_price': { value: '', matchMode: 'contains' },
+        'product_rate_list.pc_price': { value: '', matchMode: 'contains' },
+        'product_rate_list.is_kg_price': { value: '', matchMode: 'contains' },
       },
       searchQuery: '',
     },
@@ -985,6 +1095,34 @@ let initialState = {
       searchQuery: '',
       // applied: {},
       // filters: [],
+    },
+    advisorTeam: {
+      filterToggle: false,
+      advisorTeamFilters: {
+        team_name: { value: '', matchMode: 'contains' },
+        manager: { value: '', matchMode: 'contains' },
+      },
+      searchQuery: '',
+    },
+    customerRevenueTier: {
+      filterToggle: false,
+      customerRevenueTierFilters: {
+        tier_name: { value: '', matchMode: 'contains' },
+        max_revenue: { value: '', matchMode: 'contains' },
+        min_revenue: { value: '', matchMode: 'contains' },
+        BackgroundColorCode: { value: '', matchMode: 'contains' },
+      },
+      searchQuery: '',
+    },
+    OKR: {
+      filterToggle: false,
+      OKRFilters: {
+        tier_name: { value: '', matchMode: 'contains' },
+        max_revenue: { value: '', matchMode: 'contains' },
+        min_revenue: { value: '', matchMode: 'contains' },
+        BackgroundColorCode: { value: '', matchMode: 'contains' },
+      },
+      searchQuery: '',
     },
     unit: {
       filterToggle: false,
@@ -1351,6 +1489,16 @@ let initialState = {
       },
       searchQuery: '',
     },
+    exhibition: {
+      filterToggle: false,
+      exhibitionFilters: {
+        name: { value: '', matchMode: 'contains' },
+        year: { value: '', matchMode: 'contains' },
+        budget: { value: '', matchMode: 'contains' },
+        leads_acquired: { value: '', matchMode: 'contains' },
+      },
+      searchQuery: '',
+    },
     // End Miscmasters
     // sales
     order: {
@@ -1361,6 +1509,7 @@ let initialState = {
         party_name_detail: { value: '', matchMode: 'contains' },
         order_date: { value: '', matchMode: 'contains' },
         days: { value: '', matchMode: 'contains' },
+        tripta_due_amount: { value: '', matchMode: 'contains' },
         order_qty: { value: '', matchMode: 'contains' },
         total_amount: { value: '', matchMode: 'contains' },
         advance_amount: { value: '', matchMode: 'contains' },
@@ -1395,6 +1544,7 @@ let initialState = {
       },
       searchQuery: '',
       isJobsOnly: false,
+      isPendingJobsOnly: false,
     },
     proforma: {
       filterToggle: false,
@@ -1460,6 +1610,7 @@ let initialState = {
         parent_id: { value: '', matchMode: 'contains' },
       },
       mfgFilters: {
+        srno: { value: '', matchMode: 'contains' },
         roll_available_str: { value: '', matchMode: 'contains' },
         hndl_str: { value: '', matchMode: 'contains' },
         old_str_str: { value: '', matchMode: 'contains' },
@@ -1478,10 +1629,13 @@ let initialState = {
         gsm: { value: '', matchMode: 'contains' },
         bag_type: { value: '', matchMode: 'contains' },
         fabric_color: { value: '', matchMode: 'contains' },
+        roll_width: { value: '', matchMode: 'contains' },
         handle_material_name: { value: '', matchMode: 'contains' },
         handle_color: { value: '', matchMode: 'contains' },
         cylinder: { value: '', matchMode: 'contains' },
         qty: { value: '', matchMode: 'contains' },
+        per_pc: { value: '', matchMode: 'contains' },
+        per_kg: { value: '', matchMode: 'contains' },
         kg_qty: { value: '', matchMode: 'contains' },
         rate: { value: '', matchMode: 'contains' },
         kg_rate: { value: '', matchMode: 'contains' },
@@ -1900,6 +2054,7 @@ let initialState = {
         supplier_name: { value: '', matchMode: 'contains' },
         warehouse_name: { value: '', matchMode: 'contains' },
         item_name: { value: '', matchMode: 'contains' },
+        design_name: { value: '', matchMode: 'contains' },
         purchase_date: { value: '', matchMode: 'contains' },
         due_date: { value: '', matchMode: 'contains' },
         days: { value: '', matchMode: 'contains' },
@@ -1930,6 +2085,12 @@ let initialState = {
       stockWithoutOrderFilterToggle: false,
       filterToggle: false,
       searchQuery: '',
+      field_filter: {
+        fabric_color: [],
+      },
+      balnk_field_filter: {
+        fabric_color: [],
+      },
     },
     prePrintedStatus: {
       filterToggle: false,
@@ -1945,7 +2106,9 @@ let initialState = {
         base_fabric: { value: '', matchMode: 'contains' },
         lamination: { value: '', matchMode: 'contains' },
         gsm: { value: '', matchMode: 'contains' },
-        old_str: { value: '', matchMode: 'contains' },
+        // old_str: { value: '', matchMode: 'contains' },
+        old_str_str: { value: '', matchMode: 'contains' },
+        po_qty: { value: '', matchMode: 'contains' },
         kg_qty: { value: '', matchMode: 'contains' },
         qty: { value: '', matchMode: 'contains' },
         rate: { value: '', matchMode: 'contains' },
@@ -1974,7 +2137,9 @@ let initialState = {
         base_fabric: { value: '', matchMode: 'contains' },
         lamination: { value: '', matchMode: 'contains' },
         gsm: { value: '', matchMode: 'contains' },
-        old_str: { value: '', matchMode: 'contains' },
+        // old_str: { value: '', matchMode: 'contains' },
+        old_str_str: { value: '', matchMode: 'contains' },
+        po_qty: { value: '', matchMode: 'contains' },
         kg_qty: { value: '', matchMode: 'contains' },
         qty: { value: '', matchMode: 'contains' },
         rate: { value: '', matchMode: 'contains' },
@@ -2013,6 +2178,31 @@ let initialState = {
     },
     adminDashboard: {
       warehouse: '',
+      partyType: 'Both',
+    },
+    customerDashboard: {
+      filterToggle: false,
+      customerDashboardFilters: {
+        company_name: { value: '', matchMode: 'contains' },
+        no_of_outlets: { value: '', matchMode: 'contains' },
+        revenue_12m: { value: '', matchMode: 'contains' },
+        revenue_6m: { value: '', matchMode: 'contains' },
+        revenue_3m: { value: '', matchMode: 'contains' },
+        revenue_1m: { value: '', matchMode: 'contains' },
+        bags_0_5: { value: '', matchMode: 'contains' },
+        bags_5_10: { value: '', matchMode: 'contains' },
+        bags_10_20: { value: '', matchMode: 'contains' },
+        bags_20_plus: { value: '', matchMode: 'contains' },
+        orders_count: { value: '', matchMode: 'contains' },
+        avg_days_to_repeat: { value: '', matchMode: 'contains' },
+        days_since_last_order: { value: '', matchMode: 'contains' },
+      },
+    },
+    salesTrends: {
+      customerSourcePartyType: 'Both',
+      industryPartyType: 'Both',
+      stateWiseTurnoverPartyType: 'Both',
+      presentAdvisorForPendingAndTotalSales: '',
     },
   },
   targetMasterInitialState: {

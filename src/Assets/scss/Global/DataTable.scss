@@ -63,6 +63,15 @@
         height: 312px;
       }
     }
+    &.custom_height {
+      .min_height {
+        height: 350px;
+        .p-datatable-wrapper {
+          max-height: inherit;
+          height: 100%;
+        }
+      }
+    }
   }
 }
 
@@ -520,7 +529,8 @@
                 white-space: normal;
               }
 
-              &.view_detail {
+              &.view_detail,
+              .column_hover_effect {
                 color: $primary;
                 cursor: pointer;
 
@@ -1093,6 +1103,73 @@
       }
     }
   }
+  &.pre_printed_filter {
+    .p-datatable,
+    .p-treetable {
+      .p-datatable-wrapper,
+      .p-treetable-wrapper {
+        thead {
+          tr {
+            th {
+              &.p-filter-column {
+                .p-column-filter {
+                  .p-dropdown {
+                    padding: 0 !important;
+                    .p-inputtext {
+                      min-width: 68px;
+                      padding: 7px !important;
+                      height: 30px;
+
+                      &:hover {
+                        border-color: $primary;
+                      }
+                    }
+                    .p-dropdown-clear-icon {
+                      right: 5px;
+                      width: 13px;
+                    }
+                  }
+                }
+              }
+
+              &.expander_toggle {
+                .p-column-title {
+                  min-width: inherit;
+                  padding-right: 0;
+                }
+              }
+            }
+          }
+        }
+
+        tbody {
+          tr {
+            td {
+              &:first-child {
+                padding-left: 50px;
+
+                &.expander_toggle {
+                  padding-left: 15px;
+
+                  .p-row-toggler {
+                    box-shadow: none !important;
+                    z-index: 99;
+                    @media (max-width: 575px) {
+                      height: 30px;
+                      width: 30px;
+                      svg {
+                        width: 16px;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   &.min_input_table {
     .p-datatable,
@@ -1122,6 +1199,15 @@
   tr
   th {
   padding: 5px 10px;
+}
+
+.data_table_wrapper.rolls_requirement_table
+  .p-datatable
+  .p-datatable-wrapper
+  tbody
+  tr
+  td {
+  padding: 4px 10px;
 }
 
 .data_table_wrapper
@@ -1536,6 +1622,31 @@
             }
           }
         }
+      }
+    }
+  }
+}
+
+.summation_table {
+  table {
+    tfoot {
+      z-index: 105;
+      position: sticky;
+      bottom: 0;
+      tr {
+        background-color: #ffff;
+      }
+    }
+  }
+}
+.collections_table {
+  table {
+    tfoot {
+      z-index: 105;
+      position: sticky;
+      bottom: 0;
+      tr {
+        background-color: #f8f9fa;
       }
     }
   }

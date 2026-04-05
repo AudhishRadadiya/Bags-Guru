@@ -21,7 +21,11 @@ import SearchIcon from '../../Assets/Images/search.svg';
 import ExportIcon from '../../Assets/Images/export.svg';
 import CustomPaginator from 'Components/Common/CustomPaginator';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
-import { setProductRateList } from 'Store/Reducers/Products/ProductSlice';
+import {
+  setProductRateList,
+  setSortMobileAppPriceField,
+  setSortMobileAppPriceOrder,
+} from 'Store/Reducers/Products/ProductSlice';
 
 export const getMFGSeverity = lamination => {
   switch (lamination) {
@@ -135,6 +139,8 @@ export default function MobileAppPriceList({ hasAccess }) {
     productCRUDLoading,
     productRateList,
     productRateCount,
+    sortMobileAppPriceField,
+    sortMobileAppPriceOrder,
   } = useSelector(({ product }) => product);
   const { allFilters, allCommon } = useSelector(({ common }) => common);
 
@@ -160,20 +166,22 @@ export default function MobileAppPriceList({ hasAccess }) {
 
   const onPageChange = useCallback(
     page => {
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
 
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          mobileAppPriceList: {
-            ...allFilters?.mobileAppPriceList,
-            currentPage: pageIndex,
-          },
-        }),
-      );
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            mobileAppPriceList: {
+              ...allFilters?.mobileAppPriceList,
+              currentPage: pageIndex,
+            },
+          }),
+        );
+      }
     },
     [currentPage, allFilters, dispatch],
   );
@@ -364,6 +372,11 @@ export default function MobileAppPriceList({ hasAccess }) {
     [],
   );
 
+  const onSort = e => {
+    dispatch(setSortMobileAppPriceField(e.sortField));
+    dispatch(setSortMobileAppPriceOrder(e.sortOrder));
+  };
+
   return (
     <>
       {/* {productLoading && <Loader />} */}
@@ -456,9 +469,10 @@ export default function MobileAppPriceList({ hasAccess }) {
             <DataTable
               value={productRateList}
               sortMode="single"
-              sortField="name"
               filterDisplay="row"
-              sortOrder={1}
+              onSort={onSort}
+              sortField={sortMobileAppPriceField}
+              sortOrder={sortMobileAppPriceOrder}
               dataKey="_id"
               filters={mobileAppFilters}
               onFilter={event => {

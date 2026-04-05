@@ -1,12 +1,17 @@
 import { getDMYDateFormat, roastError } from 'Helper/Common';
 import {
   setAdvisorReportData,
+  setAdvisorTeamAverageSalesReportData,
+  setAdvisorTeamComparisonReportData,
+  setAdvisorTeamReportData,
   setCustomerSourceDetailData,
   setCustomerSourceReportData,
   setIndustryReportData,
   setLaminationReportData,
   setNewAndRepeatOrderReportData,
+  setOKRDashboardReportData,
   setPartyTypeReportData,
+  setReviewComparisonDetail,
   setSalesTableData,
 } from 'Store/Reducers/Sales/SalesdashboardSlice';
 import axios from 'axios';
@@ -216,5 +221,118 @@ export const getNewAndRepeatOrderReport = payload => async dispatch => {
     return false;
   } finally {
     //   dispatch(setSalesOrderLoading(false));
+  }
+};
+
+export const getReviewComparisonDetailReport = payload => async dispatch => {
+  try {
+    // dispatch(setSalesOrderLoading(true));
+    const response = await axios.post(`/list/advisor/dashboard/reviewReport`, {
+      start_date: getDMYDateFormat(payload?.startDate),
+      end_date: getDMYDateFormat(payload?.endDate),
+    });
+
+    const { msg, err, data } = response.data;
+    if (err === 0) {
+      dispatch(setReviewComparisonDetail(data));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    //   dispatch(setSalesOrderLoading(false));
+  }
+};
+
+export const getAdvisorTeamReport = payload => async dispatch => {
+  try {
+    // dispatch(setSalesOrderLoading(true));
+    const response = await axios.get(
+      `/list/advisor/dashboard/advisorTeamReport`,
+    );
+
+    const { msg, err, data } = response.data;
+    if (err === 0) {
+      dispatch(setAdvisorTeamReportData(data));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    //   dispatch(setSalesOrderLoading(false));
+  }
+};
+
+export const getAdvisorTeamComparisonReport = payload => async dispatch => {
+  try {
+    // dispatch(setSalesOrderLoading(true));
+    const response = await axios.get(
+      `/list/advisor/dashboard/advisorTeamComparisonReport`,
+    );
+
+    const { msg, err, data } = response.data;
+    if (err === 0) {
+      dispatch(setAdvisorTeamComparisonReportData(data));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    //   dispatch(setSalesOrderLoading(false));
+  }
+};
+
+export const getAdvisorTeamAverageSalesReport = payload => async dispatch => {
+  try {
+    // dispatch(setSalesOrderLoading(true));
+    const response = await axios.get(
+      `/list/advisor/dashboard/advisorTeamAverageSalesReport`,
+    );
+
+    const { msg, err, data } = response.data;
+    if (err === 0) {
+      dispatch(setAdvisorTeamAverageSalesReportData(data));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    //   dispatch(setSalesOrderLoading(false));
+  }
+};
+
+export const getOKRDashboardReport = userId => async dispatch => {
+  try {
+    const response = await axios.post(`/get/okr/dashboard`, {
+      user_id: userId,
+    });
+
+    const { msg, err, data } = response.data;
+    if (err === 0) {
+      dispatch(setOKRDashboardReportData(data));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
   }
 };

@@ -17,9 +17,12 @@ import EditIcon from '../../Assets/Images/edit.svg';
 import TrashIcon from '../../Assets/Images/trash.svg';
 import ActionBtn from '../../Assets/Images/action.svg';
 import Whatsapp from '../../Assets/Images/whatsapp.svg';
+import HistoryIcon from '../../Assets/Images/history-icon.svg';
+import ClipboardIcon from '../../Assets/Images/clipboard.svg';
 import { useDispatch } from 'react-redux';
 import {
   deleteSalesOrderJob,
+  getOrderAuditLogsDetail,
   getSalesOrdersItem,
   updateStatusSalesOrderJob,
 } from 'Services/Sales/OrderServices';
@@ -29,14 +32,19 @@ import WhatsAppShare from 'Components/Common/Whatsapp';
 import {
   clearSelectedSalesOrder,
   setIsGetInitialValuesJob,
+  setOrderAuditLogsDetail,
 } from 'Store/Reducers/Sales/SalesOrderSlice';
 import {
   updateBagSentStatus,
   updateLrSentStatus,
 } from 'Services/Production/mfgLiveServices';
-import { checkModulePermission } from 'Helper/Common';
+import { checkModulePermission, toastConfig } from 'Helper/Common';
 import moment from 'moment';
 import Loader from 'Components/Common/Loader';
+import AuditLogsDialog from './Orders/AuditLogsDialog';
+import { getCurrentUserFromLocal } from 'Services/baseService';
+import { toast } from 'react-toastify';
+import copy from 'copy-to-clipboard';
 
 const imageTemplate = data => {
   return (
@@ -138,18 +146,22 @@ export default function OrderDetails({ hasAccess }) {
   // let { Oncancel } = location.state;
   const { order_id } = useParams();
   const { is_edit_access } = hasAccess;
+  const UserPreferences = getCurrentUserFromLocal();
+
   const [whatsappPopup, setWhatsappPopup] = useState(false);
   const [whatsappData, setWhatsappData] = useState({});
   const [approvedPopup, setApprovedPopup] = useState({
     show: false,
     data: {},
   });
-  const [deletePopup, setDeletePopup] = useState(false);
   const [orderDate, setOrderDate] = useState('');
+  const [deletePopup, setDeletePopup] = useState(false);
+  const [auditLogsPopup, setAuditLogsPopup] = useState(false);
+
+  const { currentUser } = useSelector(({ auth }) => auth);
+  const { userPermissionList } = useSelector(({ settings }) => settings);
   const { selectedOrder, isGetInitialValuesJob, salesOrderLoading } =
     useSelector(({ salesOrder }) => salesOrder);
-  const { userPermissionList } = useSelector(({ settings }) => settings);
-  const { currentUser } = useSelector(({ auth }) => auth);
 
   const checkMFGLivePermission = checkModulePermission(
     userPermissionList,
@@ -247,13 +259,31 @@ export default function OrderDetails({ hasAccess }) {
                 >
                   <img src={Whatsapp} alt="" /> WhatsApp
                 </Dropdown.Item>
+                {UserPreferences?.role_name === 'Admin' && (
+                  <Dropdown.Item
+                    onClick={() => {
+                      setAuditLogsPopup(true);
+
+                      dispatch(setOrderAuditLogsDetail([]));
+
+                      dispatch(
+                        getOrderAuditLogsDetail({
+                          ref_id: _id,
+                          ref_type: 'ORDER',
+                        }),
+                      );
+                    }}
+                  >
+                    <img src={HistoryIcon} alt="" /> Audit Logs
+                  </Dropdown.Item>
+                )}
               </Dropdown.Menu>
             </Dropdown>
           </div>
         </>
       );
     },
-    [handleDeleteJob, navigate],
+    [dispatch, navigate, UserPreferences, isGetInitialValuesJob],
   );
   const innerVerify = useCallback(
     ({ status, _id, is_cancelled, attachment }) => {
@@ -335,7 +365,7 @@ export default function OrderDetails({ hasAccess }) {
           }}
           disabled={checkMFGLivePermission ? false : true}
         >
-          {val === true ? 'Yes' : 'No'}
+          {val === true ? 'YES' : 'NO'}
         </button>
       </div>
     );
@@ -374,6 +404,94 @@ export default function OrderDetails({ hasAccess }) {
       </span>
     );
   };
+
+  const formatBagSpecsText = useCallback(row => {
+    const printTech = row?.bag_detail?.print_technology;
+    const lamination = row?.bag_detail?.lamination_type_name?.join(', ') || '';
+
+    const width = row?.bag_detail?.width;
+    const height = row?.bag_detail?.height;
+    const gsm = row?.bag_detail?.gsm;
+    const gusset = row?.bag_detail?.gusset;
+
+    const design = row?.product_detail?.design || '';
+    const fabricColor = row?.product_detail?.fabric_color || '';
+    const bagType = row?.bag_detail?.bag_type || '';
+
+    const bagSizeLine = `${width}" X ${height}" X ${gusset}" (${gsm} GSM)`;
+
+    if (printTech.includes('FLEXO PRINT')) {
+      return `${bagSizeLine}
+${design} - ${fabricColor}`.trim();
+    }
+
+    if (
+      printTech.includes('ROTO GRAVURE') ||
+      printTech.includes('SCREEN PRINT (B 2 B)')
+    ) {
+      if (lamination.includes('Metallic')) {
+        return `${bagSizeLine}
+${design} - METALLIC LAMINATION
+${bagType} - ${fabricColor}`.trim();
+      } else {
+        return `${bagSizeLine}
+${design} – LAMINATED
+${bagType} - ${fabricColor}`.trim();
+      }
+    }
+
+    if (printTech.includes('SCREEN PRINT (B 2 B)')) {
+      if (lamination.includes('Non Laminated')) {
+        return `${bagSizeLine}
+${design} - NON LAMINATED
+SCREEN PRINT
+${bagType} - ${fabricColor}`.trim();
+      } else {
+        return `${bagSizeLine}
+${design} - LAMINATED
+SCREEN PRINT
+${bagType} - ${fabricColor}`.trim();
+      }
+    }
+
+    if (printTech.includes('SCREEN PRINT (R 2 R)')) {
+      return `${bagSizeLine}
+${design}
+SCREEN on MACHINE
+${bagType} - ${fabricColor}`.trim();
+    }
+
+    return 'Specs not available';
+  }, []);
+
+  const onCopyText = useCallback(
+    row => {
+      const textToCopy = formatBagSpecsText(row);
+
+      const res = copy(textToCopy, {
+        debug: false,
+        message: 'Tap to copy',
+      });
+
+      if (res) {
+        toast('Text copied to clipboard', toastConfig);
+      }
+    },
+    [formatBagSpecsText],
+  );
+
+  const copyBagSpecsTemplate = row => {
+    return (
+      <img
+        src={ClipboardIcon}
+        className="me-2"
+        alt=""
+        style={{ cursor: 'pointer' }}
+        onClick={() => onCopyText(row)}
+      />
+    );
+  };
+
   const stereoChargeBody = val => {
     return (
       <>
@@ -392,7 +510,32 @@ export default function OrderDetails({ hasAccess }) {
           <Row>
             <Col xxl={6}>
               <div className="job_detail_left_wrap border rounded-3 bg_white p-3">
-                <h3 className="mb-3">Order Details</h3>
+                <Row>
+                  <Col
+                    lg={12}
+                    className="d-flex justify-content-between align-items-center mb-3"
+                  >
+                    <h3>Order Details</h3>
+                    <Button
+                      className="btn_primary"
+                      onClick={e => {
+                        setAuditLogsPopup(true);
+
+                        dispatch(setOrderAuditLogsDetail([]));
+
+                        dispatch(
+                          getOrderAuditLogsDetail({
+                            ref_id: selectedOrder?._id,
+                            ref_type: 'ORDER',
+                          }),
+                        );
+                      }}
+                    >
+                      <img src={HistoryIcon} alt="" />
+                      Audit Log
+                    </Button>
+                  </Col>
+                </Row>
                 <Row>
                   <Col lg={8}>
                     <Row>
@@ -447,9 +590,20 @@ export default function OrderDetails({ hasAccess }) {
                           <label htmlFor="y">Booking Station</label>
                           <InputText
                             id="PresentAdvisor"
-                            placeholder="Present Advisor"
+                            placeholder="Booking Station"
                             disabled
                             value={selectedOrder?.booking_station || ''}
+                          />
+                        </div>
+                      </Col>
+                      <Col md={4} sm={6}>
+                        <div className="form_group mb-3">
+                          <label htmlFor="AdvanceAmount">Advance Amount</label>
+                          <InputText
+                            id="AdvanceAmount"
+                            placeholder="Advance Amount"
+                            disabled
+                            value={selectedOrder?.advance_amount || ''}
                           />
                         </div>
                       </Col>
@@ -493,7 +647,7 @@ export default function OrderDetails({ hasAccess }) {
                       </ul>
                     </div>
                   </Col>
-                  <Col lg={8}>
+                  <Col lg={8} className="d-flex align-items-center">
                     <Row>
                       <h3 className="mb-3">
                         Name: {selectedOrder?.contact_person_name}
@@ -536,6 +690,50 @@ export default function OrderDetails({ hasAccess }) {
                         </div>
                       </Col>
                     </Row>
+                  </Col>
+                  <Col md={4}>
+                    <div className="mb-2 text-end d-flex flex-column amount_label">
+                      <label className="text-capitalize m-0 fw-bold">
+                        Updated On :
+                      </label>
+                      <span>
+                        {selectedOrder?.tripta_last_updated_date &&
+                          moment(
+                            selectedOrder?.tripta_last_updated_date,
+                          ).format('DD-MM-YYYY')}
+                      </span>
+                    </div>
+                    <Col md={9} className="order_amount">
+                      <label className="text-capitalize m-0 fw-bold pe-2">
+                        Amount Due :
+                      </label>
+                      <div className="form_group">
+                        <label className="m-0 pe-2">{`0 - 15 days:`}</label>
+                        <span>{selectedOrder?.tripta_0_to_15_amount}</span>
+                      </div>
+                      <div className="form_group">
+                        <label className="m-0 pe-2">{`16 - 30 days:`}</label>
+                        <span>{selectedOrder?.tripta_16_to_30_amount}</span>
+                      </div>
+                      <div className="form_group">
+                        <label className="m-0 pe-2">{`31 - 45 days:`}</label>
+                        <span>{selectedOrder?.tripta_31_to_45_amount}</span>
+                      </div>
+                      <div className="form_group">
+                        <label className="m-0 pe-2">{`46 - 90 days:`}</label>
+                        <span>{selectedOrder?.tripta_46_to_90_amount}</span>
+                      </div>
+                      <div className="form_group">
+                        <label className="m-0 pe-2">{`>90 days:`}</label>
+                        <span>{selectedOrder?.tripta_above_90_amount}</span>
+                      </div>
+                      <div className="total_amount form_group">
+                        <label className="text-capitalize m-0 pe-2">
+                          {`Total :`}
+                        </label>
+                        <span>{selectedOrder?.tripta_total_due}</span>
+                      </div>
+                    </Col>
                   </Col>
                   <Col md={12}>
                     <Row>
@@ -769,6 +967,11 @@ export default function OrderDetails({ hasAccess }) {
                     body={productTemplate}
                     sortable
                   ></Column>
+                  <Column
+                    field=""
+                    header="Copy Bag Specs"
+                    body={copyBagSpecsTemplate}
+                  ></Column>
                   <Column field="qty" header="PCs" sortable></Column>
                   {/* <Column field="rate" header="Rate" sortable></Column> */}
                   <Column field="weight" header="Weight(KG)" sortable></Column>
@@ -871,6 +1074,10 @@ export default function OrderDetails({ hasAccess }) {
         setWhatsappPopup={setWhatsappPopup}
         data={whatsappData}
         isBagDetail={true}
+      />
+      <AuditLogsDialog
+        auditLogsPopup={auditLogsPopup}
+        setAuditLogsPopup={setAuditLogsPopup}
       />
     </>
   );

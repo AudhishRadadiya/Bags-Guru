@@ -120,7 +120,7 @@ export const getBrokerOptionsList = () => async dispatch => {
 
     if (err === 0) {
       dispatch(setBrokerOptionsList(data));
-      return true;
+      return data;
     } else if (err === 1) {
       toast.error(msg);
       return false;

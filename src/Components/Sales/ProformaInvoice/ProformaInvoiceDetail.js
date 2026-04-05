@@ -13,27 +13,26 @@ import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { Checkbox } from 'primereact/checkbox';
 import { Dialog } from 'primereact/dialog';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Image } from 'primereact/image';
 import { getProductList } from 'Services/Products/ProductService';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
-import {
-  setProductForProforma,
-  setSelectedProductData,
-} from 'Store/Reducers/Products/ProductSlice';
+import { setProductForProforma } from 'Store/Reducers/Products/ProductSlice';
 import { useFormik } from 'formik';
 import moment from 'moment';
 import _ from 'lodash';
 import {
   convertIntoNumber,
   getFormattedDate,
+  handleFieldFocus,
   roundValueThousandSeparator,
 } from 'Helper/Common';
 import {
   getAllUserPartyList,
   getPartiesAdvisor,
   getSingleListParties,
+  getTransporterPartyList,
 } from 'Services/partiesService';
 import DropZone from 'Components/Common/DropZone';
 import * as Yup from 'yup';
@@ -58,12 +57,15 @@ import {
 } from 'Services/Sales/ProformaService';
 import CustomPaginator from 'Components/Common/CustomPaginator';
 import { setAllFilters } from 'Store/Reducers/Common';
+import { getAllActiveBankList } from 'Services/Settings/MiscMasterService';
+import { Tag } from 'primereact/tag';
 
 const addProformachema = Yup.object().shape({
   party_name: Yup.string().required('Party Name is required'),
   invoice_date: Yup.date().required('Invoice Date is required'),
   transporter: Yup.string().required('Transporter is required'),
   present_advisor: Yup.string().required('Present Advisor is required'),
+  bank: Yup.string().required('Bank is required'),
 });
 
 const ProformaInvoiceDetail = ({ initialValues }) => {
@@ -81,6 +83,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
   const [searchProduct, setSearchProduct] = useState('');
   const [filterToggle, setFilterToggle] = useState(false);
 
+  const { allActiveBankList } = useSelector(({ miscMaster }) => miscMaster);
   const { allFilters } = useSelector(({ common }) => common);
   const { productForProforma, productCount, productLoading } = useSelector(
     ({ product }) => product,
@@ -109,6 +112,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
 
   const loadRequiredData = useCallback(() => {
     dispatch(getAllUserPartyList());
+    dispatch(getAllActiveBankList());
     // dispatch(getTransporterPartyList());
     dispatch(getPartiesAdvisor());
   }, [dispatch]);
@@ -141,7 +145,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       }
 
       let result;
-      let proforma_invoice_item = values?.proforma_item?.map(data => {
+      const proforma_invoice_item = values?.proforma_item?.map(data => {
         return {
           product_id: data?.product_id,
           remark: data?.remark,
@@ -151,6 +155,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           kg_qty: data?.weight,
           rate: data?.is_rate_per_kg ? data?.kg_rate : data?.rate,
           charge: data?.charge,
+          packaging_charge: data?.packaging_charge,
           discount: data?.discount,
           total_amount: data?.amount,
           tax_percentage: data?.tax_percentage,
@@ -167,6 +172,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           terms_and_condition: values?.terms_and_condition,
           proforma_invoice_item: proforma_invoice_item,
           total_bundle: Number(values?.total_bundle),
+          freight: convertIntoNumber(values?.freight),
         };
 
         result = await dispatch(updateProformaInvoice(payload));
@@ -191,7 +197,9 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
             : fixedTerm,
           proforma_invoice_item: proforma_invoice_item,
           total_bundle: Number(values?.total_bundle),
+          freight: convertIntoNumber(values?.freight),
         };
+
         result = await dispatch(createProformaInvoice(payload));
 
         if (result) {
@@ -241,7 +249,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
         }
         return item;
       });
-      // setSelectedProduct(newArray);
+
       commonUpdateFiledValue('selected_product', newArray);
     }
   }, [productForProforma, values?.proforma_item]);
@@ -366,6 +374,9 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       const charge = list[index]['charge']
         ? convertIntoNumber(list[index]['charge'])
         : 0;
+      const packagingCharge = list[index]['packaging_charge']
+        ? convertIntoNumber(list[index]['packaging_charge'])
+        : 0;
       const discount = list[index]['discount']
         ? convertIntoNumber(list[index]['discount'])
         : 0;
@@ -373,7 +384,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       const bgWeight = parseFloat(list[index]['bag_weight']?.split(' ')[0]);
       const amount = e * rate;
       // const finalAmount = amount - discount + charge + gstAmount;
-      const finalAmount = amount - discount + charge;
+      const finalAmount = amount - discount + charge + packagingCharge;
       const gstAmount = (finalAmount * taxPercentage) / 100;
       let kg_qty = convertIntoNumber(e * (bgWeight / 1000));
 
@@ -400,13 +411,16 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       const charge = list[index]['charge']
         ? convertIntoNumber(list[index]['charge'])
         : 0;
+      const packagingCharge = list[index]['packaging_charge']
+        ? convertIntoNumber(list[index]['packaging_charge'])
+        : 0;
       const discount = list[index]['discount']
         ? convertIntoNumber(list[index]['discount'])
         : 0;
 
       const amount = e * pcs;
       // const finalAmount = amount - discount + charge + gstAmount;
-      const finalAmount = amount - discount + charge;
+      const finalAmount = amount - discount + charge + packagingCharge;
       const gstAmount = (finalAmount * taxPercentage) / 100;
 
       list[index]['amount'] = amount ? convertIntoNumber(amount) : 0;
@@ -426,6 +440,9 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       const charge = list[index]['charge']
         ? convertIntoNumber(list[index]['charge'])
         : 0;
+      const packagingCharge = list[index]['packaging_charge']
+        ? convertIntoNumber(list[index]['packaging_charge'])
+        : 0;
       const discount = list[index]['discount']
         ? convertIntoNumber(list[index]['discount'])
         : 0;
@@ -441,7 +458,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       }
       const amount = e * kgRate;
       // const finalAmount = amount - discount + charge + gstAmount;
-      const finalAmount = amount - discount + charge;
+      const finalAmount = amount - discount + charge + packagingCharge;
       const gstAmount = (finalAmount * taxPercentage) / 100;
 
       list[index]['pcs'] = qty ? qty : 0;
@@ -462,12 +479,15 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       const charge = list[index]['charge']
         ? convertIntoNumber(list[index]['charge'])
         : 0;
+      const packagingCharge = list[index]['packaging_charge']
+        ? convertIntoNumber(list[index]['packaging_charge'])
+        : 0;
       const discount = list[index]['discount']
         ? convertIntoNumber(list[index]['discount'])
         : 0;
       const amount = e * weight;
       // const finalAmount = amount - discount + charge + gstAmount;
-      const finalAmount = amount - discount + charge;
+      const finalAmount = amount - discount + charge + packagingCharge;
       const gstAmount = (finalAmount * taxPercentage) / 100;
 
       list[index]['amount'] = amount ? convertIntoNumber(amount) : 0;
@@ -487,11 +507,36 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       const charge = list[index]['charge']
         ? convertIntoNumber(list[index]['charge'])
         : 0;
+      const packagingCharge = list[index]['packaging_charge']
+        ? convertIntoNumber(list[index]['packaging_charge'])
+        : 0;
       const discount = list[index]['discount']
         ? convertIntoNumber(list[index]['discount'])
         : 0;
       // const finalAmount = amount - discount + e + gstAmount;
-      const finalAmount = amount - discount + e;
+      const finalAmount = amount - discount + e + packagingCharge;
+      const gstAmount = (finalAmount * taxPercentage) / 100;
+      list[index]['gst_amount'] = gstAmount ? convertIntoNumber(gstAmount) : 0;
+      list[index]['final_amount'] = finalAmount
+        ? convertIntoNumber(finalAmount)
+        : 0;
+    }
+
+    if (key === 'packaging_charge') {
+      const amount = list[index]['amount']
+        ? convertIntoNumber(list[index]['amount'])
+        : 0;
+      const taxPercentage = list[index]['tax_percentage']
+        ? convertIntoNumber(list[index]['tax_percentage'])
+        : 0;
+      const charge = list[index]['charge']
+        ? convertIntoNumber(list[index]['charge'])
+        : 0;
+      const discount = list[index]['discount']
+        ? convertIntoNumber(list[index]['discount'])
+        : 0;
+      // const finalAmount = amount - discount + e + gstAmount;
+      const finalAmount = amount - discount + charge + e;
       const gstAmount = (finalAmount * taxPercentage) / 100;
       list[index]['gst_amount'] = gstAmount ? convertIntoNumber(gstAmount) : 0;
       list[index]['final_amount'] = finalAmount
@@ -509,9 +554,11 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       const charge = list[index]['charge']
         ? convertIntoNumber(list[index]['charge'])
         : 0;
-
+      const packagingCharge = list[index]['packaging_charge']
+        ? convertIntoNumber(list[index]['packaging_charge'])
+        : 0;
       // let finalAmount = amount - e + charge + gstAmount;
-      const finalAmount = amount - e + charge;
+      const finalAmount = amount - e + charge + packagingCharge;
       let gstAmount = (finalAmount * taxPercentage) / 100;
       list[index]['gst_amount'] = gstAmount ? convertIntoNumber(gstAmount) : 0;
       list[index]['final_amount'] = finalAmount
@@ -529,9 +576,11 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       const charge = list[index]['charge']
         ? convertIntoNumber(list[index]['charge'])
         : 0;
-
+      const packagingCharge = list[index]['packaging_charge']
+        ? convertIntoNumber(list[index]['packaging_charge'])
+        : 0;
       // const finalAmount = amount - discount + charge + gstAmount;
-      const finalAmount = amount - discount + charge;
+      const finalAmount = amount - discount + charge + packagingCharge;
       const gstAmount = (finalAmount * e) / 100;
       list[index]['gst_amount'] = gstAmount ? convertIntoNumber(gstAmount) : 0;
       list[index]['final_amount'] = finalAmount
@@ -546,6 +595,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       list[index]['kg_rate'] = '';
       list[index]['weight'] = '';
       list[index]['charge'] = '';
+      list[index]['packaging_charge'] = '';
       list[index]['discount'] = '';
       list[index]['gst_amount'] = '';
       list[index]['final_amount'] = '';
@@ -557,6 +607,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       list[index]['kg_rate'] = '';
       list[index]['weight'] = '';
       list[index]['charge'] = '';
+      list[index]['packaging_charge'] = '';
       list[index]['discount'] = '';
       list[index]['gst_amount'] = '';
       list[index]['final_amount'] = '';
@@ -569,6 +620,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
     let totalAmount = totalCount(list, 'amount');
     let discount = totalCount(list, 'discount');
     let stereoCharge = totalCount(list, 'charge');
+    let packagingCharge = totalCount(list, 'packaging_charge');
     let taxAmount = totalCount(list, 'gst_amount');
     let taxableAmount = totalCount(list, 'final_amount');
 
@@ -604,6 +656,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
     setFieldValue('total_amount', convertIntoNumber(total_taxable_amount));
     setFieldValue('discount', convertIntoNumber(discount));
     setFieldValue('streo_charge', convertIntoNumber(stereoCharge));
+    setFieldValue('packaging_charge', convertIntoNumber(packagingCharge));
     // setFieldValue('tax_amount', convertIntoNumber(taxAmount));
     setFieldValue(
       'tax_amount',
@@ -626,6 +679,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           total_amount: convertIntoNumber(totalAmount),
           discount: convertIntoNumber(discount),
           streo_charge: convertIntoNumber(stereoCharge),
+          packaging_charge: convertIntoNumber(packagingCharge),
           tax_amount: convertIntoNumber(taxAmount),
           final_amount: final_amount ? convertIntoNumber(final_amount) : 0,
           proforma_item: list,
@@ -638,6 +692,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           total_amount: convertIntoNumber(totalAmount),
           discount: convertIntoNumber(discount),
           streo_charge: convertIntoNumber(stereoCharge),
+          packaging_charge: convertIntoNumber(packagingCharge),
           tax_amount: convertIntoNumber(taxAmount),
           final_amount: final_amount ? convertIntoNumber(final_amount) : 0,
           proforma_item: list,
@@ -654,10 +709,11 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           placeholder="0"
           className="w-100"
           value={data?.hsn}
+          onFocus={e => handleFieldFocus(e)}
           disabled={checkViewValidation}
           onChange={e => {
             handleChangeData(
-              e.target.value ? Number(e.target.value) : '',
+              e.target.value ? convertIntoNumber(e.target.value, 3) : '',
               data,
               'hsn',
             );
@@ -675,10 +731,11 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           placeholder="0"
           className="w-100"
           value={data?.pcs}
+          onFocus={e => handleFieldFocus(e)}
           disabled={data?.is_rate_per_kg || checkViewValidation}
           onChange={e => {
             handleChangeData(
-              e.target.value ? Number(e.target.value) : '',
+              e.target.value ? convertIntoNumber(e.target.value, 3) : '',
               data,
               'pcs',
             );
@@ -691,14 +748,15 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
     return (
       <div className="form_group mb-0">
         <InputText
-          placeholder="0"
           type="number"
+          placeholder="0"
           className="w-100"
           value={data?.weight}
+          onFocus={e => handleFieldFocus(e)}
           disabled={!data?.is_rate_per_kg || checkViewValidation}
           onChange={e => {
             handleChangeData(
-              e.target.value ? Number(e.target.value) : '',
+              e.target.value ? convertIntoNumber(e.target.value, 3) : '',
               data,
               'weight',
             );
@@ -717,9 +775,10 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           className="w-100"
           value={data?.rate}
           disabled={data?.is_rate_per_kg || checkViewValidation}
+          onFocus={e => handleFieldFocus(e)}
           onChange={e => {
             handleChangeData(
-              e.target.value ? Number(e.target.value) : '',
+              e.target.value ? convertIntoNumber(e.target.value, 3) : '',
               data,
               'rate',
             );
@@ -737,10 +796,11 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           placeholder="0"
           className="w-100"
           value={data?.kg_rate}
+          onFocus={e => handleFieldFocus(e)}
           disabled={!data?.is_rate_per_kg || checkViewValidation}
           onChange={e => {
             handleChangeData(
-              e.target.value ? Number(e.target.value) : '',
+              e.target.value ? convertIntoNumber(e.target.value, 3) : '',
               data,
               'kg_rate',
             );
@@ -758,12 +818,35 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           placeholder="0"
           className="w-100"
           value={data?.charge}
+          onFocus={e => handleFieldFocus(e)}
           disabled={checkViewValidation}
           onChange={e => {
             handleChangeData(
-              e.target.value ? Number(e.target.value) : '',
+              e.target.value ? convertIntoNumber(e.target.value, 3) : '',
               data,
               'charge',
+            );
+          }}
+        />
+      </div>
+    );
+  };
+
+  const packagingTemplate = data => {
+    return (
+      <div className="form_group mb-0">
+        <InputText
+          type="number"
+          placeholder="0"
+          className="w-100"
+          value={data?.packaging_charge}
+          onFocus={e => handleFieldFocus(e)}
+          disabled={checkViewValidation}
+          onChange={e => {
+            handleChangeData(
+              e.target.value ? convertIntoNumber(e.target.value, 3) : '',
+              data,
+              'packaging_charge',
             );
           }}
         />
@@ -779,10 +862,11 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           placeholder="0"
           className="w-100"
           value={data?.discount}
+          onFocus={e => handleFieldFocus(e)}
           disabled={checkViewValidation}
           onChange={e => {
             handleChangeData(
-              e.target.value ? Number(e.target.value) : '',
+              e.target.value ? convertIntoNumber(e.target.value, 3) : '',
               data,
               'discount',
             );
@@ -816,10 +900,11 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           placeholder="0"
           className="w-100"
           disabled={checkViewValidation}
+          onFocus={e => handleFieldFocus(e)}
           value={data?.tax_percentage}
           onChange={e => {
             handleChangeData(
-              e.target.value ? Number(e.target.value) : '',
+              e.target.value ? convertIntoNumber(e.target.value, 3) : '',
               data,
               'tax_percentage',
             );
@@ -843,6 +928,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       let totalAmount = totalCount(newArray, 'amount');
       let discount = totalCount(newArray, 'discount');
       let stereoCharge = totalCount(newArray, 'charge');
+      let packagingCharge = totalCount(newArray, 'packaging_charge');
       let taxAmount = totalCount(newArray, 'gst_amount');
 
       let taxableAmount = totalCount(newArray, 'final_amount');
@@ -859,6 +945,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       setFieldValue('total_amount', convertIntoNumber(taxableAmount));
       setFieldValue('discount', convertIntoNumber(discount));
       setFieldValue('streo_charge', convertIntoNumber(stereoCharge));
+      setFieldValue('packaging_charge', convertIntoNumber(packagingCharge));
       setFieldValue('tax_amount', convertIntoNumber(taxAmount));
       setFieldValue(
         'final_amount',
@@ -882,6 +969,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
             total_amount: convertIntoNumber(taxableAmount),
             discount: convertIntoNumber(discount),
             streo_charge: convertIntoNumber(stereoCharge),
+            packaging_charge: convertIntoNumber(packagingCharge),
             tax_amount: convertIntoNumber(taxAmount),
             final_amount: final_amount ? convertIntoNumber(final_amount) : 0,
           }),
@@ -895,6 +983,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
             total_amount: convertIntoNumber(taxableAmount),
             discount: convertIntoNumber(discount),
             streo_charge: convertIntoNumber(stereoCharge),
+            packaging_charge: convertIntoNumber(packagingCharge),
             tax_amount: convertIntoNumber(taxAmount),
             final_amount: final_amount ? convertIntoNumber(final_amount) : 0,
           }),
@@ -957,6 +1046,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
         qty: '',
         rate: '',
         charge: '',
+        packaging_charge: '',
         final_amount: '',
         discount: '',
         total_amount: '',
@@ -964,10 +1054,9 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
         weight: '',
         kg_rate: '',
         gst_amount: '',
-        product_id: x._id,
       };
     });
-    // setSelectedProduct(data);
+
     commonUpdateFiledValue('selected_product', newList);
   };
 
@@ -1022,14 +1111,8 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
       : [...filteredList];
   }, [values?.shipping_addrees_list, values?.shipping_address]);
 
-  const handleProductSearchInput = e => {
-    dispatch(
-      getProductList(
-        productDataPageLimit,
-        productDataCurrentPage,
-        e.target.value,
-      ),
-    );
+  const handleProductSearchInput = (e, limit) => {
+    dispatch(getProductList(limit, 1, e.target.value));
   };
 
   const debounceHandleSearchInput = React.useCallback(
@@ -1103,6 +1186,14 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
     const res = await dispatch(getSingleListParties(e.value));
 
     if (res) {
+      if (res?.shipping_pincode) {
+        dispatch(
+          getTransporterPartyList({
+            pincode: res?.shipping_pincode,
+          }),
+        );
+      }
+
       const billingList = res?.party_address?.filter(
         x => x?.address_type_name === 'BILLING',
       );
@@ -1110,8 +1201,25 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
         x => x?.address_type_name !== 'BILLING',
       );
 
+      const partiesData = {
+        tripta_total_due: res?.tripta_total_due,
+        tripta_0_to_15_amount: res?.tripta_0_to_15_amount,
+        tripta_16_to_30_amount: res?.tripta_16_to_30_amount,
+        tripta_31_to_45_amount: res?.tripta_31_to_45_amount,
+        tripta_46_to_90_amount: res?.tripta_46_to_90_amount,
+        tripta_above_90_amount: res?.tripta_above_90_amount,
+        tripta_last_updated_date: res?.tripta_last_updated_date,
+      };
+
       setFieldValue('billing_addrees_list', billingList);
       setFieldValue('shipping_addrees_list', shippingList);
+      setFieldValue('tripta_total_due', res?.tripta_total_due);
+      setFieldValue('tripta_0_to_15_amount', res?.tripta_0_to_15_amount);
+      setFieldValue('tripta_16_to_30_amount', res?.tripta_16_to_30_amount);
+      setFieldValue('tripta_31_to_45_amount', res?.tripta_31_to_45_amount);
+      setFieldValue('tripta_46_to_90_amount', res?.tripta_46_to_90_amount);
+      setFieldValue('tripta_above_90_amount', res?.tripta_above_90_amount);
+      setFieldValue('tripta_last_updated_date', res?.tripta_last_updated_date);
 
       if (locationPath?.[1] === 'add-proforma-invoice') {
         setFieldValue('present_advisor', res.present_advisor);
@@ -1120,13 +1228,13 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
         dispatch(
           setAddSelectedProformaInvoiceData({
             ...addSelectedProformaInvoiceData,
+            ...partiesData,
             [field_name]: field_value,
             address_list: [''],
             billing_addrees_list: billingList,
             shipping_addrees_list: shippingList,
             shipping_address: [{ ...shippingList?.[0] }],
             billing_address: [{ ...billingList?.[0] }],
-            present_advisor: res.present_advisor,
           }),
         );
       } else {
@@ -1144,6 +1252,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
         dispatch(
           setUpdateSelectedProformaInvoiceData({
             ...updateSelectedProformaInvoiceData,
+            ...partiesData,
             [field_name]: field_value,
             shipping_address: newShippingList,
             billing_address: newBillingList,
@@ -1170,8 +1279,10 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           },
         }),
       );
+
+      dispatch(getProductList(page, updateCurrentPage, searchProduct));
     },
-    [allFilters, dispatch],
+    [allFilters, dispatch, searchProduct],
   );
 
   const onPageChange = useCallback(
@@ -1190,9 +1301,39 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
           },
         }),
       );
+
+      dispatch(getProductList(productDataPageLimit, pageIndex, searchProduct));
     },
-    [dispatch, productDataCurrentPage, allFilters],
+    [
+      dispatch,
+      productDataPageLimit,
+      productDataCurrentPage,
+      allFilters,
+      searchProduct,
+    ],
   );
+
+  const transporterPartyListItemTemplate = option => {
+    return (
+      <div className="flex align-items-center justify-content-between w-full">
+        <span>{option.label}</span>
+        {option.suggested && (
+          <Tag
+            value="Suggested"
+            severity="success"
+            style={{
+              background: '#d4edda',
+              color: '#155724',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              marginLeft: '5px',
+              fontSize: '0.75rem',
+            }}
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -1239,7 +1380,12 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                         options={allUserPartyList}
                         name="party_name"
                         onChange={e => {
-                          dispatch(getPreviousTransporter(e.value));
+                          dispatch(
+                            getPreviousTransporter({
+                              party_name: e.value,
+                              type: 2,
+                            }),
+                          );
                           setFieldValue('party_name', e.value);
                           partyHandleChange(e);
                           // commonUpdateFiledValue('party_name', e.value);
@@ -1251,21 +1397,75 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                         <p className="text-danger">{errors?.party_name}</p>
                       )}
                     </div>
+                    {values?.invoice_no && proformaId ? (
+                      <Col lg={7}>
+                        <div className="form_group mb-3">
+                          <label htmlFor="InvoiceNo">Invoice No.</label>
+                          <InputText
+                            id="InvoiceNo"
+                            placeholder="3307"
+                            name="invoice_no"
+                            disabled={checkViewValidation}
+                            value={values?.invoice_no || ''}
+                          />
+                        </div>
+                      </Col>
+                    ) : null}
                   </Col>
-                  {values?.invoice_no && proformaId ? (
-                    <Col lg={4}>
-                      <div className="form_group mb-3">
-                        <label htmlFor="InvoiceNo">Invoice No.</label>
-                        <InputText
-                          id="InvoiceNo"
-                          placeholder="3307"
-                          name="invoice_no"
-                          disabled={checkViewValidation}
-                          value={values?.invoice_no || ''}
-                        />
+                  <Col md={6} className="d-flex justify-content-end">
+                    <Col md={6} className="order_amount pe-4">
+                      <label className="text-capitalize m-0 fw-bold pe-2">
+                        Amount Due :
+                      </label>
+                      <div className="form_group w-auto">
+                        <label className="text-capitalize fw-bold pe-2">
+                          {`0 to 15 :`}
+                        </label>
+                        <span>{values?.tripta_0_to_15_amount}</span>
+                      </div>
+                      <div className="form_group w-auto">
+                        <label className="text-capitalize fw-bold pe-2">
+                          {`16 to 30 :`}
+                        </label>
+                        <span>{values?.tripta_16_to_30_amount}</span>
+                      </div>
+                      <div className="form_group w-auto">
+                        <label className="text-capitalize fw-bold pe-2">
+                          {`31 to 45 :`}
+                        </label>
+                        <span>{values?.tripta_31_to_45_amount}</span>
+                      </div>
+                      <div className="form_group w-auto">
+                        <label className="text-capitalize fw-bold pe-2">
+                          {`46 to 90 :`}
+                        </label>
+                        <span>{values?.tripta_46_to_90_amount}</span>
+                      </div>
+                      <div className="form_group w-auto">
+                        <label className="text-capitalize fw-bold pe-2">
+                          {`above 90 :`}
+                        </label>
+                        <span>{values?.tripta_above_90_amount}</span>
+                      </div>
+                      <div className="total_amount form_group">
+                        <label className="text-capitalize m-0 pe-2">
+                          {`Total :`}
+                        </label>
+                        <span>{values?.tripta_total_due}</span>
                       </div>
                     </Col>
-                  ) : null}
+                    <div className="mb-2 text-end d-flex flex-column amount_label">
+                      <label className="text-capitalize m-0 fw-bold">
+                        Updated On :
+                      </label>
+                      <span>
+                        {values?.tripta_last_updated_date &&
+                          moment(values?.tripta_last_updated_date).format(
+                            'DD-MM-YYYY',
+                          )}
+                      </span>
+                    </div>
+                  </Col>
                 </Row>
                 <Row>
                   <Col sm={6}>
@@ -1478,6 +1678,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                         }}
                         onBlur={handleBlur}
                         placeholder="Transporter"
+                        itemTemplate={transporterPartyListItemTemplate}
                       />
                       {touched?.transporter && errors?.transporter && (
                         <p className="text-danger">{errors?.transporter}</p>
@@ -1535,7 +1736,82 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                       />
                     </div>
                   </Col>
+                  <Col md={4} sm={6}>
+                    <div className="form_group mb-3">
+                      <label>
+                        Bank <span className="text-danger fs-4">*</span>
+                      </label>
+                      <ReactSelectSingle
+                        filter
+                        value={values?.bank || ''}
+                        options={allActiveBankList}
+                        name="bank"
+                        onChange={e => {
+                          commonUpdateFiledValue('bank', e.value);
+                        }}
+                        onBlur={handleBlur}
+                        placeholder="Bank"
+                      />
+                      {touched?.bank && errors?.bank && (
+                        <p className="text-danger">{errors?.bank}</p>
+                      )}
+                    </div>
+                  </Col>
                 </Row>
+              </Col>
+            </Row>
+            <Row>
+              <Col
+                sm={10}
+                className="d-flex flex-wrap justify-content-lg-between"
+              >
+                <div className="form_group w-auto">
+                  <label className="fw-bold text-capitalize pe-2">
+                    {`Tripta Total Due :`}
+                  </label>
+                  <span>{values?.tripta_total_due}</span>
+                </div>
+                <div className="form_group w-auto mb-2">
+                  <label className="fw-bold text-capitalize pe-2">
+                    {`Tripta Last Updated Date :`}
+                  </label>
+                  <span>
+                    {values?.tripta_last_updated_date &&
+                      moment(values?.tripta_last_updated_date).format(
+                        'DD-MM-YYYY',
+                      )}
+                  </span>
+                </div>
+                <div className="form_group w-auto">
+                  <label className="text-capitalize fw-bold pe-2">
+                    {`0 to 15 :`}
+                  </label>
+                  <span>{values?.tripta_0_to_15_amount}</span>
+                </div>
+                <div className="form_group w-auto">
+                  <label className="text-capitalize fw-bold pe-2">
+                    {`16 to 30 :`}
+                  </label>
+                  <span>{values?.tripta_16_to_30_amount}</span>
+                </div>
+                <div className="form_group w-auto">
+                  <label className="text-capitalize fw-bold pe-2">
+                    {`31 to 45 :`}
+                  </label>
+                  <span>{values?.tripta_31_to_45_amount}</span>
+                </div>
+                <div className="form_group w-auto">
+                  <label className="text-capitalize fw-bold pe-2">
+                    {`46 to 90 :`}
+                  </label>
+                  <span>{values?.tripta_46_to_90_amount}</span>
+                </div>
+                <div className="form_group w-auto">
+                  <label className="text-capitalize fw-bold pe-2">
+                    {`above 90 :`}
+                  </label>
+                  <span>{values?.tripta_above_90_amount}</span>
+                </div>
               </Col>
             </Row>
           </div>
@@ -1669,6 +1945,13 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                   sortable
                 />
                 <Column
+                  field="packaging_charge"
+                  body={packagingTemplate}
+                  header="Packaging Charge"
+                  className="with_input_field"
+                  sortable
+                />
+                <Column
                   field="discount"
                   body={discountTemplate}
                   className="with_input_field"
@@ -1789,8 +2072,10 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                         <div className="form_group">
                           <InputText
                             id="Freight"
+                            type="number"
                             name="freight"
                             placeholder="0"
+                            onFocus={e => handleFieldFocus(e)}
                             disabled={checkViewValidation}
                             value={values?.freight}
                             onChange={e => {
@@ -1832,7 +2117,9 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                               setFieldValue('total_amount', taxable_amount);
                               setFieldValue(
                                 'freight',
-                                convertIntoNumber(e.target.value),
+                                e.target.value
+                                  ? convertIntoNumber(e.target.value)
+                                  : '',
                               );
                               setFieldValue(
                                 'tax_amount',
@@ -1865,7 +2152,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                                   setUpdateSelectedProformaInvoiceData({
                                     ...updateSelectedProformaInvoiceData,
                                     total_amount: taxable_amount,
-                                    freight: Number(e.target.value),
+                                    freight: convertIntoNumber(e.target.value),
                                     tax_amount:
                                       convertIntoNumber(taxAmount) +
                                       taxable_freight_amount,
@@ -1879,7 +2166,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                                   setAddSelectedProformaInvoiceData({
                                     ...addSelectedProformaInvoiceData,
                                     total_amount: taxable_amount,
-                                    freight: Number(e.target.value),
+                                    freight: convertIntoNumber(e.target.value),
                                     tax_amount:
                                       convertIntoNumber(taxAmount) +
                                       taxable_freight_amount,
@@ -1891,6 +2178,26 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                             }}
                           />
                         </div>
+                      </Col>
+                    </Row>
+                  </li>
+                  <li>
+                    <Row className="align-items-center mb-3">
+                      <Col md={4}>
+                        <label
+                          htmlFor="packagingCharge"
+                          className="mb-md-0 mb-1"
+                        >
+                          Packaging Charges
+                        </label>
+                      </Col>
+                      <Col md={8}>
+                        <span>
+                          ₹
+                          {roundValueThousandSeparator(
+                            values?.packaging_charge,
+                          )}
+                        </span>
                       </Col>
                     </Row>
                   </li>
@@ -2060,7 +2367,7 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
             if (proformaId) {
               let newArray = values?.proforma_item?.map(item => {
                 const obj = values?.selected_product?.find(
-                  item2 => item2._id === item.product_id,
+                  item2 => item2.product_id === item.product_id,
                 );
                 if (obj) {
                   return obj;
@@ -2099,7 +2406,10 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                               className="input_wrap small search_wrap"
                               value={searchProduct}
                               onChange={e => {
-                                debounceHandleSearchInput(e);
+                                debounceHandleSearchInput(
+                                  e,
+                                  productDataPageLimit,
+                                );
                                 setSearchProduct(e.target.value);
                               }}
                             />
@@ -2237,23 +2547,24 @@ const ProformaInvoiceDetail = ({ initialValues }) => {
                     values?.proforma_item?.length > 0 &&
                     values?.selected_product?.length > 0
                   ) {
-                    let res = values?.selected_product?.map(item => {
+                    const res = values?.selected_product?.map(item => {
                       const obj = values?.proforma_item?.find(
                         item2 => item2?.product_id === item?.product_id,
                       );
+
                       if (obj) {
                         return obj;
                       }
                       return item;
                     });
-                    // commonUpdateFiledValue('proforma_item', res);
+
                     const changeFieldObj = {
                       proforma_item: res,
                       selected_product: values?.selected_product,
                     };
+
                     handleChangeFieldsdData(changeFieldObj);
                   } else {
-                    // commonUpdateFiledValue('proforma_item', newSelectedList);
                     const changeFieldObj = {
                       proforma_item: values?.selected_product,
                       selected_product: values?.selected_product,

@@ -96,7 +96,7 @@ const mainTableRollWidthTemplate = rowData => {
 const bedgeBodyTemplate = val => {
   return (
     <span className={`bedge_${getSeverity(val)}`}>
-      {val === true ? 'Old' : 'New'}
+      {val === true ? 'OLD' : 'NEW'}
     </span>
   );
 };
@@ -132,8 +132,8 @@ const MFGLiveFlexoFilterDetails = [
 ];
 
 const commonStatusObj = [
-  { label: 'Old', value: true },
-  { label: 'New', value: false },
+  { label: 'OLD', value: true },
+  { label: 'NEW', value: false },
 ];
 
 function MFGLiveHotStamping() {

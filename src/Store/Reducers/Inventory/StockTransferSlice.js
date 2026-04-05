@@ -5,6 +5,8 @@ let initialState = {
   stockTransferExportLoading: false,
   stockTransferList: [],
   stockTransferCount: 0,
+  sortStockTransferField: null,
+  sortStockTransferOrder: null,
 };
 
 const StockTransferSlice = createSlice({
@@ -23,6 +25,12 @@ const StockTransferSlice = createSlice({
     setStockTransferCount: (state, action) => {
       state.stockTransferCount = action.payload;
     },
+    setSortStockTransferField: (state, action) => {
+      state.sortStockTransferField = action.payload;
+    },
+    setSortStockTransferOrder: (state, action) => {
+      state.sortStockTransferOrder = action.payload;
+    },
   },
 });
 
@@ -31,6 +39,8 @@ export const {
   setStockTransferExportLoading,
   setStockTransferList,
   setStockTransferCount,
+  setSortStockTransferField,
+  setSortStockTransferOrder,
 } = StockTransferSlice.actions;
 
 export default StockTransferSlice.reducer;

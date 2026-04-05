@@ -22,6 +22,7 @@ import { toast } from 'react-toastify';
 import Loader from 'Components/Common/Loader';
 import {
   convertIntoNumber,
+  decimalPattern,
   getFormattedDate,
   roundValueThousandSeparator,
 } from 'Helper/Common';
@@ -43,7 +44,12 @@ const addJobSchema = Yup.object().shape({
   qty: Yup.string().required('Qty is required'),
   rate: Yup.string().when('unit_pc', unit_pc => {
     return unit_pc.includes(1)
-      ? Yup.string().required('Rate is required')
+      ? Yup.string()
+          .matches(
+            /^(?!0{1,10}(\.\d{1,2})?$)[1-9]\d{0,7}(\.\d{1,2})?$/,
+            'Rate must have 1 to 8 digits',
+          )
+          .required('Rate is required')
       : Yup.string().notRequired();
   }),
   qty_kg: Yup.string().when('unit_pc', unit_pc => {
@@ -53,7 +59,12 @@ const addJobSchema = Yup.object().shape({
   }),
   rate_kg: Yup.string().when('unit_pc', unit_pc => {
     return unit_pc.includes(0)
-      ? Yup.string().required('Rate is required')
+      ? Yup.string()
+          .matches(
+            /^(?!0{1,10}(\.\d{1,2})?$)[1-9]\d{0,7}(\.\d{1,2})?$/,
+            'Kg Rate must have 1 to 8 digits',
+          )
+          .required('Rate is required')
       : Yup.string().notRequired();
   }),
   // qty: Yup.number().required('Quantity is required'),
@@ -71,9 +82,7 @@ export default function JobDetail({ initialValues }) {
   // const [jobValue, setJobValue] = useState(initialValues);
   const [orderId, setOrderId] = useState('');
 
-  const { allProductList, productLoading } = useSelector(
-    ({ product }) => product,
-  );
+  const { allProductList } = useSelector(({ product }) => product);
   const {
     salesOrderJobCRUDLoading,
     salesJobOrderDetail,
@@ -162,18 +171,18 @@ export default function JobDetail({ initialValues }) {
     async values => {
       let result;
       const due_date = getFormattedDate(values.due_date);
-      // if (values?._id && !values?.isDuplicated) {
-      //   const payload = {
-      //     ...values,
-      //     orderId: values?._id,
-      //   };
-      //   result = await dispatch(updateSalesOrder(payload));
-      // } else {
+
+      const { broker_rate, broker_rate_kg, ...rest } = values;
+
+      const brokerRate =
+        values.broker_unit_pc === 1 ? broker_rate : broker_rate_kg;
+
       if (job_id) {
         const payload = {
-          ...values,
+          ...rest,
+          broker_rate: brokerRate,
           salesOrder_id: values?.sales_order_id,
-          broker_unit_pc: values?.unit_pc,
+          // broker_unit_pc: values?.unit_pc,
           discount: Number(values.discount)?.toFixed(2),
           qty: Number(values.qty),
           kg_qty: Number(values.qty_kg),
@@ -192,6 +201,7 @@ export default function JobDetail({ initialValues }) {
           job_id: values?._id,
           due_date: due_date,
         };
+
         result = await dispatch(updateSalesOrderJob(payload));
         if (result) {
           dispatch(
@@ -204,9 +214,10 @@ export default function JobDetail({ initialValues }) {
         }
       } else {
         const payload = {
-          ...values,
+          ...rest,
           salesOrder_id: order_id,
-          broker_unit_pc: values?.unit_pc,
+          broker_rate: brokerRate,
+          // broker_unit_pc: values?.unit_pc,
           amount:
             values?.unit_pc === 0
               ? Number(values.amount_kg)?.toFixed(2)
@@ -223,6 +234,7 @@ export default function JobDetail({ initialValues }) {
           gst_amount: Number(values.gst_amount)?.toFixed(2),
           gst_percentage: Number(values?.gst_percentage)?.toFixed(2),
         };
+
         result = await dispatch(createSalesOrderJob(payload));
         if (result) {
           dispatch(
@@ -404,7 +416,6 @@ export default function JobDetail({ initialValues }) {
         : 0,
     };
 
-    // Set the feild value in form:
     setFieldValue('qty', e.value);
     setFieldValue('qty_kg', kg_qty ? kg_qty : 0);
     setFieldValue('amount', amount ? convertIntoNumber(amount) : 0);
@@ -420,10 +431,6 @@ export default function JobDetail({ initialValues }) {
       'final_amount',
       calculate_final_amount ? convertIntoNumber(calculate_final_amount) : 0,
     );
-
-    // if (values?.unit_pc === 1) {
-    // }
-    // commonUpdateFieldValue('qty');
 
     if (job_id) {
       dispatch(
@@ -715,9 +722,7 @@ export default function JobDetail({ initialValues }) {
 
   return (
     <div className="main_Wrapper">
-      {(salesOrderJobCRUDLoading ||
-        productLoading ||
-        salesOrderCRUDLoading) && <Loader />}
+      {(salesOrderJobCRUDLoading || salesOrderCRUDLoading) && <Loader />}
       <div className="add_job_wrap">
         <Row>
           <Col lg={4}>
@@ -816,7 +821,7 @@ export default function JobDetail({ initialValues }) {
           <Col lg={8}>
             <div className="add_job_right_wrap border rounded-3 bg_white p-3 mb-3">
               <Row className="mb-3">
-                <Col xs={3}>
+                <Col md={3} sm={3}>
                   <div className="custom_col">
                     <div className="form_group date_select_wrapper">
                       <label htmlFor="deliveryDate">
@@ -845,7 +850,19 @@ export default function JobDetail({ initialValues }) {
                     </div>
                   </div>
                 </Col>
-                <Col xs={9}>
+                <Col md={3} sm={3}>
+                  <div className="form_group mb-3">
+                    <label htmlFor="AdvanceAmount">Advance Amount</label>
+                    <InputText
+                      id="AdvanceAmount"
+                      name="advance_amount"
+                      placeholder="Advance Amount"
+                      value={values?.advance_amount || ''}
+                      disabled
+                    />
+                  </div>
+                </Col>
+                <Col md={5} sm={6}>
                   <div className="form_group custom_radio_wrappper mb-3">
                     <RadioButton
                       inputId="OLDStereo"
@@ -888,12 +905,10 @@ export default function JobDetail({ initialValues }) {
                     name="unit_pc"
                     value={1}
                     onChange={() => {
-                      // setFieldValue('unit_pc', 1);
                       commonUpdateFieldValue('unit_pc', 1);
                       setFieldValue('qty', '');
                       setFieldValue('rate', '');
                       setFieldValue('amount', 0);
-                      setFieldValue('broker_rate_kg', 0);
                       setFieldValue('qty_kg', '');
                       setFieldValue('rate_kg', '');
                       setFieldValue('amount_kg', 0);
@@ -1040,8 +1055,16 @@ export default function JobDetail({ initialValues }) {
                           className="green_input"
                           disabled={state?.isView || values?.unit_pc === 0}
                           value={values?.rate || ''}
+                          keyfilter={decimalPattern}
                           onChange={e => {
-                            handleRatePCS(e);
+                            const inputValue = e.target.value;
+                            const decimalPattern = /^(\d+)?(\.\d{0,2})?$/;
+                            if (
+                              inputValue === '' ||
+                              decimalPattern.test(inputValue)
+                            ) {
+                              handleRatePCS(e);
+                            }
 
                             // let amount =
                             //   Number(values.qty) * Number(e.target.value);
@@ -1113,6 +1136,30 @@ export default function JobDetail({ initialValues }) {
                     </div>
                     <div className="custom_col">
                       <div className="form_group mb-3">
+                        <label htmlFor="BrokerBaseRate">
+                          Brokerage Calculation
+                        </label>
+                        <div className="custom_radio_wrappper d-flex">
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="BrokerQtyPcs"
+                              name="broker_unit_pc"
+                              value={1}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 1);
+                                setFieldValue('broker_rate_kg', 0);
+                              }}
+                              onBlur={handleBlur}
+                              checked={values?.broker_unit_pc === 1}
+                              className="me-2"
+                            />
+                            <label htmlFor="BrokerQtyPcs">PCs</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="custom_col">
+                      <div className="form_group mb-3">
                         <label htmlFor="BrokerBaseRate">Broker Base Rate</label>
                         <InputText
                           id="BrokerBaseRate"
@@ -1120,15 +1167,18 @@ export default function JobDetail({ initialValues }) {
                           type="number"
                           name="broker_rate"
                           value={values?.broker_rate || ''}
-                          disabled={values?.unit_pc === 0 || state?.isView}
-                          // onChange={handleChange}
                           onChange={e => {
-                            commonUpdateFieldValue(
-                              'broker_rate',
-                              e.target.value,
-                            );
+                            if (values?.broker_unit_pc === 1) {
+                              commonUpdateFieldValue(
+                                'broker_rate',
+                                e.target.value,
+                              );
+                            }
                           }}
                           onBlur={handleBlur}
+                          disabled={
+                            values?.broker_unit_pc === 0 || state?.isView
+                          }
                         />
                       </div>
                     </div>
@@ -1152,7 +1202,7 @@ export default function JobDetail({ initialValues }) {
                   </Row>
                 </div>
               </div>
-              <div className="radio_line_wrap">
+              <div className="radio_line_wrap mb-3">
                 <div className="custom_radio_wrappper">
                   <RadioButton
                     inputId="QtyKg"
@@ -1160,12 +1210,10 @@ export default function JobDetail({ initialValues }) {
                     value={0}
                     onChange={() => {
                       setFieldTouched('unit_pc');
-                      // setFieldValue('unit_pc', 0);
                       commonUpdateFieldValue('unit_pc', 0);
                       setFieldValue('qty', '');
                       setFieldValue('rate', '');
                       setFieldValue('amount', 0);
-                      setFieldValue('broker_rate', 0);
                       setFieldValue('qty_kg', '');
                       setFieldValue('rate_kg', '');
                       setFieldValue('amount_kg', 0);
@@ -1233,9 +1281,18 @@ export default function JobDetail({ initialValues }) {
                           name="rate_kg"
                           className="green_input"
                           value={values?.rate_kg || ''}
+                          keyfilter={decimalPattern}
                           disabled={state?.isView || values?.unit_pc === 1}
                           onChange={e => {
-                            handleRateKG(e);
+                            const inputValue = e.target.value;
+                            const decimalPattern = /^(\d+)?(\.\d{0,2})?$/;
+                            if (
+                              inputValue === '' ||
+                              decimalPattern.test(inputValue)
+                            ) {
+                              handleRateKG(e);
+                            }
+
                             // let amountKg =
                             //   Number(values.qty_kg) * Number(e.target.value);
                             // setFieldValue(
@@ -1307,6 +1364,32 @@ export default function JobDetail({ initialValues }) {
                         />
                       </div>
                     </div>
+
+                    <div className="custom_col">
+                      <div className="form_group mb-3">
+                        <label htmlFor="BrokerBaseRate">
+                          Brokerage Calculation
+                        </label>
+                        <div className="custom_radio_wrappper">
+                          <div className="d-flex align-items-center">
+                            <RadioButton
+                              inputId="BrokerQtyKg"
+                              name="broker_unit_pc"
+                              value={0}
+                              onChange={e => {
+                                commonUpdateFieldValue(e.target.name, 0);
+                                setFieldValue('broker_rate', 0);
+                              }}
+                              onBlur={handleBlur}
+                              checked={values?.broker_unit_pc === 0}
+                              className="me-2"
+                            />
+                            <label htmlFor="BrokerQtyKg">KG</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="custom_col">
                       <div className="form_group mb-3">
                         <label htmlFor="BrokerBaseRate">Broker Base Rate</label>
@@ -1316,15 +1399,16 @@ export default function JobDetail({ initialValues }) {
                           type="number"
                           name="broker_rate_kg"
                           value={values?.broker_rate_kg || ''}
-                          // onChange={handleChange}
                           onChange={e => {
-                            commonUpdateFieldValue(
-                              e.target.name,
-                              e.target.value,
-                            );
+                            if (values?.broker_unit_pc === 0) {
+                              commonUpdateFieldValue(
+                                e.target.name,
+                                e.target.value,
+                              );
+                            }
                           }}
                           onBlur={handleBlur}
-                          disabled={values?.unit_pc === 1}
+                          disabled={values?.broker_unit_pc === 1}
                         />
                       </div>
                     </div>

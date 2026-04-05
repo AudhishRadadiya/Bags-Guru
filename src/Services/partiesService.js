@@ -30,6 +30,7 @@ import {
   setPartiesListLoading,
   setCustomerRating,
   setPartiesCategoriesLoading,
+  setTransporterFileLink,
 } from 'Store/Reducers/Parties/parties.slice';
 
 /**
@@ -117,7 +118,7 @@ export const getPartiesAdvisor = () => async dispatch => {
         };
       });
       dispatch(setPartiesAdvisor(updated));
-      return true;
+      return updated;
     } else if (err === 1) {
       toast.error(msg);
       return false;
@@ -236,8 +237,17 @@ export const getPartiesCustomerSourceDetail = () => async dispatch => {
     const response = await axios.get(`/list/active/customerSourceDetail`);
     const { msg, err, data } = response.data;
 
+    const modifiedData =
+      data?.map(item => {
+        return {
+          ...item,
+          label: item?.name,
+          value: item?._id,
+        };
+      }) || [];
+
     if (err === 0) {
-      dispatch(setPartiesCustomerSourceDetail(data));
+      dispatch(setPartiesCustomerSourceDetail(modifiedData));
       return true;
     } else if (err === 1) {
       toast.error(msg);
@@ -967,11 +977,16 @@ export const deleteFilter = parties => async dispatch => {
  * @desc get Transporter Party List
  * @param payload (parties)
  */
-export const getTransporterPartyList = () => async dispatch => {
+export const getTransporterPartyList = payload => async dispatch => {
   try {
     dispatch(setPartiesLoading(true));
+    let url = '/list/transporterParty';
 
-    const response = await axios.get(`/list/transporterParty`);
+    if (payload?.pincode) {
+      url = `/list/transporterParty?pincode=${payload.pincode}`;
+    }
+
+    const response = await axios.get(url);
     const { msg, err, data } = response.data;
 
     if (err === 0) {
@@ -1027,3 +1042,33 @@ export const getAllUserPartyList = () => async dispatch => {
     dispatch(setPartiesLoading(false));
   }
 };
+
+export const uploadTransporterListFile =
+  ({ file }) =>
+  async dispatch => {
+    try {
+      dispatch(setPartiesLoading(true));
+
+      let body = new FormData();
+      body.append('file', file);
+      const headers = { 'Content-Type': 'multipart/form-data' };
+
+      const response = await axios.post(`/upload_file`, body, {
+        headers: headers,
+      });
+      const { data, err, msg } = response.data;
+
+      if (err === 0) {
+        dispatch(setTransporterFileLink(data.file));
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    } catch (e) {
+      roastError();
+      return false;
+    } finally {
+      dispatch(setPartiesLoading(false));
+    }
+  };

@@ -1,3 +1,4 @@
+import { stripHtml } from 'Helper/Common';
 import * as Yup from 'yup';
 
 export const addWarehouseSchema = Yup.object().shape({
@@ -5,6 +6,50 @@ export const addWarehouseSchema = Yup.object().shape({
   code: Yup.string().required('Warehouse code is required'),
   is_active: Yup.boolean().oneOf([true, false], 'Invalid option'),
   is_default: Yup.boolean().oneOf([true, false], 'Invalid option'),
+});
+
+export const advisorTeamSchema = Yup.object().shape({
+  team_name: Yup.string().required('Team Name is required'),
+  manager: Yup.string().required('Manager Name is required'),
+  members: Yup.array()
+    .min(1, 'Please select any one Member')
+    .required('Member is required'),
+  is_active: Yup.boolean().oneOf([true, false], 'Invalid option'),
+});
+
+export const customerRevenueTierSchema = Yup.object().shape({
+  tier_name: Yup.string().required('Tier Name is required'),
+  min_revenue: Yup.number().required('Min Revenue is required'),
+  max_revenue: Yup.number()
+    .required('Max Revenue is required')
+    .test(
+      'max-greater-than-min',
+      'Max Revenue must be greater than Min Revenue',
+      function (value) {
+        const { min_revenue } = this.parent;
+        return Number(value) > Number(min_revenue);
+      },
+    ),
+
+  BackgroundColorCode: Yup.string().required(
+    'Background Color Code is required',
+  ),
+  is_active: Yup.boolean().oneOf([true, false], 'Invalid option'),
+});
+
+export const OKRDetailsSchema = Yup.object().shape({
+  date: Yup.string().required('Date is required'),
+  user_id: Yup.string().required('User is required'),
+  objective: Yup.string()
+    .transform(value => stripHtml(value))
+    .required('Objective is required'),
+  key_results: Yup.string()
+    .transform(value => stripHtml(value))
+    .required('Key Results is required'),
+  source: Yup.string()
+    .transform(value => stripHtml(value))
+    .required('Source is required'),
+  is_active: Yup.boolean().oneOf([true, false], 'Invalid option'),
 });
 
 export const addUnitSchema = Yup.object().shape({
@@ -154,6 +199,8 @@ export const addCustomerSourceSchema = Yup.object().shape({
 
 export const addCustomerSourceDetailSchema = Yup.object().shape({
   name: Yup.string().required('Customer Source Detail Name is required'),
+  budget: Yup.string().notRequired(),
+  advisor: Yup.array().notRequired(),
   is_active: Yup.boolean().oneOf([true, false], 'Invalid option'),
 });
 
@@ -221,4 +268,17 @@ export const addVelcroSchema = Yup.object().shape({
 export const addCustomerRatingSchema = Yup.object().shape({
   star_rating: Yup.string().required('Name is required'),
   percentage: Yup.string().required('Percentage is required'),
+});
+
+export const exhibitionSchema = Yup.object().shape({
+  name: Yup.string().required('Exhibition Name is required'),
+  year: Yup.string().required('Year is required'),
+  budget: Yup.number().required('Budget is required'),
+  leads_acquired: Yup.number().required('Leads Acquired is required'),
+  advisor_id: Yup.array()
+    .min(1, 'Advisor Name is required')
+    .required('Advisor Name is required'),
+  linked_customer_source_detail: Yup.string().required(
+    'Customer Source Detail is required',
+  ),
 });

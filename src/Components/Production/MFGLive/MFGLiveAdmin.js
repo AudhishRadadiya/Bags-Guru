@@ -11,13 +11,13 @@ import { Tag } from 'primereact/tag';
 import copy from 'copy-to-clipboard';
 import { toast } from 'react-toastify';
 import { Image } from 'primereact/image';
-import { Col, Row } from 'react-bootstrap';
+import { Col, OverlayTrigger, Row, Tooltip } from 'react-bootstrap';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Column } from 'primereact/column';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Dropdown } from 'primereact/dropdown';
 import { Checkbox } from 'primereact/checkbox';
 import { Calendar } from 'primereact/calendar';
@@ -26,7 +26,10 @@ import { DataTable } from 'primereact/datatable';
 import { ColumnGroup } from 'primereact/columngroup';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import {
+  convertIntoNumber,
   convertThousandToNumeric,
+  generateUniqueId,
+  getDateWithTime,
   getFormattedDate,
   roundValueThousandSeparator,
   thousandSeparator,
@@ -53,6 +56,7 @@ import {
   viewBagMadeData,
   addBagDetailForBagMade,
   getMfgLivePrintingFilterList,
+  getMfgLivePrintStatusList,
 } from 'Services/Production/mfgLiveServices';
 import {
   getActiveLaminationTypeList,
@@ -63,7 +67,10 @@ import {
   setAssignedRollList,
   setBagToBagData,
   setClearPrintingData,
+  setMfgLiveList,
   setPrintTechnologyList,
+  setSortMFGLiveField,
+  setSortMFGLiveOrder,
   setSuggestedRollList,
   setUpdatedPrintStatus,
   setprintingData,
@@ -93,10 +100,14 @@ import CheckGreen from '../../../Assets/Images/check-round-green.svg';
 import { getProductDetailById } from 'Services/Products/ProductService';
 import ReactSelectSingle from '../../../Components/Common/ReactSelectSingle';
 import { setViewProductDetailData } from 'Store/Reducers/Products/ProductSlice';
+import { InputSwitch } from 'primereact/inputswitch';
+import PrintingDialog from './Dialogs/PrintingDialog';
+import ScreenPrintingBagDialog from './Dialogs/ScreenPrintingBagDialog';
 
 export const getSeverity = val => {
   switch (val) {
     case true:
+    case 1:
       return 'success';
     case false:
       return 'danger';
@@ -187,7 +198,7 @@ const mfgLiveFilterDetails = [
 ];
 
 const mfgLiveFilterDetailsDesigner = [
-  { label: 'OLD STR', value: 'old_str', type: 'dropDown' },
+  { label: 'OLD STR', value: 'old_stereo', type: 'dropDown' },
   { label: 'STR ORD', value: 'str_ord', type: 'dropDown' },
   { label: 'STR RCV', value: 'str_rcv', type: 'dropDown' },
   { label: 'Job Date', value: 'job_date', type: 'inputBox' },
@@ -198,6 +209,7 @@ const mfgLiveFilterDetailsDesigner = [
     value: 'background_design_name',
     type: 'inputBox',
   },
+  { label: 'Roll Width', value: 'roll_width', type: 'inputBox' },
   { label: 'Width', value: 'width', type: 'inputBox' },
   { label: 'Height', value: 'height', type: 'inputBox' },
   { label: 'Gusset', value: 'gusset', type: 'inputBox' },
@@ -213,6 +225,7 @@ const mfgLiveFilterDetailsDesigner = [
   { label: 'Comment', value: 'comment', type: 'inputBox' },
   { label: 'Party Name', value: 'party_name', type: 'inputBox' },
   { label: 'Present Advisor', value: 'present_advisor_name', type: 'inputBox' },
+  { label: 'Designer Name', value: 'designer_name', type: 'inputBox' },
   { label: 'Lamination Type', value: 'lamination_typename', type: 'dropDown' },
   { label: 'Entry By', value: 'created_by_name', type: 'inputBox' },
 ];
@@ -231,19 +244,6 @@ const rollMenuOption = ['YES', 'NO', 'PART'];
 const commonMenuOption = ['YES', 'NO'];
 const strOrdMenuOption = ['YES', 'NO', 'SENT'];
 
-const intialPrintingData = {
-  print_technology_id: '',
-  process_id: '',
-  product_id: '',
-  in_stock: '',
-  qty_used: '',
-  wastage: '',
-  bag_printed: '',
-  suggested_product_id: '',
-  warehouse: '',
-  completed: 0,
-  partial: 1,
-};
 const initialBagMade = {
   order_date: '',
   total: 0,
@@ -327,6 +327,14 @@ export default function MFGLiveAdmin({ hasAccess }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { is_export_access } = hasAccess;
+  const location = useLocation();
+
+  const [fastStatus, setFastStatus] = useState(false);
+  const [snapShort, setSnapShort] = useState(true);
+
+  const handleChange = e => {
+    setFastStatus(e.checked);
+  };
 
   const [bagMadeModal, setBagMadeModal] = useState({
     isView: false,
@@ -405,7 +413,6 @@ export default function MFGLiveAdmin({ hasAccess }) {
   } = useSelector(({ miscMaster }) => miscMaster);
   const { currentUser } = useSelector(({ auth }) => auth);
   const { allFilters, allCommon } = useSelector(({ common }) => common);
-  const { viewProductDetailData } = useSelector(({ product }) => product);
   const { partiesAdvisor, listFilter } = useSelector(({ parties }) => parties);
 
   const {
@@ -448,6 +455,19 @@ export default function MFGLiveAdmin({ hasAccess }) {
         module_name: 'mfg_live',
       }),
     );
+
+    let fieldFilters = { ...field_filter };
+
+    if (
+      location?.state?.redirectFromCustomerDashboard &&
+      location?.state?.party_name
+    ) {
+      fieldFilters = {
+        ...fieldFilters,
+        party_name: [location.state.party_name],
+      };
+    }
+
     await dispatch(
       getmfgLiveList(
         pageLimit,
@@ -455,7 +475,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
         searchQuery,
         applied,
         dates,
-        field_filter,
+        fieldFilters,
       ),
     );
     dispatch(getFactoryLocationList());
@@ -471,11 +491,69 @@ export default function MFGLiveAdmin({ hasAccess }) {
     field_filter,
     pageLimit,
     searchQuery,
+    location,
   ]);
 
   useEffect(() => {
     loadRequiredData();
   }, []);
+
+  useEffect(() => {
+    if (mfgLiveFilterList?.partyList?.length > 0) {
+      // This function is call when redirect from Customer-Dashboard
+      if (
+        location?.state?.redirectFromCustomerDashboard &&
+        location?.state?.party_name
+      ) {
+        dispatch(
+          setAllCommon({
+            ...allCommon,
+            mfgLive: {
+              ...allCommon?.mfgLive,
+              field_filter: {
+                ...allCommon?.mfgLive?.field_filter,
+                party_name: [location.state.party_name],
+              },
+            },
+          }),
+        );
+      }
+    }
+  }, [dispatch, mfgLiveFilterList, location]);
+
+  const calculatedAvgWeightBag = (list, key) => {
+    const sum = totalCount(list, key);
+
+    const count = list?.filter(
+      item =>
+        Object.prototype.hasOwnProperty.call(item, key) &&
+        !isNaN(Number(item.avg_bag_weight)),
+    ).length;
+
+    return count > 0 ? sum / count : 0;
+  };
+
+  const calculateBatch = useMemo(() => {
+    const initial = {
+      calculateBagMade: 0,
+      calculateBundleNo: 0,
+      calculateGrossWeightBags: 0,
+      calculateNetWeightBags: 0,
+      calculateAverageWeightPerBag: 0,
+    };
+
+    const result = batchEntryList.reduce((acc, curr) => {
+      acc.calculateBagMade += Number(curr.bag_made) || 0;
+      acc.calculateBundleNo += Number(curr.total_bundle) || 0;
+      acc.calculateGrossWeightBags += Number(curr.gross_weight_bag) || 0;
+      acc.calculateNetWeightBags += Number(curr.net_weight_bag) || 0;
+      acc.calculateAverageWeightPerBag += Number(curr.avg_bag_weight) || 0;
+
+      return acc;
+    }, initial);
+
+    return result;
+  }, [batchEntryList]);
 
   useEffect(() => {
     if (Object.entries(bagMadeData)?.length > 0) {
@@ -499,18 +577,29 @@ export default function MFGLiveAdmin({ hasAccess }) {
         });
         let totalBag = totalCount(list, 'bag_made');
         let totalNetWtBAG = totalCount(list, 'net_weight_bag');
-        let AvgWtPerBag = totalCount(list, 'avg_bag_weight');
-        let theoriticalRate = (bagMadeData?.per_pc * AvgWtPerBag) / 1000;
+        // let AvgWtPerBag = totalCount(list, 'avg_bag_weight');
+        // const AvgWtPerBag = calculatedAvgWeightBag(list, 'avg_bag_weight');
+
+        // let theoriticalRate = (bagMadeData?.per_pc * AvgWtPerBag) / 1000;
+        // let theoreticalRate = (1000 / AvgWtPerBag) * bagMadeData?.per_pc;
+        // let calculatedActualRate = (1000 / AvgWtPerBag) * bagMadeData?.per_pc;
+
         let handleWeight =
           bagMadeData?.bag_made_data?.is_handle_weight_auto === true
             ? bagMadeData?.bag_made_data?.auto_handle_weight
             : bagMadeData?.bag_made_data?.act_handle_weight;
         let totalHandleWeight = (Number(totalBag) * handleWeight) / 1000;
         let netWtOfBag = Number(totalNetWtBAG) - totalHandleWeight;
-        let wastage = bagMadeData?.total_fabric - netWtOfBag;
-        let wastagePer = (wastage / bagMadeData?.total_fabric) * 100;
-        let wastageRate =
-          (bagMadeData?.roll_rate * Number(wastage)) / bagMadeData?.roll_weight;
+        let wastage = bagMadeData?.total_fabric
+          ? bagMadeData?.total_fabric - netWtOfBag
+          : 0;
+        let wastagePer = bagMadeData?.total_fabric
+          ? (wastage / bagMadeData?.total_fabric) * 100
+          : 0;
+        let wastageRate = bagMadeData?.total_fabric
+          ? (bagMadeData?.roll_rate * Number(wastage)) /
+            bagMadeData?.roll_weight
+          : 0;
         let costPrice =
           bagMadeData?.conversion_rate +
           Number(wastageRate) +
@@ -528,16 +617,18 @@ export default function MFGLiveAdmin({ hasAccess }) {
             completed: bagMadeData?.bag_made_data?.completed === true ? 1 : 0,
           }),
           order_date: bagMadeData?.order_date ? bagMadeData?.order_date : '',
+          // theoretical_kg_rate
+          //   bagMadeData?.unit_pc === true
+          //     ? parseFloat(Number(theoreticalRate).toFixed(2))
+          //     : bagMadeData?.theoritical_per_kg,
           theoretical_kg_rate:
-            bagMadeData?.unit_pc === true
-              ? parseFloat(Number(theoriticalRate).toFixed(2))
-              : bagMadeData?.theoritical_per_kg,
+            bagMadeData.bag_made_data.theoretical_kg_rate ?? 0,
           per_pc: bagMadeData?.per_pc ? bagMadeData?.per_pc : 0,
           conversion_rate: bagMadeData?.conversion_rate
             ? bagMadeData?.conversion_rate
             : 0,
-
-          act_kg_rate: bagMadeData?.per_kg ? bagMadeData?.per_kg : 0,
+          act_kg_rate: bagMadeData.bag_made_data?.act_kg_rate ?? 0,
+          // act_kg_rate: bagMadeData?.per_kg ? bagMadeData?.per_kg : 0,
           bag_weight: bagMadeData?.bag_weight ? bagMadeData?.bag_weight : 0,
           expected: bagMadeData?.expected ? bagMadeData?.expected : 0,
           stereo_charge: bagMadeData?.stereo_charge
@@ -557,6 +648,9 @@ export default function MFGLiveAdmin({ hasAccess }) {
             ? bagMadeData?.bag_made_data?.additional_mfg_cost
             : bagMadeData?.additional_mfg_cost
             ? bagMadeData?.additional_mfg_cost
+            : 0,
+          act_handle_weight: bagMadeData?.bag_made_data?.act_handle_weight
+            ? bagMadeData?.bag_made_data?.act_handle_weight
             : 0,
           auto_handle_weight: bagMadeData?.bag_made_data?.auto_handle_weight
             ? bagMadeData?.bag_made_data?.auto_handle_weight
@@ -593,7 +687,8 @@ export default function MFGLiveAdmin({ hasAccess }) {
             ? bagMadeData?.conversion_rate
             : 0,
 
-          act_kg_rate: bagMadeData?.per_kg ? bagMadeData?.per_kg : 0,
+          // act_kg_rate: bagMadeData?.per_kg ? bagMadeData?.per_kg : 0,
+          act_kg_rate: 0,
           bag_weight: bagMadeData?.bag_weight ? bagMadeData?.bag_weight : 0,
           expected: bagMadeData?.expected ? bagMadeData?.expected : 0,
           stereo_charge: bagMadeData?.stereo_charge
@@ -614,6 +709,9 @@ export default function MFGLiveAdmin({ hasAccess }) {
             : bagMadeData?.additional_mfg_cost
             ? bagMadeData?.additional_mfg_cost
             : 0,
+          act_handle_weight: bagMadeData?.bag_made_data?.act_handle_weight
+            ? bagMadeData?.bag_made_data?.act_handle_weight
+            : 0,
           auto_handle_weight: bagMadeData?.bag_made_data?.auto_handle_weight
             ? bagMadeData?.bag_made_data?.auto_handle_weight
             : bagMadeData?.auto_handle_weight
@@ -623,6 +721,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
             ?.is_handle_weight_auto
             ? bagMadeData?.bag_made_data?.is_handle_weight_auto
             : 1,
+          unit_pc: bagMadeData?.unit_pc ? bagMadeData?.unit_pc : 0,
           wastage: 0,
           wastage_percentage: 0,
           profit: 0,
@@ -633,10 +732,15 @@ export default function MFGLiveAdmin({ hasAccess }) {
 
   useEffect(() => {
     if (batchEntryList?.length > 0) {
-      const lastObj = batchEntryList[batchEntryList.length - 1];
+      // const lastObj = batchEntryList[batchEntryList.length - 1];
 
-      let endDate = lastObj['batch_date']
-        ? moment(lastObj['batch_date']).valueOf()
+      const minBatchData = _.minBy(
+        batchEntryList,
+        item => new Date(item?.batch_date),
+      );
+
+      let endDate = minBatchData['batch_date']
+        ? moment(minBatchData['batch_date']).valueOf()
         : null;
       let startDate = bagMadeAllData?.order_date
         ? moment(bagMadeAllData?.order_date, 'DD-MM-YYYY').valueOf()
@@ -790,16 +894,17 @@ export default function MFGLiveAdmin({ hasAccess }) {
 
   useEffect(() => {
     if (updatedPrintStatus?.length > 0) {
-      let obj = {};
-      updatedPrintStatus?.map((d, i) => {
-        obj = {
-          ...obj,
-          [`value_${i}_${i + 1}`]: {
-            ...d,
-          },
-        };
-      });
-      dispatch(setPrintTechnologyList([obj]));
+      // let obj = {};
+      // updatedPrintStatus?.map((d, i) => {
+      //   obj = {
+      //     ...obj,
+      //     [`value_${i}_${i + 1}`]: {
+      //       ...d,
+      //     },
+      //   };
+      // });
+
+      dispatch(setPrintTechnologyList(updatedPrintStatus));
       dispatch(setUpdatedPrintStatus([]));
 
       dispatch(
@@ -872,7 +977,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
   const footerGroup = (
     <ColumnGroup>
       <Row>
-        <Column footer="Total" colSpan={16} />
+        <Column footer="Total" colSpan={17} />
         {/* QTY PCS */}
         <Column
           style={{ textAlign: 'end' }}
@@ -880,7 +985,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
             mfgLiveTotalQty ? roundValueThousandSeparator(mfgLiveTotalQty) : ''
           }
         />
-        <Column footer="" colSpan={5} />
+        <Column footer="" colSpan={7} />
         {/* QTY KGS */}
         <Column
           style={{ textAlign: 'end' }}
@@ -901,6 +1006,63 @@ export default function MFGLiveAdmin({ hasAccess }) {
           }
         />
         <Column footer="" colSpan={19} />
+      </Row>
+    </ColumnGroup>
+  );
+
+  const batchEntryFooterGroup = (
+    <ColumnGroup>
+      <Row>
+        <Column footer="Total:" />
+
+        <Column footer="" colSpan={1} />
+
+        {/* BAG MADE */}
+        <Column
+          footer={
+            calculateBatch.calculateBagMade
+              ? calculateBatch.calculateBagMade
+              : ''
+          }
+        />
+
+        {/* NO. BUNDLE */}
+        <Column
+          footer={
+            calculateBatch.calculateBundleNo
+              ? calculateBatch?.calculateBundleNo
+              : ''
+          }
+        />
+
+        <Column footer="" colSpan={1} />
+
+        {/* GROSS WEIGHT BAGS */}
+        <Column
+          footer={
+            calculateBatch.calculateGrossWeightBags
+              ? calculateBatch.calculateGrossWeightBags
+              : ''
+          }
+        />
+
+        {/* NET WEIGHT BAGS */}
+        <Column
+          footer={
+            calculateBatch.calculateNetWeightBags
+              ? calculateBatch.calculateNetWeightBags
+              : ''
+          }
+        />
+
+        {/* AVERAGE WEIGHT PER BAG */}
+        <Column
+          footer={
+            calculateBatch.calculateAverageWeightPerBag
+              ? `${calculateBatch.calculateAverageWeightPerBag} (AVG)`
+              : ''
+          }
+        />
       </Row>
     </ColumnGroup>
   );
@@ -1081,12 +1243,12 @@ export default function MFGLiveAdmin({ hasAccess }) {
     );
   };
 
-  const printBedgeBodyTemplate = (val, val_str, id, data) => {
+  const printBedgeBodyTemplate = (val, val_str, id) => {
     return (
       <button
         className={`bedge_${getSeverity(val)}`}
         onClick={e => {
-          onClickOnPrint(data, id);
+          onClickOnPrint(id);
         }}
       >
         {val_str}
@@ -1137,10 +1299,10 @@ export default function MFGLiveAdmin({ hasAccess }) {
     return <span> {rowItem?.cylinder ? `${rowItem?.cylinder}”` : ''} </span>;
   };
 
-  const handleCheckboxTemplate = data => {
-    // setAssignedRoll(data.value);
-    setCheckedAssignedRoll(data);
-  };
+  // const handleCheckboxTemplate = data => {
+  //   // setAssignedRoll(data.value);
+  //   setCheckedAssignedRoll(data);
+  // };
 
   const bagMadeBodyTemplate = (val, val_str, id) => {
     return (
@@ -1221,7 +1383,8 @@ export default function MFGLiveAdmin({ hasAccess }) {
       }
     }, 0);
 
-    return total?.toFixed(2);
+    return convertIntoNumber(total);
+    // return total?.toFixed(2);
   };
 
   const handleWeightChange = (isHandleAutoVal, autoValue, actualValue) => {
@@ -1293,7 +1456,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
       present_advisor: partiesAdvisor,
       roll_available: rollOption,
       hndl: commonOption,
-      old_str: commonOption,
+      old_stereo: commonOption,
       str_ord: strOrdOption,
       str_rcv: commonOption,
       print: commonOption,
@@ -1349,11 +1512,14 @@ export default function MFGLiveAdmin({ hasAccess }) {
     }
     if (key === 'gross_weight_bag') {
       netWeightBag =
-        e -
+        Number(e) -
         Number(list[index]['total_bundle']) *
           Number(list[index]['empty_bundle_weight']);
-      averageWtPerBag = netWeightBag / Number(list[index]['bag_made']);
+
+      averageWtPerBag = netWeightBag / (Number(list[index]['bag_made']) || 1);
+
       let gramAvgPerBag = averageWtPerBag * 1000;
+
       list[index]['net_weight_bag'] = netWeightBag
         ? netWeightBag?.toFixed(2)
         : 0;
@@ -1384,19 +1550,30 @@ export default function MFGLiveAdmin({ hasAccess }) {
     }
     let totalBag = totalCount(list, 'bag_made');
     let totalNetWtBAG = totalCount(list, 'net_weight_bag');
-    let AvgWtPerBag = totalCount(list, 'avg_bag_weight');
-    let theoriticalRate = (bagMadeData?.per_pc * AvgWtPerBag) / 1000;
+    const AvgWtPerBag = calculatedAvgWeightBag(list, 'avg_bag_weight');
+    // let theoriticalRate = (bagMadeData?.per_pc * AvgWtPerBag) / 1000;
+    // let theoriticalRate = AvgWtPerBag
+    //   ? (1000 / AvgWtPerBag) * bagMadeData?.per_pc
+    //   : 0;
+    const calculatedActualKGRate = AvgWtPerBag
+      ? (1000 / AvgWtPerBag) * bagMadeData?.per_pc
+      : 0;
     let handleWeight =
       isHandleAuto === 1
         ? bagMadeAllData?.auto_handle_weight
         : bagMadeAllData?.act_handle_weight;
     let totalHandleWeight = (Number(totalBag) * handleWeight) / 1000;
     let netWtOfBag = Number(totalNetWtBAG) - totalHandleWeight;
-    let wastage = bagMadeAllData?.total_fabric - netWtOfBag;
-    let wastagePer = (wastage / bagMadeAllData?.total_fabric) * 100;
-    let wastageRate =
-      (bagMadeAllData?.roll_rate * Number(wastage)) /
-      bagMadeAllData?.roll_weight;
+    let wastage = bagMadeAllData?.total_fabric
+      ? bagMadeAllData?.total_fabric - netWtOfBag
+      : 0;
+    let wastagePer = bagMadeAllData?.total_fabric
+      ? (wastage / bagMadeAllData?.total_fabric) * 100
+      : 0;
+    let wastageRate = bagMadeAllData?.total_fabric
+      ? (bagMadeAllData?.roll_rate * Number(wastage)) /
+        bagMadeAllData?.roll_weight
+      : 0;
     let costPrice =
       bagMadeAllData?.conversion_rate +
       Number(wastageRate) +
@@ -1406,6 +1583,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
 
     // Nett weight = Gross weight - (No. Of bundles* wt of empty bundle)
     // Avg wt per bag = Nett weight / total number of bags
+
     setBatchEntryList(list);
     setBagMadeAllData({
       ...bagMadeAllData,
@@ -1414,9 +1592,13 @@ export default function MFGLiveAdmin({ hasAccess }) {
       wastage: parseFloat(Number(wastage).toFixed(2)),
       wastage_percentage: infinityToZero(wastagePer),
       profit: infinityToZero(profit),
-      theoriticalRate:
+      // theoretical_kg_rate:
+      //   bagMadeAllData?.unit_pc === true
+      //     ? parseFloat(Number(theoriticalRate).toFixed(2))
+      //     : 0,
+      act_kg_rate:
         bagMadeAllData?.unit_pc === true
-          ? parseFloat(Number(theoriticalRate).toFixed(2))
+          ? parseFloat(Number(calculatedActualKGRate).toFixed(2))
           : 0,
     });
   };
@@ -1456,7 +1638,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
 
   const applyFilterHandler = useCallback(() => {
     let filterArray = [];
-    const filter_fields = [
+    const filterTextfields = [
       'days',
       'amount',
       'width',
@@ -1479,7 +1661,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
     ];
 
     filters?.forEach(item => {
-      if (String(item.value) !== '0') {
+      if (Array.isArray(item?.value) || String(item.value) !== '0') {
         filterArray.push(item);
       }
     });
@@ -1490,12 +1672,13 @@ export default function MFGLiveAdmin({ hasAccess }) {
         filterObj = {
           ...filterObj,
           ...{
-            [item.filter]: filter_fields.includes(item?.filter)
+            [item.filter]: filterTextfields.includes(item?.filter)
               ? Number(item.value)
               : item.value,
           },
         };
       });
+
       dispatch(
         setAllFilters({
           ...allFilters,
@@ -1655,7 +1838,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
         );
         const checkDropDownList = [
           'hndl',
-          'old_str',
+          'old_stereo',
           'str_rcv',
           'print',
           'bag_made',
@@ -1820,6 +2003,14 @@ export default function MFGLiveAdmin({ hasAccess }) {
         let profit = sellingPrice - Number(costPrice) / sellingPrice;
         // Nett weight = Gross weight - (No. Of bundles* wt of empty bundle)
         // Avg wt per bag = Nett weight / total number of bags
+
+        const AvgWtPerBag = calculatedAvgWeightBag(list, 'avg_bag_weight');
+
+        const calculatedActualRate =
+          Number(AvgWtPerBag) > 0
+            ? (1000 / AvgWtPerBag) * bagMadeData?.per_pc
+            : 0;
+
         setBatchEntryList(list);
         setBagMadeAllData({
           ...bagMadeAllData,
@@ -1828,6 +2019,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
           wastage: parseFloat(Number(wastage).toFixed(2)),
           wastage_percentage: infinityToZero(wastagePer),
           profit: infinityToZero(profit),
+          act_kg_rate: parseFloat(Number(calculatedActualRate).toFixed(2)),
         });
       }
     },
@@ -1946,118 +2138,102 @@ export default function MFGLiveAdmin({ hasAccess }) {
     );
   };
 
+  const handleMfgTableData = useCallback(
+    (name, value, stringName, stringValue, id) => {
+      if (!mfgLiveList?.length) return;
+
+      const updatedMfgLiveList = mfgLiveList.map(item =>
+        item._id === id
+          ? {
+              ...item,
+              [name]: value,
+              [stringName]: stringValue,
+            }
+          : item,
+      );
+
+      setMfgData(updatedMfgLiveList);
+      dispatch(setMfgLiveList(updatedMfgLiveList));
+    },
+    [dispatch, mfgLiveList],
+  );
+
   const handleBodyChange = useCallback(
     async (val, val_str, name, id) => {
-      if (name === 'str_ord') {
-        let payload = {
-          process_id: id,
-          status: StrOrdCase(val),
-        };
-        let res = await dispatch(updateStrOrderStatus(payload));
-        if (res) {
-          dispatch(
-            getmfgLiveList(
-              pageLimit,
-              currentPage,
-              searchQuery,
-              applied,
-              dates,
-              field_filter,
-            ),
-          );
-        }
-      }
-      if (name === 'str_rcv') {
-        let payload = {
-          process_id: id,
-          status: commonCase(val),
-        };
-        let res = await dispatch(updateStrReceiveStatus(payload));
-        if (res) {
-          dispatch(
-            getmfgLiveList(
-              pageLimit,
-              currentPage,
-              searchQuery,
-              applied,
-              dates,
-              field_filter,
-            ),
-          );
-        }
-      }
-      if (name === 'hndl') {
-        let payload = {
-          process_id: id,
-          status: commonCase(val),
-        };
-        let res = await dispatch(updateHandleStatus(payload));
-        if (res) {
-          dispatch(
-            getmfgLiveList(
-              pageLimit,
-              currentPage,
-              searchQuery,
-              applied,
-              dates,
-              field_filter,
-            ),
-          );
-        }
-      }
+      const createPayloadAndDispatch = (status, statusString, apiCall) => {
+        handleMfgTableData(name, status, `${name}_str`, statusString, id);
 
-      if (name === 'bag_sent') {
-        let payload = {
+        const payload = {
           process_id: id,
           status: commonCase(val),
         };
-        let res = await dispatch(updateBagSentStatus(payload));
-        if (res) {
-          dispatch(
-            getmfgLiveList(
-              pageLimit,
-              currentPage,
-              searchQuery,
-              applied,
-              dates,
-              field_filter,
-            ),
+
+        dispatch(apiCall(payload));
+      };
+
+      switch (name) {
+        case 'str_ord': {
+          const updatedStrOrdValue = StrOrdCase(val);
+          const updatedStrOrdString =
+            val === 2 ? 'YES' : val === 1 ? 'NO' : 'SENT';
+
+          handleMfgTableData(
+            name,
+            updatedStrOrdValue,
+            'str_ord_str',
+            updatedStrOrdString,
+            id,
           );
+
+          const payload = {
+            process_id: id,
+            status: updatedStrOrdValue,
+          };
+
+          dispatch(updateStrOrderStatus(payload));
+          break;
         }
-      }
-      if (name === 'lr_sent') {
-        let payload = {
-          process_id: id,
-          status: commonCase(val),
-        };
-        let res = await dispatch(updateLrSentStatus(payload));
-        if (res) {
-          dispatch(
-            getmfgLiveList(
-              pageLimit,
-              currentPage,
-              searchQuery,
-              applied,
-              dates,
-              field_filter,
-            ),
+        case 'str_rcv':
+          createPayloadAndDispatch(
+            !val,
+            val ? 'NO' : 'YES',
+            updateStrReceiveStatus,
           );
-        }
+          break;
+
+        case 'hndl':
+          createPayloadAndDispatch(
+            !val,
+            val ? 'NO' : 'YES',
+            updateHandleStatus,
+          );
+          break;
+
+        case 'bag_sent':
+          createPayloadAndDispatch(
+            !val,
+            val ? 'NO' : 'YES',
+            updateBagSentStatus,
+          );
+          break;
+
+        case 'lr_sent':
+          createPayloadAndDispatch(
+            !val,
+            val ? 'NO' : 'YES',
+            updateLrSentStatus,
+          );
+          break;
+
+        default:
+          break;
       }
     },
-    [
-      applied,
-      searchQuery,
-      currentPage,
-      pageLimit,
-      dates,
-      field_filter,
-      dispatch,
-    ],
+    [dispatch, handleMfgTableData],
   );
 
   const bedgeBodyTemplate = useCallback(
-    (val, val_str, name, id) => {
+    (val, val_str, name, id, updaterName = '', updaterAt) => {
       if (name === 'roll') {
         return (
           <span
@@ -2071,16 +2247,26 @@ export default function MFGLiveAdmin({ hasAccess }) {
         );
       } else if (name === 'str_ord') {
         return (
-          <button
-            className={`bedge_${getNewSeverity(val)}`}
-            onClick={e => {
-              handleBodyChange(val, val_str, name, id);
-            }}
+          <OverlayTrigger
+            overlay={props => (
+              <Tooltip className={!updaterName && 'empty_tooltip'} {...props}>
+                {updaterName}
+                <div>{getDateWithTime(updaterAt)}</div>
+              </Tooltip>
+            )}
+            placement="bottom"
           >
-            {val_str}
-          </button>
+            <button
+              className={`bedge_${getNewSeverity(val)}`}
+              onClick={e => {
+                handleBodyChange(val, val_str, name, id);
+              }}
+            >
+              {val_str}
+            </button>
+          </OverlayTrigger>
         );
-      } else if (name === 'old_str') {
+      } else if (name === 'old_stereo') {
         return (
           <span
             className={`bedge_${getSeverity(val)}`}
@@ -2093,14 +2279,24 @@ export default function MFGLiveAdmin({ hasAccess }) {
         );
       } else {
         return (
-          <button
-            className={`bedge_${getSeverity(val)}`}
-            onClick={e => {
-              handleBodyChange(val, val_str, name, id);
-            }}
+          <OverlayTrigger
+            overlay={props => (
+              <Tooltip className={!updaterName && 'empty_tooltip'} {...props}>
+                <div>{updaterName}</div>
+                <div>{getDateWithTime(updaterAt)}</div>
+              </Tooltip>
+            )}
+            placement="bottom"
           >
-            {val_str}
-          </button>
+            <button
+              className={`bedge_${getSeverity(val)}`}
+              onClick={e => {
+                handleBodyChange(val, val_str, name, id);
+              }}
+            >
+              {val_str}
+            </button>
+          </OverlayTrigger>
         );
       }
     },
@@ -2109,9 +2305,18 @@ export default function MFGLiveAdmin({ hasAccess }) {
 
   const PrintDetailTemplate = useCallback(
     (e, i) => {
-      let status = Object.values(e)?.[i]?.status || false;
-      let title = Object.values(e)?.[i]?.title || '';
-      let id = Object.values(e)?.[i]?._id || '';
+      const {
+        status = false,
+        title = '',
+        updated_by_name,
+        updated_at = '',
+      } = e;
+      const id = e?._id || '';
+
+      // let status = Object.values(e)?.[i]?.status || false;
+      // let title = Object.values(e)?.[i]?.title || '';
+      // let id = Object.values(e)?.[i]?._id || '';
+
       const commonRotoPrintTechnology = [
         'flexo print',
         'screen print (r 2 r)',
@@ -2125,189 +2330,224 @@ export default function MFGLiveAdmin({ hasAccess }) {
       ];
 
       return (
-        <button
-          className={`bedge_${getSeverity(status === 1 ? true : false)}`}
-          onClick={async e => {
-            setCheckedAssignedRoll([]);
-            setAssignedRoll([]);
-            dispatch(setAssignedRollList([]));
-            setChangeRollDate(new Date());
-            const data = mfgData?.filter(d => d?._id === newTableModal?.id);
-            setJobId(data[0]);
-            setPrintTechnologyId(id);
-            if (
-              // title === 'FLEXO PRINT' ||
-              // title === 'SCREEN PRINT (R 2 R)' ||
-              // title === 'ROTO GRAVURE' ||
-              // title === 'PLAIN PRINT' ||
-              commonRotoPrintTechnology.includes(title?.toLowerCase())
-            ) {
-              setPrintingTableModal(true);
-              if (data?.length > 0) {
-                dispatch(getProductDetailById(data[0]?.product_id));
-
-                const printing_res = await dispatch(
-                  viewMfgProcessPrintingById(id, data[0]?._id),
-                );
-
-                dispatch(
-                  setprintingData({
-                    ...printingData,
-                    print_technology_id: id,
-                    process_id: data[0]?._id,
-                    product_id: data[0]?.product_id,
-                    pending_bag: printing_res.hasOwnProperty('pending_bag')
-                      ? printing_res?.pending_bag
-                      : data[0]?.quantity,
-                    ...(printing_res?.hasOwnProperty('completed') && {
-                      completed: printing_res?.completed === true ? 1 : 0,
-                    }),
-                    ...(printing_res?.hasOwnProperty('partial') && {
-                      partial: printing_res?.partial === true ? 1 : 0,
-                    }),
-                  }),
-                );
-
-                const hasNotEmptyArray = Object.values(print_field_filter).some(
-                  property => {
-                    return property.length > 0;
-                  },
-                );
-
-                await dispatch(
-                  getSuggestedRollList(
-                    data[0]?.job_id,
-                    id,
-                    ...(hasNotEmptyArray ? [print_field_filter] : []),
-                    // print_field_filter,
-                    // checkPrintFilterValues,
-                  ),
-                );
-
-                // if (
-                //   response?.roll_printed?.length > 0 ||
-                //   (res?.data?.length === 0 &&
-                //     response?.roll_printed?.length > 0)
-                // ) {
-                //   dispatch(
-                //     getSuggestedRollList(
-                //       data[0]?.job_id,
-                //       id,
-                //       // print_field_filter,
-                //       // checkPrintFilterValues,
-                //     ),
-                //   );
-                // }
-              }
-            }
-            if (commonBtoBPrintTechnology.includes(title?.toLowerCase())) {
-              setScreenTableModal(true);
-              if (data?.length > 0) {
-                const printing_res = await dispatch(
-                  viewMfgProcessPrintingById(id, data[0]?._id),
-                );
-
-                dispatch(
-                  setBagToBagData({
-                    ...bagToBagData,
-                    print_technology_id: id,
-                    product_id: data[0]?.product_id,
-                    process_id: data[0]?._id,
-                    // pending_bag: data[0]?.pending_bag,
-                    pending_bag: printing_res.hasOwnProperty('pending_bag')
-                      ? printing_res?.pending_bag
-                      : data[0]?.quantity,
-                    ...(printing_res?.hasOwnProperty('partial') && {
-                      partial: printing_res?.partial === true ? 1 : 0,
-                    }),
-                    ...(printing_res?.hasOwnProperty('completed') && {
-                      completed: printing_res?.completed === true ? 1 : 0,
-                    }),
-                  }),
-                );
-
-                dispatch(getSuggestedProductList(data[0]?.product_id));
-                dispatch(getProductDetailById(data[0]?.product_id));
-              }
-            }
-            // if (title === 'ROTO GRAVURE') {
-            //   let newObj = {
-            //     print_technology_id: id,
-            //     process_id: data[0]?._id,
-            //     status: status === 0 || status === false ? 1 : 0,
-            //   };
-            //   let res = await dispatch(updatePrintStatus(newObj));
-            // }
-          }}
+        <OverlayTrigger
+          overlay={props => (
+            <Tooltip className={!updated_by_name && 'empty_tooltip'} {...props}>
+              {updated_by_name}
+              <div>{getDateWithTime(updated_at)}</div>
+            </Tooltip>
+          )}
+          placement="bottom"
         >
-          {status === 1 ? 'YES' : 'NO'}
-        </button>
+          <button
+            className={`bedge_${getSeverity(status === 1 ? true : false)}`}
+            onClick={async e => {
+              setCheckedAssignedRoll([]);
+              setAssignedRoll([]);
+              dispatch(setAssignedRollList([]));
+              setChangeRollDate(new Date());
+              const data = mfgData?.filter(d => d?._id === newTableModal?.id);
+              setJobId(data[0]);
+              setPrintTechnologyId(id);
+              if (
+                // title === 'FLEXO PRINT' ||
+                // title === 'SCREEN PRINT (R 2 R)' ||
+                // title === 'ROTO GRAVURE' ||
+                // title === 'PLAIN PRINT' ||
+                commonRotoPrintTechnology.includes(title?.toLowerCase())
+              ) {
+                setPrintingTableModal(true);
+                if (data?.length > 0) {
+                  dispatch(getProductDetailById(data[0]?.product_id));
+
+                  const printing_res = await dispatch(
+                    viewMfgProcessPrintingById(id, data[0]?._id),
+                  );
+
+                  dispatch(
+                    setprintingData({
+                      ...printingData,
+                      print_technology_id: id,
+                      process_id: data[0]?._id,
+                      product_id: data[0]?.product_id,
+                      total_used_rolls: printing_res?.total_used_rolls || 0,
+                      pending_bag: printing_res.hasOwnProperty('pending_bag')
+                        ? printing_res?.pending_bag
+                        : data[0]?.quantity,
+                      ...(printing_res?.hasOwnProperty('completed') && {
+                        completed: printing_res?.completed === true ? 1 : 0,
+                      }),
+                      ...(printing_res?.hasOwnProperty('partial') && {
+                        partial: printing_res?.partial === true ? 1 : 0,
+                      }),
+                    }),
+                  );
+
+                  const hasNotEmptyArray = Object.values(
+                    print_field_filter,
+                  ).some(property => {
+                    return property.length > 0;
+                  });
+
+                  await dispatch(
+                    getSuggestedRollList(
+                      data[0]?.job_id,
+                      id,
+                      ...(hasNotEmptyArray ? [print_field_filter] : []),
+                      // print_field_filter,
+                      // checkPrintFilterValues,
+                    ),
+                  );
+
+                  // if (
+                  //   response?.roll_printed?.length > 0 ||
+                  //   (res?.data?.length === 0 &&
+                  //     response?.roll_printed?.length > 0)
+                  // ) {
+                  //   dispatch(
+                  //     getSuggestedRollList(
+                  //       data[0]?.job_id,
+                  //       id,
+                  //       // print_field_filter,
+                  //       // checkPrintFilterValues,
+                  //     ),
+                  //   );
+                  // }
+                }
+              }
+              if (commonBtoBPrintTechnology.includes(title?.toLowerCase())) {
+                setScreenTableModal(true);
+                if (data?.length > 0) {
+                  const printing_res = await dispatch(
+                    viewMfgProcessPrintingById(id, data[0]?._id),
+                  );
+
+                  dispatch(
+                    setBagToBagData({
+                      ...bagToBagData,
+                      print_technology_id: id,
+                      product_id: data[0]?.product_id,
+                      process_id: data[0]?._id,
+                      total_used_rolls: printing_res?.total_used_rolls || 0,
+                      pending_bag: printing_res.hasOwnProperty('pending_bag')
+                        ? printing_res?.pending_bag
+                        : data[0]?.quantity,
+                      ...(printing_res?.hasOwnProperty('partial') && {
+                        partial: printing_res?.partial === true ? 1 : 0,
+                      }),
+                      ...(printing_res?.hasOwnProperty('completed') && {
+                        completed: printing_res?.completed === true ? 1 : 0,
+                      }),
+                    }),
+                  );
+
+                  dispatch(getSuggestedProductList(data[0]?.product_id));
+                  dispatch(getProductDetailById(data[0]?.product_id));
+                }
+              }
+              // if (title === 'ROTO GRAVURE') {
+              //   let newObj = {
+              //     print_technology_id: id,
+              //     process_id: data[0]?._id,
+              //     status: status === 0 || status === false ? 1 : 0,
+              //   };
+              //   let res = await dispatch(updatePrintStatus(newObj));
+              // }
+            }}
+          >
+            {status === 1 ? 'YES' : 'NO'}
+          </button>
+        </OverlayTrigger>
       );
     },
     [mfgData, newTableModal?.id, dispatch, printingData],
   );
 
-  const handleAddRolls = e => {
-    const selectedDate = getFormattedDate(new Date(changeRollDate));
+  // const handleAddRolls = e => {
+  //   const selectedDate = getFormattedDate(new Date(changeRollDate));
 
-    // ** add selected_date field to checked (assignedRoll) data **//
-    const modifyCheckedData = checkedAssignedRoll?.map(checked => {
-      return {
-        ...checked,
-        selected_date: selectedDate,
-        // print_technology_name: mfgProcessPrintingById?.print_technology,
-      };
-    });
+  //   // ** add selected_date field to checked (assignedRoll) data **//
+  //   const modifyCheckedData = checkedAssignedRoll?.map(checked => {
+  //     return {
+  //       ...checked,
+  //       selected_date: selectedDate,
+  //       // print_technology_name: mfgProcessPrintingById?.print_technology,
+  //     };
+  //   });
 
-    // ** remove suggested roll data when add data in printed roll **//
-    const removeSuggestedRoll = suggestedRollList?.filter(suggested => {
-      return !checkedAssignedRoll?.some(
-        checked => checked?._id === suggested?._id,
-      );
-    });
+  //   // ** remove suggested roll data when add data in printed roll **//
+  //   const removeSuggestedRoll = suggestedRollList?.filter(suggested => {
+  //     return !checkedAssignedRoll?.some(
+  //       checked => checked?._id === suggested?._id,
+  //     );
+  //   });
 
-    dispatch(setSuggestedRollList(removeSuggestedRoll));
-    setAssignedRoll([...assignedRoll, ...modifyCheckedData]);
-    dispatch(setAssignedRollList([...assignedRoll, ...modifyCheckedData]));
-    setCheckedAssignedRoll();
-  };
+  //   dispatch(setSuggestedRollList(removeSuggestedRoll));
+  //   setAssignedRoll([...assignedRoll, ...modifyCheckedData]);
+  //   dispatch(setAssignedRollList([...assignedRoll, ...modifyCheckedData]));
+  //   setCheckedAssignedRoll();
+  // };
 
   const onClickOnPrint = useCallback(
-    (data, id) => {
-      let obj = {};
-      activePrintTechnologyList.map((item, index) => {
-        data.find((item2, index2) => {
-          if (item2._id === item._id) {
-            obj = {
-              ...obj,
-              // [`key_${index}_${index2}`]: item2.status,
-              [`value_${index}_${index2}`]: {
-                title: item.name,
-                status: item2.status,
-                _id: item._id,
-              },
-            };
-          }
-        });
-      });
-      dispatch(setPrintTechnologyList([obj]));
+    async id => {
       setNewTableModal({
         id: id,
         isView: true,
       });
+
+      const printStatusData = await dispatch(getMfgLivePrintStatusList(id));
+
+      if (printStatusData) {
+        const updatedPrintStatusData = printStatusData?.map(item => {
+          return {
+            title: item.print_technology_name,
+            status: item.status,
+            updated_by: item.updated_by || '',
+            updated_at: item?.updated_at ?? '',
+            updated_by_name: item.updated_by_name || '',
+            _id: item._id,
+          };
+        });
+
+        dispatch(setPrintTechnologyList(updatedPrintStatusData));
+      }
+
+      // let obj = {};
+
+      // activePrintTechnologyList.map((item, index) => {
+      //   rowData.find((item2, index2) => {
+      //     if (item2._id === item._id) {
+      //       obj = {
+      //         ...obj,
+      //         // [`key_${index}_${index2}`]: item2.status,
+      //         [`value_${index}_${index2}`]: {
+      //           title: item.name,
+      //           status: item2.status,
+      //           _id: item._id,
+      //         },
+      //       };
+      //     }
+      //   });
+      // });
+
+      // dispatch(setPrintTechnologyList([obj]));
+      // setNewTableModal({
+      //   id: id,
+      //   isView: true,
+      // });
     },
-    [activePrintTechnologyList, dispatch],
+    [dispatch],
   );
 
   const renderPrintTechnologyList = useMemo(() => {
     let finalTable =
       (printTechnologyList?.length > 0 &&
-        Object.entries(printTechnologyList[0])?.map((data, i) => {
+        printTechnologyList?.map((data, i) => {
           return (
             <Column
               key={i}
               field="status"
-              header={data[1]?.title}
+              header={data.title}
               body={e => PrintDetailTemplate(e, i)}
               sortable
             ></Column>
@@ -2320,6 +2560,28 @@ export default function MFGLiveAdmin({ hasAccess }) {
   const footerContent = (
     <>
       <div className="mt-2 d-flex justify-content-end">
+        <div className="d-flex align-items-center">
+          <Checkbox
+            inputId="ingredient1"
+            name="complete"
+            value={printingData?.completed}
+            checked={fastStatus}
+            onChange={handleChange}
+            className="h-auto"
+          />
+          <label htmlFor="ingredient1" className="mx-2">
+            Fast Status
+          </label>
+        </div>
+        <div className="form_group checkbox_wrap with_input mt-0 toggle_btn me-2">
+          <InputSwitch
+            name="is_reviewed"
+            checked={snapShort}
+            onChange={e => setSnapShort(!snapShort)}
+          />
+          <label htmlFor="is_reviewed">SnapShot</label>
+        </div>
+
         <Button
           className="btn_border me-2"
           onClick={() => {
@@ -2342,6 +2604,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
               process_id: bagMadeModal?.id,
               is_handle_weight_auto: isHandleAuto === 1 ? true : false,
             };
+
             const res = await dispatch(addBagDetailForBagMade(newObj));
 
             if (res) {
@@ -2359,149 +2622,6 @@ export default function MFGLiveAdmin({ hasAccess }) {
                 ),
               );
             }
-          }}
-        >
-          Save
-        </Button>
-      </div>
-    </>
-  );
-
-  const footerContentR2R = (
-    <>
-      <div className="mt-2 d-flex justify-content-end">
-        <Button
-          className="btn_border me-2"
-          onClick={() => {
-            dispatch(
-              setAllCommon({
-                ...allCommon,
-                mfgLive: {
-                  ...allCommon?.mfgLive,
-                  suggestedFilterToggle: false,
-                  assignedFilterToggle: false,
-                  print_field_filter: blank_print_field_filter,
-                },
-              }),
-            );
-            dispatch(setViewProductDetailData({}));
-            setAssignedRoll([]);
-            dispatch(setAssignedRollList([]));
-            setCheckedAssignedRoll([]);
-            dispatch(setSuggestedRollList([]));
-            setPrintingTableModal(false);
-            dispatch(setClearPrintingData());
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          className="btn_primary"
-          onClick={() => {
-            // if (!assignedRoll?.length) {
-            //   toast.error('Select at-least one roll to save the details!');
-            // } else {
-            let rollId = [];
-            let rollPrintedDateData = [];
-            let updatedPrintedRoll = [];
-
-            if (assignedRoll?.length > 0) {
-              updatedPrintedRoll = assignedRoll?.filter(x => x?.is_cancelled);
-            }
-
-            // if (updatedPrintedRoll?.length > 0) {
-            //** store all assigned printed roll IDs: **//
-            // updatedPrintedRoll?.forEach(x => rollId.push(x?._id));
-
-            // updatedPrintedRoll?.forEach(x => {
-            //   let dateFormateRolldata = {
-            //     date: x?.selected_date,
-            //     roll: [],
-            //   };
-
-            //   if (rollData?.roll?.length > 0) {
-            //     const abc = rollData.find(
-            //       roll =>
-            //         moment(roll.date).format('YYYY-MM-DD') ===
-            //         moment(x.date).format('YYYY-MM-DD'),
-            //     );
-            //     if (abc) {
-            //       let updatedList = [...rollData];
-            //       const index = updatedList?.findIndex(
-            //         x =>
-            //           moment(x.date).format('YYYY-MM-DD') ===
-            //           moment(abc.selected_date).format('YYYY-MM-DD'),
-            //       );
-
-            //       if (index !== -1) {
-            //         const oldObj = updatedList[index];
-            //         const updatedObj = {
-            //           ...oldObj,
-            //           roll: [...oldObj.roll, x._id],
-            //         };
-            //         updatedList[index] = updatedObj;
-            //         rollData = updatedList;
-            //       }
-            //     } else {
-            //       dateFormateRolldata?.roll?.push(x._id);
-            //       rollData.push(dateFormateRolldata);
-            //     }
-            //   } else {
-            //     dateFormateRolldata?.roll?.push(x._id);
-            //     rollData.push(dateFormateRolldata);
-            //   }
-            // });
-
-            if (updatedPrintedRoll?.length > 0) {
-              updatedPrintedRoll?.forEach(x => {
-                rollId.push(x?._id);
-
-                const dateIndex = rollPrintedDateData?.findIndex(
-                  roll => roll?.date === x?.selected_date,
-                );
-
-                if (dateIndex !== -1) {
-                  rollPrintedDateData[dateIndex].roll.push(x._id);
-                } else {
-                  rollPrintedDateData.push({
-                    date: x.selected_date,
-                    roll: [x._id],
-                  });
-                }
-              });
-            }
-
-            const newObj = {
-              ...printingData,
-              pending_bag: Number(printingData?.pending_bag),
-              roll_printed: rollId,
-              roll_printed_date: rollPrintedDateData,
-            };
-
-            const response = dispatch(updatePrintStatus(newObj));
-            if (response) {
-              setPrintingTableModal(false);
-              dispatch(
-                setAllCommon({
-                  ...allCommon,
-                  mfgLive: {
-                    ...allCommon?.mfgLive,
-                    print_field_filter: blank_print_field_filter,
-                    suggestedFilterToggle: false,
-                    assignedFilterToggle: false,
-                  },
-                }),
-              );
-              dispatch(setViewProductDetailData({}));
-              setAssignedRoll([]);
-              dispatch(setAssignedRollList([]));
-              setCheckedAssignedRoll([]);
-              dispatch(setSuggestedRollList([]));
-              dispatch(setClearPrintingData());
-            }
-            // }
-            // }
-            // }
           }}
         >
           Save
@@ -2577,7 +2697,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
       let text = '';
       const img = whatsappData?.main_image;
       const oldStereo =
-        whatsappData?.old_str === true ? '*OLD BLOCK*' : '*NEW BLOCK*';
+        whatsappData?.old_stereo === true ? '*OLD BLOCK*' : '*NEW BLOCK*';
       const productTitle = whatsappData?.design?.toUpperCase();
       const productType = whatsappData?.bag_type ? whatsappData?.bag_type : '';
       const qty = whatsappData?.qty ? whatsappData?.qty : '';
@@ -2648,7 +2768,14 @@ export default function MFGLiveAdmin({ hasAccess }) {
     [whatsappData],
   );
 
-  const handleSearchInput = e => {
+  const handleSearchInput = (
+    e,
+    allFilters,
+    pageLimit,
+    appliedFilters,
+    selectedDates,
+    filters,
+  ) => {
     dispatch(
       setAllFilters({
         ...allFilters,
@@ -2663,9 +2790,9 @@ export default function MFGLiveAdmin({ hasAccess }) {
         pageLimit,
         1,
         e.target.value,
-        applied,
-        dates,
-        field_filter,
+        appliedFilters,
+        selectedDates,
+        filters,
       ),
     );
   };
@@ -2686,20 +2813,22 @@ export default function MFGLiveAdmin({ hasAccess }) {
       }),
     );
 
-    loadTableData(e);
+    if (e?.startDate !== e?.endDate) {
+      loadTableData(e);
+    }
   };
 
-  const checkboxTemplate = data => {
-    return data?.can_transfer_consumed && !data?.assigned_to ? (
-      <Checkbox
-        value={data?.isSelected}
-        onChange={e => {
-          handleCheckboxTemplate(e, data);
-        }}
-        checked={data?.isSelected === true}
-      />
-    ) : null;
-  };
+  // const checkboxTemplate = data => {
+  //   return data?.can_transfer_consumed && !data?.assigned_to ? (
+  //     <Checkbox
+  //       value={data?.isSelected}
+  //       onChange={e => {
+  //         handleCheckboxTemplate(e, data);
+  //       }}
+  //       checked={data?.isSelected === true}
+  //     />
+  //   ) : null;
+  // };
 
   return (
     <div className="main_Wrapper">
@@ -2724,7 +2853,14 @@ export default function MFGLiveAdmin({ hasAccess }) {
                         className="input_wrap small search_wrap"
                         value={searchQuery}
                         onChange={e => {
-                          debounceHandleSearchInput(e);
+                          debounceHandleSearchInput(
+                            e,
+                            allFilters,
+                            pageLimit,
+                            applied,
+                            dates,
+                            field_filter,
+                          );
                           dispatch(
                             setAllCommon({
                               ...allCommon,
@@ -2829,12 +2965,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
           </Row>
         </div>
 
-        <MFGLiveAdminMultiSelect
-          allCommon={allCommon}
-          field_filter={field_filter}
-          setAllCommon={setAllCommon}
-          mfgLiveFilterList={mfgLiveFilterList}
-        />
+        <MFGLiveAdminMultiSelect />
 
         <MFGLiveAdminTable
           mfgData={mfgData}
@@ -2918,722 +3049,27 @@ export default function MFGLiveAdmin({ hasAccess }) {
           </div>
         </div>
       </Dialog>
-      <Dialog
-        header="Printing"
-        visible={printingTableModal}
-        draggable={false}
-        className="modal_Wrapper model_extra_large"
-        onHide={() => {
-          setAssignedRoll([]);
-          setPrintingTableModal(false);
-          dispatch(setClearPrintingData());
-          dispatch(setAssignedRollList([]));
-          dispatch(setViewProductDetailData({}));
-          dispatch(
-            setAllCommon({
-              ...allCommon,
-              mfgLive: {
-                ...allCommon?.mfgLive,
-                suggestedFilterToggle: false,
-                assignedFilterToggle: false,
-              },
-            }),
-          );
-        }}
-        footer={footerContentR2R}
-      >
-        <div className="printing_content_wrap">
-          <MFGLivePrintingFilter
-            jobId={jobId}
-            allCommon={allCommon}
-            setAllCommon={setAllCommon}
-            printTechnologyId={printTechnologyId}
-            print_field_filter={print_field_filter}
-            mfgLivePrintingFilterList={mfgLivePrintingFilterList}
-          />
-          <div className="printing_content_middle">
-            <Row className="g-2">
-              <Col lg={3} className="order-1 order-lg-1">
-                <div className="product_details_left border rounded-3 bg_white p-3 mb-3">
-                  <div className="product_detail_wrap">
-                    <h3 className="mb-2">Product Details</h3>
-                    <img
-                      src={viewProductDetailData?.main_image}
-                      alt="ProductImg"
-                      className="w-100"
-                    />
-                    <h4>Bag Size</h4>
-                    <h5>{viewProductDetailData?.product_code}</h5>
-                    <ul className="rounded_ul">
-                      <li>Bag Type: {viewProductDetailData?.bag_type_name}</li>
-                      <li>
-                        Bag Printing: {viewProductDetailData.print_type_name}
-                      </li>
-                      <li>Design Name: {viewProductDetailData?.design_name}</li>
-                      <li>Bag Weight: {viewProductDetailData?.bag_weight} </li>
-                    </ul>
-                  </div>
-                </div>
-              </Col>
-              <Col lg={9} className="order-4 order-lg-2">
-                <div className="table_main_Wrapper bg-white mb-3">
-                  <div className="top_filter_wrap">
-                    <h3>Suggested Rolls</h3>
-                  </div>
-                  <div className="data_table_wrapper cell_padding_small is_filter custom_suggested_mfg break_header">
-                    <button
-                      type="button"
-                      className="table_filter_btn"
-                      onClick={() => {
-                        dispatch(
-                          setAllCommon({
-                            ...allCommon,
-                            mfgLive: {
-                              ...allCommon?.mfgLive,
-                              suggestedFilterToggle: !suggestedFilterToggle,
-                            },
-                          }),
-                        );
-                      }}
-                    >
-                      <img src={SearchIcon} alt="" />
-                    </button>
-                    <DataTable
-                      value={suggestedRollList}
-                      sortMode="single"
-                      sortField="name"
-                      sortOrder={1}
-                      rows={10}
-                      dataKey="_id"
-                      filterDisplay="row"
-                      selectionMode="checkbox"
-                      // onSelectionChange={e => handleCheckboxTemplate(e.value)}
-                      // selection={assignedRoll}
-                      onSelectionChange={e => handleCheckboxTemplate(e.value)}
-                      selection={checkedAssignedRoll}
-                      // onSelectionChange={e => setSelectedProducts(e.value)}
-                      filters={mfgLivePrintingFilter}
-                      onFilter={event => {
-                        dispatch(
-                          setAllCommon({
-                            ...allCommon,
-                            mfgLive: {
-                              ...allCommon?.mfgLive,
-                              mfgLivePrintingFilter: event?.filters,
-                            },
-                          }),
-                        );
-                      }}
-                    >
-                      <Column
-                        selectionMode="multiple"
-                        headerStyle={{ width: '2rem' }}
-                      ></Column>
-                      {/* <Column
-                        selectionMode="multiple"
-                        headerStyle={{ width: '3rem' }}
-                        field="can_transfer_consumed"
-                        body={checkboxTemplate}
-                      ></Column> */}
-                      <Column
-                        field=""
-                        header="No"
-                        sortable
-                        body={customNoColumn}
-                      ></Column>
-                      <Column
-                        field="id_no"
-                        header="ID No."
-                        sortable
-                        filter={suggestedFilterToggle}
-                      ></Column>
-                      <Column
-                        field="color"
-                        header="Color"
-                        sortable
-                        filter={suggestedFilterToggle}
-                      ></Column>
-                      <Column
-                        field="gsm"
-                        header="GSM"
-                        sortable
-                        filter={suggestedFilterToggle}
-                      ></Column>
-                      <Column
-                        field="size"
-                        header="Size"
-                        sortable
-                        body={sizeTemplate}
-                        filter={suggestedFilterToggle}
-                      ></Column>
-                      <Column
-                        field="net_weight"
-                        header="Net Weight"
-                        sortable
-                        filter={suggestedFilterToggle}
-                      ></Column>
-                      <Column
-                        field="item_name"
-                        header="Item Name"
-                        className="product_code suggested_roll"
-                        sortable
-                        filter={suggestedFilterToggle}
-                      ></Column>
-                      <Column
-                        field="print_technology_name"
-                        header="Print Technology"
-                        className="product_code suggested_roll"
-                        sortable
-                        filter={suggestedFilterToggle}
-                        body={printTechnology}
-                      ></Column>
-                      <Column
-                        field="lamination"
-                        header="Lamination"
-                        sortable
-                        filter={suggestedFilterToggle}
-                      ></Column>
-                      <Column
-                        field="design_name"
-                        header="Design Name"
-                        sortable
-                        filter={suggestedFilterToggle}
-                      ></Column>
-                      <Column
-                        field="is_slit"
-                        header="Split"
-                        sortable
-                        filter={suggestedFilterToggle}
-                        body={slitTemplate}
-                      ></Column>
-                      <Column
-                        field="parent_id"
-                        header="Parent"
-                        sortable
-                        filter={suggestedFilterToggle}
-                      ></Column>
-                    </DataTable>
-                  </div>
-                </div>
-              </Col>
-              <Col lg={3} className="order-2 order-lg-3">
-                <div className="d-flex flex-wrap gap-3">
-                  <div className="d-flex align-items-center">
-                    <Checkbox
-                      inputId="ingredient1"
-                      name="complete"
-                      value={printingData?.completed}
-                      onChange={e => {
-                        dispatch(
-                          setprintingData({
-                            ...printingData,
-                            completed: e.target.checked ? 1 : 0,
-                            partial: e.target.checked ? 0 : 1,
-                          }),
-                        );
-                      }}
-                      checked={printingData?.completed === 1}
-                    />
-                    <label htmlFor="ingredient1" className="mx-2">
-                      Complete
-                    </label>
-                  </div>
-                  <div className="d-flex align-items-center">
-                    <Checkbox
-                      inputId="ingredient2"
-                      name="partial"
-                      value={printingData?.partial}
-                      onChange={e => {
-                        dispatch(
-                          setprintingData({
-                            ...printingData,
-                            partial: e.target.checked ? 1 : 0,
-                            completed: e.target.checked ? 0 : 1,
-                          }),
-                        );
-                      }}
-                      checked={printingData?.partial === 1}
-                    />
-                    <label htmlFor="ingredient2" className="mx-2">
-                      Partial
-                    </label>
-                  </div>
-                </div>
-              </Col>
-              <Col lg={9} className="order-3 order-lg-4">
-                <ul className="d-flex align-items-center justify-content-start justify-content-lg-end gap-2 flex-wrap">
-                  <li>
-                    <ul className="pending_bags panding_bags_details">
-                      <li>
-                        Pending qty of bags to print
-                        <div className="form_group">
-                          <InputText
-                            placeholder="Bags Qty"
-                            value={printingData?.pending_bag}
-                            onChange={e => {
-                              dispatch(
-                                setprintingData({
-                                  ...printingData,
-                                  pending_bag: e.target.value,
-                                }),
-                              );
-                            }}
-                          />
-                          <span>Bags</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </li>
-                  <li>
-                    <div className="form_group date_select_wrapper">
-                      <Calendar
-                        id=" ConsumptionDate"
-                        value={changeRollDate}
-                        placeholder="Select Date Range"
-                        showIcon
-                        showButtonBar
-                        dateFormat="dd-mm-yy"
-                        selectionMode="single"
-                        readOnlyInput
-                        onChange={e => setChangeRollDate(e.value)}
-                      />
-                    </div>
-                  </li>
-                  <li>
-                    <div className="text-end">
-                      <Button
-                        className="btn_primary"
-                        onClick={e => handleAddRolls(e)}
-                      >
-                        Add Rolls
-                      </Button>
-                    </div>
-                  </li>
-                </ul>
-              </Col>
-            </Row>
-          </div>
-          <div className="final_print_table mt-3">
-            <div className="table_main_Wrapper bg-white">
-              <div className="top_filter_wrap">
-                <h3>Printed Rolls</h3>
-              </div>
-              <div className="data_table_wrapper with_colspan_head cell_padding_small is_filter custom_suggested_mfg">
-                <button
-                  type="button"
-                  className="table_filter_btn"
-                  onClick={() => {
-                    dispatch(
-                      setAllCommon({
-                        ...allCommon,
-                        mfgLive: {
-                          ...allCommon?.mfgLive,
-                          assignedFilterToggle: !assignedFilterToggle,
-                        },
-                      }),
-                    );
-                  }}
-                >
-                  <img src={SearchIcon} alt="" />
-                </button>
-                <DataTable
-                  value={assignedRoll}
-                  sortMode="multiple"
-                  sortField="name"
-                  sortOrder={1}
-                  filterDisplay="row"
-                  dataKey="_id"
-                  filters={mfgLivePrintingFilter}
-                  onFilter={event => {
-                    dispatch(
-                      setAllCommon({
-                        ...allCommon,
-                        mfgLive: {
-                          ...allCommon?.mfgLive,
-                          mfgLivePrintingFilter: event?.filters,
-                        },
-                      }),
-                    );
-                  }}
-                >
-                  <Column
-                    field=""
-                    header="No"
-                    sortable
-                    body={customNoColumn}
-                  ></Column>
-                  <Column
-                    field="id_no"
-                    header="ID No."
-                    sortable
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="color"
-                    header="Color"
-                    sortable
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="gsm"
-                    header="GSM"
-                    sortable
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="size"
-                    header="Size"
-                    sortable
-                    body={sizeTemplate}
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="net_weight"
-                    header="Net Weight"
-                    sortable
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="item_name"
-                    header="Item Name"
-                    sortable
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="print_technology_name"
-                    header="Print Technology"
-                    sortable
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="lamination"
-                    header="Lamination"
-                    sortable
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="design_name"
-                    header="Design Name"
-                    sortable
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="is_slit"
-                    header="Split"
-                    sortable
-                    filter={assignedFilterToggle}
-                    body={slitTemplate}
-                  ></Column>
-                  <Column
-                    field="parent_id"
-                    header="Parent"
-                    sortable
-                    filter={assignedFilterToggle}
-                  ></Column>
-                  <Column
-                    field="action"
-                    body={assignActionTemplate}
-                    header="Action"
-                  />
-                </DataTable>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Dialog>
-      <Dialog
-        header="SCREEN PRINTING (BAG TO BAG)"
-        visible={screenTableModal}
-        draggable={false}
-        className="modal_Wrapper modal_medium"
-        onHide={() => {
-          setScreenTableModal(false);
-          setSelectedProductFromSuggested({});
-          dispatch(setBagToBagData(intialPrintingData));
-        }}
-      >
-        <div className="printing_content_wrap">
-          <div className="printing_content_top">
-            <Row className="align-items-center">
-              <Col lg={3} md={4}>
-                <h5 className="mb-3">Is Printed?</h5>
-                <div className="d-flex flex-wrap gap-3 mb-3">
-                  <div className="d-flex align-items-center">
-                    <Checkbox
-                      inputId="ingredient1"
-                      name="complete"
-                      value={bagToBagData?.completed}
-                      onChange={e => {
-                        dispatch(
-                          setBagToBagData({
-                            ...bagToBagData,
-                            completed: e.target.checked ? 1 : 0,
-                            partial: e.target.checked ? 0 : 1,
-                          }),
-                        );
-                      }}
-                      checked={bagToBagData?.completed === 1}
-                    />
-                    <label htmlFor="ingredient1" className="mx-2">
-                      Complete
-                    </label>
-                  </div>
-                  <div className="d-flex align-items-center">
-                    <Checkbox
-                      inputId="ingredient2"
-                      name="partial"
-                      value={bagToBagData?.partial}
-                      onChange={e => {
-                        dispatch(
-                          setBagToBagData({
-                            ...bagToBagData,
-                            partial: e.target.checked ? 1 : 0,
-                            completed: e.target.checked ? 0 : 1,
-                          }),
-                        );
-                      }}
-                      checked={bagToBagData?.partial === 1}
-                    />
-                    <label htmlFor="ingredient2" className="mx-2">
-                      Partial
-                    </label>
-                  </div>
-                </div>
-              </Col>
-              <Col lg={9} md={8}>
-                <div className="form_group mb-3">
-                  <ReactSelectSingle
-                    filter
-                    name="suggested_product_id"
-                    value={bagToBagData?.suggested_product_id || ''}
-                    options={suggestedProductList}
-                    onChange={e => {
-                      dispatch(
-                        setBagToBagData({
-                          ...bagToBagData,
-                          suggested_product_id: e.target.value,
-                          warehouse: '',
-                          in_stock: '',
-                        }),
-                      );
-                      let data = suggestedProductList?.filter(
-                        d => d?._id === e.target.value,
-                      );
-                      let updatedData = data?.map(i => {
-                        return {
-                          ...i,
-                          warehouse: i?.warehouse?.map(d => {
-                            return {
-                              ...d,
-                              label: d?.name,
-                              value: d?._id,
-                            };
-                          }),
-                        };
-                      });
-                      setSelectedProductFromSuggested(updatedData[0]);
-                    }}
-                    placeholder="Select Product"
-                  />
-                </div>
-              </Col>
-            </Row>
-          </div>
-          <div className="printing_content_middle">
-            <Row>
-              <Col md={5}>
-                <div className="product_details_left border rounded-3 bg_white p-3 h-100 mb-3">
-                  <div className="product_detail_wrap">
-                    <h3 className="mb-2">Product Details</h3>
-                    <img
-                      src={
-                        viewProductDetailData?.main_image
-                          ? viewProductDetailData?.main_image
-                          : DummyImage
-                      }
-                      alt="ProductImg"
-                      className="w-100"
-                    />
-                    <h4>Bag Size</h4>
-                    <h5>{viewProductDetailData?.product_code}</h5>
-                    <ul className="rounded_ul">
-                      <li>Bag Type: {viewProductDetailData?.bag_type_name}</li>
-                      <li>
-                        Bag Printing: {viewProductDetailData.print_type_name}
-                      </li>
-                      <li>Design Name: {viewProductDetailData?.design_name}</li>
-                      <li>Bag Weight: {viewProductDetailData?.bag_weight} </li>
-                    </ul>
-                  </div>
-                </div>
-              </Col>
-              <Col md={7}>
-                <div className="screen_printing_right">
-                  <div className="bag_box_wrap">
-                    <div className="bag_type_box">
-                      <div className="bag_img">
-                        <img
-                          src={
-                            selectedProductFromSuggested?.main_image
-                              ? selectedProductFromSuggested?.main_image
-                              : DummyImage
-                          }
-                          alt="BagIcon"
-                        ></img>
-                      </div>
-                      <div className="bag_title_wrap">
-                        <h5 className="m-0">
-                          {selectedProductFromSuggested?.design_name
-                            ? selectedProductFromSuggested?.design_name
-                            : 'Selected Product Image'}
-                        </h5>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="stock_list_Wrap">
-                    <ul>
-                      <li>
-                        <label>Warehouse</label>
-                        <ReactSelectSingle
-                          filter
-                          name="suggested_product_id"
-                          value={bagToBagData?.warehouse || ''}
-                          options={selectedProductFromSuggested?.warehouse}
-                          onChange={e => {
-                            let data =
-                              selectedProductFromSuggested?.warehouse?.filter(
-                                d => d?._id === e.target.value,
-                              );
-                            dispatch(
-                              setBagToBagData({
-                                ...bagToBagData,
-                                warehouse: e.target.value,
-                                in_stock: data[0]?.qty,
-                              }),
-                            );
-                          }}
-                          placeholder="Select Warehouse"
-                        />
-                      </li>
-                      <li>
-                        <label>In Stock</label>
-                        <div className="input_wrap">
-                          <InputText
-                            placeholder="In Stock"
-                            value={bagToBagData?.in_stock}
-                            disabled
-                          />
-                        </div>
-                      </li>
-                      <li>
-                        <label>Qty used for this job</label>
-                        <div className="input_wrap">
-                          <InputText
-                            placeholder="Qty used for this job"
-                            type="number"
-                            name="bagToBagData.qty_used"
-                            value={bagToBagData.qty_used}
-                            onChange={e => {
-                              dispatch(
-                                setBagToBagData({
-                                  ...bagToBagData,
-                                  qty_used: e.target.value,
-                                }),
-                              );
-                            }}
-                          />
-                        </div>
-                      </li>
-                      <li>
-                        <label>Wastage</label>
-                        <div className="input_wrap">
-                          <InputText
-                            placeholder="Wastage"
-                            type="number"
-                            value={bagToBagData.wastage}
-                            onChange={e => {
-                              dispatch(
-                                setBagToBagData({
-                                  ...bagToBagData,
-                                  wastage: e.target.value,
-                                }),
-                              );
-                            }}
-                          />
-                        </div>
-                      </li>
-                      <li>
-                        <label>Qty of bags printed</label>
-                        <div className="input_wrap">
-                          <InputText
-                            placeholder="Qty of bags printed"
-                            type="number"
-                            value={bagToBagData.bag_printed}
-                            onChange={e => {
-                              dispatch(
-                                setBagToBagData({
-                                  ...bagToBagData,
-                                  bag_printed: e.target.value,
-                                }),
-                              );
-                            }}
-                          />
-                        </div>
-                      </li>
-                      <li>
-                        <label>Pending qty of bags to print</label>
-                        <div className="input_wrap">
-                          <InputText
-                            placeholder="Pending qty of bags"
-                            type="number"
-                            value={bagToBagData.pending_bag}
-                            onChange={e => {
-                              dispatch(
-                                setBagToBagData({
-                                  ...bagToBagData,
-                                  pending_bag: e.target.value,
-                                }),
-                              );
-                            }}
-                          />
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </Col>
-            </Row>
-          </div>
-          <div className="mt-3 d-flex justify-content-end">
-            <Button
-              className="btn_border me-2"
-              onClick={() => {
-                setScreenTableModal(false);
-                dispatch(setBagToBagData(intialPrintingData));
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="btn_primary"
-              onClick={() => {
-                let data = {
-                  ...bagToBagData,
-                  pending_bag: Number(bagToBagData?.pending_bag),
-                  qty_used: Number(bagToBagData?.qty_used),
-                  wastage: Number(bagToBagData?.wastage),
-                  bag_printed: Number(bagToBagData?.bag_printed),
-                };
-                dispatch(updatePrintStatus(data));
-                setScreenTableModal(false);
-                dispatch(setBagToBagData(intialPrintingData));
-              }}
-            >
-              Save
-            </Button>
-          </div>
-        </div>
-      </Dialog>
+
+      <PrintingDialog
+        jobId={jobId}
+        assignedRoll={assignedRoll}
+        changeRollDate={changeRollDate}
+        setAssignedRoll={setAssignedRoll}
+        printTechnologyId={printTechnologyId}
+        setChangeRollDate={setChangeRollDate}
+        printingTableModal={printingTableModal}
+        checkedAssignedRoll={checkedAssignedRoll}
+        setPrintingTableModal={setPrintingTableModal}
+        setCheckedAssignedRoll={setCheckedAssignedRoll}
+      />
+
+      <ScreenPrintingBagDialog
+        screenTableModal={screenTableModal}
+        setScreenTableModal={setScreenTableModal}
+        selectedProductFromSuggested={selectedProductFromSuggested}
+        setSelectedProductFromSuggested={setSelectedProductFromSuggested}
+      />
+
       <Dialog
         header="Bag Made"
         visible={bagMadeModal?.isView}
@@ -3724,7 +3160,9 @@ export default function MFGLiveAdmin({ hasAccess }) {
                                 batchEntryList[batchEntryList.length - 1];
                               const result = Object.keys(lastObj).filter(
                                 value => {
-                                  return value !== 'id' && lastObj[value]
+                                  return value !== 'id' &&
+                                    value !== 'batch_no' &&
+                                    lastObj[value]
                                     ? lastObj[value]
                                     : false;
                                 },
@@ -3740,7 +3178,8 @@ export default function MFGLiveAdmin({ hasAccess }) {
                                   {
                                     ...batchEntryData,
                                     batch_date: new Date(),
-                                    id: Math.floor(Math.random() * 100),
+                                    // id: Math.floor(Math.random() * 100),
+                                    id: generateUniqueId(),
                                     batch_no: (
                                       batchEntryList?.length + 1
                                     )?.toString(),
@@ -3753,7 +3192,8 @@ export default function MFGLiveAdmin({ hasAccess }) {
                                 {
                                   ...batchEntryData,
                                   batch_date: new Date(),
-                                  id: Math.floor(Math.random() * 100),
+                                  // id: Math.floor(Math.random() * 100),
+                                  id: generateUniqueId(),
                                   batch_no: (
                                     batchEntryList?.length + 1
                                   )?.toString(),
@@ -3777,6 +3217,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
                 sortMode="single"
                 sortField="name"
                 sortOrder={1}
+                footerColumnGroup={batchEntryFooterGroup}
                 // // rows={10}
                 // filterDisplay="row"
                 dataKey="_id"
@@ -3786,7 +3227,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
                   header="Batch No"
                   sortable
                   filter={filterToggle}
-                  // body={customNoColumn}
+                  body={customNoColumn}
                 ></Column>
                 <Column
                   field="batch_date"
@@ -3845,183 +3286,240 @@ export default function MFGLiveAdmin({ hasAccess }) {
           </div>
           <Row className="mb-3">
             <Col md={6}>
-              <Row className="g-3">
-                <Col lg={4} sm={6}>
-                  <div className="rate_box blue_box">
-                    <h4>{bagMadeAllData?.days} days</h4>
-                    <h5 className="m-0">Turn Around Time</h5>
-                  </div>
-                </Col>
-                <Col lg={8}>
-                  <div className="total_hr_list">
-                    <ul>
-                      <li>
-                        <label>Total No. Bags</label>
-                        <span>
-                          {thousandSeparator(
-                            parseFloat(
-                              bagMadeAllData?.total ? bagMadeAllData?.total : 0,
-                            ),
+              <Row className={`${snapShort ? 'row-cols-3' : 'row-cols-2'} g-3`}>
+                {snapShort && (
+                  <Col lg={7}>
+                    <div>
+                      <h1>Product Image</h1>
+                    </div>
+                    <div className="product_img">
+                      <img src={bagMadeData?.main_image} alt="" />
+                    </div>
+                  </Col>
+                )}
+                <Col sm={snapShort ? 5 : 12}>
+                  {snapShort ? (
+                    <>
+                      {/* <h5>17.5" x 14" x 5"</h5> */}
+                      <h5>{`${
+                        bagMadeData?.bag_width
+                          ? 'W ' + bagMadeData?.bag_width + '”'
+                          : ''
+                      } ${
+                        bagMadeData?.bag_height
+                          ? 'x  H ' + bagMadeData?.bag_height + '”'
+                          : ''
+                      } ${
+                        bagMadeData?.bag_gusset
+                          ? 'x G ' + bagMadeData?.bag_gusset + '”'
+                          : ''
+                      }`}</h5>
+                      <h5>{`${bagMadeData?.bag_gsm}GSM`}</h5>
+                      <h5>{bagMadeData?.rate}</h5>
+                      <h5>{bagMadeData?.party_name}</h5>
+                      <h5>{bagMadeData?.design_name}</h5>
+                    </>
+                  ) : (
+                    <Row className="g-3">
+                      <Col sm={12}>
+                        <Row
+                          className={`${
+                            snapShort ? 'flex-column-reverse flex' : ''
+                          } g-3`}
+                        >
+                          <Col lg={snapShort ? 12 : 4} sm={6}>
+                            <div className="rate_box blue_box">
+                              <h4>{bagMadeAllData?.days} days</h4>
+                              <h5 className="m-0">Turn Around Time</h5>
+                            </div>
+                          </Col>
+                          <Col lg={snapShort ? 12 : 8}>
+                            <div
+                              className={
+                                snapShort
+                                  ? 'total_hr_list fast_status_list'
+                                  : 'total_hr_list'
+                              }
+                            >
+                              <ul>
+                                <li>
+                                  <label>Total No. Bags</label>
+                                  <span>
+                                    {thousandSeparator(
+                                      parseFloat(
+                                        bagMadeAllData?.total
+                                          ? bagMadeAllData?.total
+                                          : 0,
+                                      ),
+                                    )}
+                                  </span>
+                                </li>
+                                {!snapShort && (
+                                  <li>
+                                    <label>Expected No. Bags</label>
+                                    <span>
+                                      {thousandSeparator(
+                                        parseFloat(
+                                          bagMadeAllData?.expected
+                                            ? bagMadeAllData?.expected
+                                            : 0,
+                                        ),
+                                      )}
+                                    </span>
+                                  </li>
+                                )}
+                              </ul>
+                            </div>
+                          </Col>
+                        </Row>
+                      </Col>
+                      <Col sm={12}>
+                        <Row className="g-3">
+                          <Col lg={snapShort ? 12 : 4} md={4} sm={6}>
+                            <div className="rate_box yellow_box">
+                              <h4>
+                                ₹{' '}
+                                {thousandSeparator(
+                                  Number(bagMadeAllData?.act_kg_rate),
+                                )}
+                                /KG
+                              </h4>
+                              <h5 className="m-0">KG Rate (Actual)</h5>
+                            </div>
+                          </Col>
+                          <Col lg={snapShort ? 12 : 4} md={4} sm={6}>
+                            <div className="rate_box green_box">
+                              <h4>
+                                ₹{' '}
+                                {thousandSeparator(
+                                  Number(bagMadeAllData?.theoretical_kg_rate),
+                                )}
+                                /KG
+                              </h4>
+                              <h5 className="m-0">KG Rate (Theoretical)</h5>
+                            </div>
+                          </Col>
+                          {!snapShort && (
+                            <Col lg={4} md={4} sm={6}>
+                              <div className="rate_box light_blue_box">
+                                <h4>
+                                  {Number(bagMadeAllData?.profit) > 0
+                                    ? bagMadeAllData?.profit
+                                    : 0}
+                                  %
+                                </h4>
+                                <h5 className="m-0">Profit (%)</h5>
+                              </div>
+                            </Col>
                           )}
-                        </span>
-                      </li>
-                      <li>
-                        <label>Expected No. Bags</label>
-                        <span>
-                          {thousandSeparator(
-                            parseFloat(
-                              bagMadeAllData?.expected
-                                ? bagMadeAllData?.expected
-                                : 0,
-                            ),
-                          )}
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                </Col>
-                <Col sm={12}>
-                  <Row className="g-3">
-                    <Col lg={4} md={4} sm={6}>
-                      <div className="rate_box yellow_box">
-                        <h4>
-                          ₹{' '}
-                          {thousandSeparator(
-                            Number(bagMadeAllData?.act_kg_rate),
-                          )}
-                          /KG
-                        </h4>
-                        <h5 className="m-0">KG Rate (Actual)</h5>
-                      </div>
-                    </Col>
-                    <Col lg={4} md={4} sm={6}>
-                      <div className="rate_box green_box">
-                        <h4>
-                          ₹{' '}
-                          {thousandSeparator(
-                            Number(bagMadeAllData?.theoretical_kg_rate),
-                          )}
-                          /KG
-                        </h4>
-                        <h5 className="m-0">KG Rate (Theoretical)</h5>
-                      </div>
-                    </Col>
-                    <Col lg={4} md={4} sm={6}>
-                      <div className="rate_box light_blue_box">
-                        <h4>
-                          {Number(bagMadeAllData?.profit) > 0
-                            ? bagMadeAllData?.profit
-                            : 0}
-                          %
-                        </h4>
-                        <h5 className="m-0">Profit (%)</h5>
-                      </div>
-                    </Col>
-                  </Row>
-                </Col>
-                <Col lg={12}>
-                  <h5 className="ms-2">Wt.of handle</h5>
-                  <Row className="custom_radio_wrappper">
-                    <Col md={6}>
-                      <div className="flex align-items-center mb-3">
-                        <RadioButton
-                          inputId="auto"
-                          name="isHandleAuto"
-                          value={1}
-                          onChange={e => {
-                            setIsHandleAuto(e.value);
-                            handleWeightChange(
-                              1,
-                              bagMadeAllData?.auto_handle_weight,
-                              bagMadeAllData?.act_handle_weight,
-                            );
-                          }}
-                          checked={isHandleAuto === 1}
-                        />
-                        <InputText
-                          placeholder=""
-                          className="mx-2"
-                          disabled
-                          value={bagMadeAllData?.auto_handle_weight}
-                          onChange={e => {
-                            setBagMadeAllData({
-                              ...bagMadeAllData,
-                              auto_handle_weight: e.target.value,
-                            });
-                            handleWeightChange(
-                              1,
-                              Number(e.target.value),
-                              bagMadeAllData?.act_handle_weight,
-                            );
-                          }}
-                        />
-                        <label htmlFor="auto" className="ml-2">
-                          Auto
-                        </label>
-                      </div>
-                    </Col>
-                    <Col md={6}>
-                      <div className="flex align-items-center">
-                        <RadioButton
-                          inputId="actual"
-                          name="isHandleAuto"
-                          value={0}
-                          onChange={e => {
-                            setIsHandleAuto(e.value);
-                            handleWeightChange(
-                              0,
-                              bagMadeAllData?.auto_handle_weight,
-                              bagMadeAllData?.act_handle_weight,
-                            );
-                          }}
-                          checked={isHandleAuto === 0}
-                        />
-                        <InputText
-                          placeholder="0"
-                          type="number"
-                          className="mx-2"
-                          value={bagMadeAllData?.act_handle_weight}
-                          onChange={e => {
-                            setBagMadeAllData({
-                              ...bagMadeAllData,
-                              act_handle_weight: e.target.value,
-                            });
-                            // const value = e?.target?.value;
-                            // const parts = value.split('.');
-                            // // const a = parts.length > 1 && Number(parts[1]) >= 0;
-                            // const a = parts[1]?.length > 0;
-
-                            // if (!a || (a && parts[1]?.length <= 2)) {
-                            handleWeightChange(
-                              0,
-                              bagMadeAllData?.auto_handle_weight,
-                              e?.target?.value,
-                            );
-                            // }
-
-                            // const inputValue = e?.target?.value;
-                            // const isValidDecimal =
-                            //   /^\d*\.?\d{0,2}$/.test(inputValue) &&
-                            //   inputValue !== 'e' &&
-                            //   inputValue !== '.';
-
-                            // if (isValidDecimal) {
-                            //   handleWeightChange(
-                            //     0,
-                            //     bagMadeAllData?.auto_handle_weight,
-                            //     Number(inputValue),
-                            //   );
-                            // }
-                          }}
-                        />
-                        <label htmlFor="actual" className="ml-2">
-                          Actual
-                        </label>
-                      </div>
-                    </Col>
-                  </Row>
+                        </Row>
+                      </Col>
+                    </Row>
+                  )}
                 </Col>
               </Row>
+              <Col lg={12}>
+                <h5 className="ms-2">Wt.of handle</h5>
+                <Row className="custom_radio_wrappper">
+                  <Col md={6}>
+                    <div className="flex align-items-center mb-3">
+                      <RadioButton
+                        inputId="auto"
+                        name="isHandleAuto"
+                        value={1}
+                        onChange={e => {
+                          setIsHandleAuto(e.value);
+                          handleWeightChange(
+                            1,
+                            bagMadeAllData?.auto_handle_weight,
+                            bagMadeAllData?.act_handle_weight,
+                          );
+                        }}
+                        checked={isHandleAuto === 1}
+                      />
+                      <InputText
+                        placeholder=""
+                        className="mx-2"
+                        disabled
+                        value={bagMadeAllData?.auto_handle_weight}
+                        onChange={e => {
+                          setBagMadeAllData({
+                            ...bagMadeAllData,
+                            auto_handle_weight: e.target.value,
+                          });
+                          handleWeightChange(
+                            1,
+                            Number(e.target.value),
+                            bagMadeAllData?.act_handle_weight,
+                          );
+                        }}
+                      />
+                      <label htmlFor="auto" className="ml-2">
+                        Auto
+                      </label>
+                    </div>
+                  </Col>
+                  <Col md={6}>
+                    <div className="flex align-items-center">
+                      <RadioButton
+                        inputId="actual"
+                        name="isHandleAuto"
+                        value={0}
+                        onChange={e => {
+                          setIsHandleAuto(e.value);
+                          handleWeightChange(
+                            0,
+                            bagMadeAllData?.auto_handle_weight,
+                            bagMadeAllData?.act_handle_weight,
+                          );
+                        }}
+                        checked={isHandleAuto === 0}
+                      />
+                      <InputText
+                        placeholder="0"
+                        type="number"
+                        className="mx-2"
+                        value={bagMadeAllData?.act_handle_weight}
+                        onChange={e => {
+                          setBagMadeAllData({
+                            ...bagMadeAllData,
+                            act_handle_weight: e.target.value,
+                          });
+                          // const value = e?.target?.value;
+                          // const parts = value.split('.');
+                          // // const a = parts.length > 1 && Number(parts[1]) >= 0;
+                          // const a = parts[1]?.length > 0;
+
+                          // if (!a || (a && parts[1]?.length <= 2)) {
+                          handleWeightChange(
+                            0,
+                            bagMadeAllData?.auto_handle_weight,
+                            e?.target?.value,
+                          );
+                          // }
+
+                          // const inputValue = e?.target?.value;
+                          // const isValidDecimal =
+                          //   /^\d*\.?\d{0,2}$/.test(inputValue) &&
+                          //   inputValue !== 'e' &&
+                          //   inputValue !== '.';
+
+                          // if (isValidDecimal) {
+                          //   handleWeightChange(
+                          //     0,
+                          //     bagMadeAllData?.auto_handle_weight,
+                          //     Number(inputValue),
+                          //   );
+                          // }
+                        }}
+                      />
+                      <label htmlFor="actual" className="ml-2">
+                        Actual
+                      </label>
+                    </div>
+                  </Col>
+                </Row>
+              </Col>
             </Col>
             <Col md={6}>
               <div className="total_list_box mb-3">
@@ -4075,6 +3573,13 @@ export default function MFGLiveAdmin({ hasAccess }) {
                 </ul>
               </div>
               <Row>
+                {snapShort && (
+                  <h3 className="text-danger">
+                    {`Bags dispatched in ${bagMadeAllData?.days} days${
+                      fastStatus ? ', We are that Fast.' : '.'
+                    }`}
+                  </h3>
+                )}
                 <Col sm={4}>
                   <div className="form_group mb-3">
                     <label>Stereo Charge</label>
@@ -4143,10 +3648,37 @@ export default function MFGLiveAdmin({ hasAccess }) {
                   </div>
                 </Col>
               </Row>
+              {snapShort && (
+                <Row className="g-3">
+                  <Col lg={4} sm={6}>
+                    <div className="rate_box yellow_box">
+                      <h4>
+                        ₹{' '}
+                        {thousandSeparator(Number(bagMadeAllData?.act_kg_rate))}
+                        /KG
+                      </h4>
+                      <h5 className="m-0">KG Rate (Actual)</h5>
+                    </div>
+                  </Col>
+                  <Col lg={4} sm={6}>
+                    <div className="rate_box green_box">
+                      <h4>
+                        ₹{' '}
+                        {thousandSeparator(
+                          Number(bagMadeAllData?.theoretical_kg_rate),
+                        )}
+                        /KG
+                      </h4>
+                      <h5 className="m-0">KG Rate (Theoretical)</h5>
+                    </div>
+                  </Col>
+                </Row>
+              )}
             </Col>
           </Row>
         </div>
       </Dialog>
+
       <Dialog
         header=""
         visible={!!whatsappPopup}
@@ -4246,6 +3778,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
           </div>
         </div>
       </Dialog>
+
       <Dialog
         header={`${isEdit ? 'Update' : 'Save'}  Personal Filters`}
         visible={saveFilterModal}
@@ -4268,6 +3801,7 @@ export default function MFGLiveAdmin({ hasAccess }) {
           {isEdit ? 'Update Filter' : 'Save Filter'}
         </Button>
       </Dialog>
+
       <FilterOverlay
         op={op}
         filters={filters}

@@ -6,6 +6,10 @@ import { Column } from 'primereact/column';
 import CustomPaginator from 'Components/Common/CustomPaginator';
 import Skeleton from 'react-loading-skeleton';
 import { useSelector } from 'react-redux';
+import {
+  setSortMFGLiveField,
+  setSortMFGLiveOrder,
+} from 'Store/Reducers/Production/mfgLiveSlice';
 
 function MFGLiveAdminTable({
   setAllCommon,
@@ -40,9 +44,12 @@ function MFGLiveAdminTable({
 }) {
   const dispatch = useDispatch();
 
-  const { mfgFilterListLoading, mfgLiveListLoading } = useSelector(
-    ({ mfgLive }) => mfgLive,
-  );
+  const {
+    mfgFilterListLoading,
+    mfgLiveListLoading,
+    sortMFGLiveField,
+    sortMFGLiveOrder,
+  } = useSelector(({ mfgLive }) => mfgLive);
   const { currentUser } = useSelector(({ auth }) => auth);
   const { partiesLoading } = useSelector(({ parties }) => parties);
   const { miscMasterLoading } = useSelector(({ miscMaster }) => miscMaster);
@@ -54,6 +61,19 @@ function MFGLiveAdminTable({
       return false;
     }
   }, []);
+
+  const customSort = e => {
+    dispatch(setSortMFGLiveField(e.sortField));
+    dispatch(setSortMFGLiveOrder(e.sortOrder));
+  };
+
+  const designerNameTemplate = data => {
+    return (
+      <span className="m-0" style={{ width: '140px', display: 'flex' }}>
+        {data?.designer_name}
+      </span>
+    );
+  };
 
   return (
     <div className="data_table_wrapper mfg_table_Wrapper with_colspan_head cell_padding_large is_filter break_header">
@@ -77,8 +97,9 @@ function MFGLiveAdminTable({
       <DataTable
         value={mfgData}
         sortMode="single"
-        sortField="name"
-        sortOrder={1}
+        onSort={customSort}
+        sortField={sortMFGLiveField}
+        sortOrder={sortMFGLiveOrder}
         rows={10}
         filterDisplay="row"
         dataKey="_id"
@@ -102,7 +123,7 @@ function MFGLiveAdminTable({
           (miscMasterLoading ||
             mfgLiveListLoading ||
             mfgFilterListLoading ||
-            partiesLoading) && <Skeleton count={9} />
+            partiesLoading) && <Skeleton count={12} />
         }
       >
         <Column
@@ -136,7 +157,16 @@ function MFGLiveAdminTable({
             sortable
             showFilterMenu={false}
             filter={filterToggle}
-            body={e => bedgeBodyTemplate(e.hndl, e.hndl_str, 'hndl', e._id)}
+            body={e =>
+              bedgeBodyTemplate(
+                e.hndl,
+                e.hndl_str,
+                'hndl',
+                e._id,
+                e.hndl_updated_by_name,
+                e.hndl_updated_at,
+              )
+            }
             filterElement={e => statusRowFilterTemplate(e, 'hndl')}
             style={{ zIndex: '10' }}
             frozen
@@ -148,9 +178,9 @@ function MFGLiveAdminTable({
           sortable
           showFilterMenu={false}
           filter={filterToggle}
-          filterElement={e => statusRowFilterTemplate(e, 'old_str')}
+          filterElement={e => statusRowFilterTemplate(e, 'old_stereo')}
           body={e =>
-            bedgeBodyTemplate(e.old_str, e.old_str_str, 'old_str', e._id)
+            bedgeBodyTemplate(e.old_stereo, e.old_str_str, 'old_stereo', e._id)
           }
           style={{ zIndex: '10' }}
           frozen
@@ -163,7 +193,14 @@ function MFGLiveAdminTable({
           filter={filterToggle}
           filterElement={e => statusRowFilterTemplate(e, 'str_ord')}
           body={e =>
-            bedgeBodyTemplate(e.str_ord, e.str_ord_str, 'str_ord', e._id)
+            bedgeBodyTemplate(
+              e.str_ord,
+              e.str_ord_str,
+              'str_ord',
+              e._id,
+              e.str_ord_updated_by_name,
+              e.str_ord_updated_at,
+            )
           }
           style={{ zIndex: '10' }}
           frozen
@@ -176,7 +213,14 @@ function MFGLiveAdminTable({
           filter={filterToggle}
           filterElement={e => statusRowFilterTemplate(e, 'str_rcv')}
           body={e =>
-            bedgeBodyTemplate(e.str_rcv, e.str_rcv_str, 'str_rcv', e._id)
+            bedgeBodyTemplate(
+              e.str_rcv,
+              e.str_rcv_str,
+              'str_rcv',
+              e._id,
+              e.str_rcv_updated_by_name,
+              e.str_rcv_updated_at,
+            )
           }
           style={{ zIndex: '10' }}
           frozen
@@ -223,7 +267,14 @@ function MFGLiveAdminTable({
             filter={filterToggle}
             filterElement={e => statusRowFilterTemplate(e, 'bag_sent')}
             body={e =>
-              bedgeBodyTemplate(e.bag_sent, e.bag_sent_str, 'bag_sent', e._id)
+              bedgeBodyTemplate(
+                e.bag_sent,
+                e.bag_sent_str,
+                'bag_sent',
+                e._id,
+                e.bag_sent_updated_by_name,
+                e.bag_sent_updated_at,
+              )
             }
             style={{ zIndex: '10' }}
             frozen
@@ -238,7 +289,14 @@ function MFGLiveAdminTable({
             filter={filterToggle}
             filterElement={e => statusRowFilterTemplate(e, 'lr_sent')}
             body={e =>
-              bedgeBodyTemplate(e.lr_sent, e.lr_sent_str, 'lr_sent', e._id)
+              bedgeBodyTemplate(
+                e.lr_sent,
+                e.lr_sent_str,
+                'lr_sent',
+                e._id,
+                e.lr_sent_updated_by_name,
+                e.lr_sent_updated_at,
+              )
             }
             style={{ zIndex: '10' }}
             frozen
@@ -262,14 +320,14 @@ function MFGLiveAdminTable({
           <Column
             field="action"
             header="Action"
-            filter={filterToggle}
+            // filter={filterToggle}
             body={actionTemplate}
           ></Column>
         )}
         <Column
           field="main_image"
           header="Image"
-          filter={filterToggle}
+          // filter={filterToggle}
           body={imageTemplate}
         ></Column>
         <Column
@@ -278,6 +336,13 @@ function MFGLiveAdminTable({
           sortable
           filter={filterToggle}
           body={designNameTemplate}
+        ></Column>
+        <Column
+          field="designer_name"
+          header="Designer Name"
+          sortable
+          filter={filterToggle}
+          body={designerNameTemplate}
         ></Column>
         <Column
           field="size_str"
@@ -339,6 +404,18 @@ function MFGLiveAdminTable({
           sortable
           filter={filterToggle}
           body={mainTableRollWidthTemplate}
+        ></Column>
+        <Column
+          field="bag_weight"
+          header="Bag Weight"
+          sortable
+          filter={filterToggle}
+        ></Column>
+        <Column
+          field="print_technology_name"
+          header="Print Technology"
+          sortable
+          filter={filterToggle}
         ></Column>
         {currentUser.role_name.toLowerCase() !== 'designer' && (
           <Column
@@ -427,6 +504,13 @@ function MFGLiveAdminTable({
           sortable
           filter={filterToggle}
         ></Column>
+        {/* <Column
+          field="designer_name"
+          header="Designer Name"
+          sortable
+          filter={filterToggle}
+          className="px-5"
+        ></Column> */}
         <Column
           field="is_laminated_str"
           header="Lamination"
@@ -500,6 +584,7 @@ function MFGLiveAdminTable({
         onPageRowsChange={onPageRowsChange}
         currentPage={currentPage}
         totalCount={mfgLiveCount}
+        isRestrictTotalEntries // Not showing total data entries:
       />
     </div>
   );

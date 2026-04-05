@@ -40,6 +40,8 @@ import {
 import {
   setBrokerMarginAnalysisList,
   setPendingBrokerMarginList,
+  setSortBrokerMarginField,
+  setSortBrokerMarginOrder,
 } from 'Store/Reducers/Finance/FinancialsSlice';
 import { Checkbox } from 'primereact/checkbox';
 import moment from 'moment';
@@ -69,9 +71,17 @@ const designNameTemplate = rowItem => {
 
 const bagSizeAndGSMTemplate = rowItem => {
   const bagDetail = rowItem?.bag_detail;
-  const value = `W${bagDetail?.width} X H${bagDetail?.height} X G${bagDetail?.gusset} (${bagDetail?.gsm}GSM)`;
+  // const value = `W${bagDetail?.width} X H${bagDetail?.height} X G${bagDetail?.gusset} (${bagDetail?.gsm}GSM)`;
 
-  return <span className="d-block">{value}</span>;
+  const gsmValue = bagDetail
+    ? `${bagDetail?.width ? 'W ' + bagDetail?.width + '”' : ''} ${
+        bagDetail?.height ? 'x  H ' + bagDetail?.height + '”' : ''
+      } ${bagDetail?.gusset ? 'x G ' + bagDetail?.gusset + '”' : ''} ${
+        bagDetail?.gsm ? '(' + bagDetail?.gsm + ' GSM)' : ''
+      }`
+    : '-';
+
+  return <span className="d-block">{gsmValue}</span>;
 };
 
 const bagTypeTemplate = rowItem => {
@@ -173,6 +183,8 @@ export default function BrokerMargin() {
     brokerOptionsList,
     brokerMarginAnalysisList,
     pendingBrokerMarginList,
+    sortBrokerMarginField,
+    sortBrokerMarginOrder,
   } = useSelector(({ finance }) => finance);
 
   const {
@@ -209,52 +221,57 @@ export default function BrokerMargin() {
   //   return updatedData;
   // }, [brokerMarginAnalysisList, isPendingReward]);
 
-  const handleBrokerMarginListings = useCallback(() => {
-    if (brokerSelect) {
-      if (isPendingReward) {
-        dispatch(
-          getPendingBrokerMarginAnalysisList(
-            pendingBrokerCurrentPage,
-            pendingBrokerCurrentPageLimit,
-            brokerSelect,
-            applied,
-            searchQuery,
-          ),
-        );
-      } else {
-        dispatch(
-          getBrokerMarginAnalysisList(
-            currentPage,
-            pageLimit,
-            brokerSelect,
-            applied,
-            searchQuery,
-          ),
-        );
+  const handleBrokerMarginListings = useCallback(
+    broker => {
+      if (broker) {
+        if (isPendingReward) {
+          dispatch(
+            getPendingBrokerMarginAnalysisList(
+              pendingBrokerCurrentPage,
+              pendingBrokerCurrentPageLimit,
+              broker,
+              applied,
+              searchQuery,
+            ),
+          );
+        } else {
+          dispatch(
+            getBrokerMarginAnalysisList(
+              currentPage,
+              pageLimit,
+              broker,
+              applied,
+              searchQuery,
+            ),
+          );
+        }
       }
-    }
-  }, [
-    dispatch,
-    applied,
-    brokerSelect,
-    currentPage,
-    pageLimit,
-    searchQuery,
-    isPendingReward,
-    pendingBrokerCurrentPage,
-    pendingBrokerCurrentPageLimit,
-  ]);
+    },
+    [
+      dispatch,
+      applied,
+      // brokerSelect,
+      currentPage,
+      pageLimit,
+      searchQuery,
+      isPendingReward,
+      pendingBrokerCurrentPage,
+      pendingBrokerCurrentPageLimit,
+    ],
+  );
 
-  const loadRequiredData = () => {
+  const loadRequiredData = async () => {
     dispatch(
       getListFilter({
         module_name: 'brokerMarginAnalysis',
       }),
     );
-    handleBrokerMarginListings();
-    dispatch(getBrokerOptionsList());
+    const brokerOptionsList = await dispatch(getBrokerOptionsList());
     dispatch(getActiveBagTypeList());
     dispatch(getActiveLaminationTypeList());
+    if (brokerOptionsList?.length) {
+      handleBrokerMarginListings(brokerOptionsList[0]?._id);
+    }
   };
 
   useEffect(() => {
@@ -1071,6 +1088,11 @@ export default function BrokerMargin() {
     [allFilters, applied, brokerSelect, dispatch, isPendingReward, searchQuery],
   );
 
+  const customSort = e => {
+    dispatch(setSortBrokerMarginField(e.sortField));
+    dispatch(setSortBrokerMarginOrder(e.sortOrder));
+  };
+
   return (
     <>
       {financeLoading && <Loader />}
@@ -1103,6 +1125,28 @@ export default function BrokerMargin() {
                                 },
                               }),
                             );
+
+                            if (e.checked) {
+                              dispatch(
+                                getPendingBrokerMarginAnalysisList(
+                                  pendingBrokerCurrentPage,
+                                  pendingBrokerCurrentPageLimit,
+                                  brokerSelect,
+                                  applied,
+                                  searchQuery,
+                                ),
+                              );
+                            } else {
+                              dispatch(
+                                getBrokerMarginAnalysisList(
+                                  currentPage,
+                                  pageLimit,
+                                  brokerSelect,
+                                  applied,
+                                  searchQuery,
+                                ),
+                              );
+                            }
                           }}
                           checked={isPendingReward}
                         />
@@ -1141,6 +1185,7 @@ export default function BrokerMargin() {
                         options={updatedBrokerOptions}
                         onChange={e => {
                           setBrokerSelect(e.value);
+                          handleBrokerMarginListings(e.value);
                           // handleBrokerMarginListing(e.value);
                         }}
                         placeholder="Select Broker"
@@ -1206,7 +1251,9 @@ export default function BrokerMargin() {
                   : brokerMarginAnalysisList?.list
               }
               sortMode="single"
-              sortField="name"
+              onSort={customSort}
+              sortField={sortBrokerMarginField}
+              sortOrder={sortBrokerMarginOrder}
               filterDisplay="row"
               dataKey="_id"
               filters={brokerMarginFilter}

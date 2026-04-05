@@ -39,7 +39,7 @@ export function generateYearOptions(startYear) {
   const currentYear = new Date().getFullYear();
   const options = [];
 
-  for (let year = startYear; year <= currentYear; year++) {
+  for (let year = startYear; year <= currentYear + 2; year++) {
     options.push({ value: year, label: year.toString() });
   }
 
@@ -105,7 +105,9 @@ export default function TargetMaster({ hasAccess }) {
 
   const getTargetMasterData = useCallback(
     async (advisorId, year) => {
-      dispatch(getListAdvisorTaget(advisorId, year));
+      if (advisorId && year) {
+        dispatch(getListAdvisorTaget(advisorId, year));
+      }
     },
     [advisorTargetMasterData, dispatch],
   );
@@ -140,6 +142,10 @@ export default function TargetMaster({ hasAccess }) {
                               ...advisorTargetMasterData,
                               advisor_id: e.value,
                             }),
+                          );
+                          debouncehandleSearchInput(
+                            e.value,
+                            advisorTargetMasterData?.year,
                           );
                         }}
                         placeholder="Advisor Name"

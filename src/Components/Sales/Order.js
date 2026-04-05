@@ -14,6 +14,7 @@ import ExportIcon from '../../Assets/Images/export.svg';
 import PlusIcon from '../../Assets/Images/plus.svg';
 import EditIcon from '../../Assets/Images/edit.svg';
 import TrashIcon from '../../Assets/Images/trash.svg';
+import HistoryIcon from '../../Assets/Images/history-icon.svg';
 import { Dialog } from 'primereact/dialog';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -29,6 +30,7 @@ import SalesInvoice from '../../Assets/Images/sales-invoice.svg';
 import Whatsapp from '../../Assets/Images/whatsapp.svg';
 import CheckGreen from '../../Assets/Images/check-round-green.svg';
 import CheckRed from '../../Assets/Images/check-round-red.svg';
+import StockDispatch from '../../Assets/Images/stock-dispatch.svg';
 import { Checkbox } from 'primereact/checkbox';
 import { useSelector } from 'react-redux';
 import _ from 'lodash';
@@ -47,6 +49,8 @@ import {
   deleteSalesOrderJob,
   getExportSalesOrder,
   getExportSalesOrderJobs,
+  getOrderAuditLogsDetail,
+  getOrderRateHistoryDetail,
   getSalesOrderDetail,
   getSalesOrderJobsList,
   getSalesOrdersList,
@@ -58,7 +62,6 @@ import { useDispatch } from 'react-redux';
 import ConfirmDialog from 'Components/Common/ConfirmDialog';
 import FilterOverlay from 'Components/Common/FilterOverlay';
 import CustomPaginator from 'Components/Common/CustomPaginator';
-import Loader from 'Components/Common/Loader';
 import WhatsAppShare from 'Components/Common/Whatsapp';
 import Skeleton from 'react-loading-skeleton';
 import {
@@ -69,8 +72,9 @@ import {
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 import {
   checkModulePermission,
+  convertCurrencyToNumber,
   getDMYDateFormat,
-  statusObj as statusArray,
+  roundValueThousandSeparator,
 } from 'Helper/Common';
 import {
   updateBagSentStatus,
@@ -83,9 +87,20 @@ import {
   clearAddSelectedOrderData,
   setIsGetInitialValuesJob,
   setIsGetInitialValuesOrder,
+  setOrderAuditLogsDetail,
   setPreviousTransporter,
+  setSalesOrderList,
+  setSalesOrderOnlyJobsList,
+  setSortOrderDataField,
+  setSortOrderDataOrder,
+  setSortOrderOnlyJobDataField,
+  setSortOrderOnlyJobDataOrder,
 } from 'Store/Reducers/Sales/SalesOrderSlice';
 import { setIsGetInitialValuesSalesInvoice } from 'Store/Reducers/Sales/SalesInvoiceSlice';
+import { ColumnGroup } from 'primereact/columngroup';
+import OrderRateHistoryDialog from './Orders/OrderRateHistoryDialog';
+import AuditLogsDialog from './Orders/AuditLogsDialog';
+import { getCurrentUserFromLocal } from 'Services/baseService';
 
 const commonCase = val => {
   switch (val) {
@@ -97,6 +112,12 @@ const commonCase = val => {
       return null;
   }
 };
+
+const statusArray = [
+  { label: 'YES', value: true },
+  { label: 'NO', value: false },
+];
+
 const statusObj = [
   { label: 'Pending', value: '0' },
   { label: 'Approved', value: '1' },
@@ -104,6 +125,7 @@ const statusObj = [
   { label: 'Completed', value: '3' },
   { label: 'Cancelled', value: '4' },
   { label: 'Rejected', value: '5' },
+  { label: 'Approved for Dispatch', value: '6' },
 ];
 
 export const getSeverity = val => {
@@ -159,7 +181,7 @@ export const getStatusText = status => {
     case 0:
       return 'Pending';
     case 1:
-      return 'Approved';
+      return 'Approved for MFG';
     case 2:
       return 'Progress';
     case 3:
@@ -168,6 +190,8 @@ export const getStatusText = status => {
       return 'Cancelled';
     case 5:
       return 'Rejected';
+    case 6:
+      return 'Approved for Dispatch';
     default:
       return 'Pending';
   }
@@ -190,7 +214,7 @@ const filterDetails = [
   { label: 'Total Amount', value: 'total_amount', type: 'inputBox' },
   { label: 'Advance Amount', value: 'advance_amount', type: 'inputBox' },
   { label: 'Present Advisor', value: 'present_advisor', type: 'dropDown' },
-  // { label: 'Original Advisor', value: 'original_advisor', type: 'dropDown' },
+  { label: 'Original Advisor', value: 'original_advisor', type: 'dropDown' },
   { label: 'Transporter', value: 'transporter', type: 'dropDown' },
   { label: 'Comments', value: 'comment', type: 'inputBox' },
   { label: 'CC Attach', value: 'is_cc_attach', type: 'dropDown' },
@@ -245,6 +269,7 @@ export default function Order({ hasAccess }) {
   const dateRef = useRef(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const UserPreferences = getCurrentUserFromLocal();
 
   const {
     is_create_access,
@@ -254,12 +279,14 @@ export default function Order({ hasAccess }) {
     is_print_access,
   } = hasAccess;
 
+  const [auditLogsPopup, setAuditLogsPopup] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [selectId, setSelectId] = useState('');
   const [filterId, setFilterId] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [whatsappData, setWhatsappData] = useState({});
   const [deletePopup, setDeletePopup] = useState(false);
+  const [orderRateHistoryPopup, setOrderRateHistoryPopup] = useState(false);
   const [repeatOrder, setRepeatOrder] = useState(false);
   const [cancelOrder, setCancelOrder] = useState(false);
   const [expandedRows, setExpandedRows] = useState(null);
@@ -280,10 +307,15 @@ export default function Order({ hasAccess }) {
   // const [isJobsOnly, setIsJobsOnly] = useState(false);
 
   const {
+    sortOrderDataField,
+    sortOrderDataOrder,
+    sortOrderOnlyJobDataOrder,
+    sortOrderOnlyJobDataField,
     salesOrderListLoading,
-    salesOrderCRUDLoading,
     salesOrderList,
     salesOrderCount,
+    salesTotalQty,
+    salesTotalAmount,
     salesOrderOnlyJobsList,
     salesOrderJobsCount,
     isGetInitialValuesOrder,
@@ -310,6 +342,7 @@ export default function Order({ hasAccess }) {
     jobFilterToggle,
     searchQuery,
     isJobsOnly,
+    isPendingJobsOnly,
     orderFilters,
     jobFilters,
   } = allCommon?.order;
@@ -386,6 +419,19 @@ export default function Order({ hasAccess }) {
     );
   };
 
+  const customSort = e => {
+    dispatch(setSortOrderDataField(e.sortField));
+    dispatch(setSortOrderDataOrder(e.sortOrder));
+  };
+
+  const salesOrderJobCustomSort = useCallback(
+    e => {
+      dispatch(setSortOrderOnlyJobDataField(e.sortField));
+      dispatch(setSortOrderOnlyJobDataOrder(e.sortOrder));
+    },
+    [dispatch],
+  );
+
   const laminationOptions = useMemo(() => {
     const updatedLaminationData = activeLaminationTypeList?.map(item => {
       return { label: item?.label, value: item.label };
@@ -398,6 +444,12 @@ export default function Order({ hasAccess }) {
 
   const allowExpansion = rowData => {
     return rowData?.order_job?.length > 0;
+  };
+
+  const advanceAmountTemplate = row => {
+    return (
+      <span>{`₹${roundValueThousandSeparator(row?.advance_amount)}`}</span>
+    );
   };
 
   const partieTemplate = useCallback(
@@ -542,7 +594,7 @@ export default function Order({ hasAccess }) {
   const bedgeBodyTemplate = val => {
     return (
       <span className={`bedge_${getSeverity(val)}`}>
-        {val === true ? 'Yes' : 'No'}
+        {val === true ? 'YES' : 'NO'}
       </span>
     );
   };
@@ -557,34 +609,83 @@ export default function Order({ hasAccess }) {
           }}
           disabled={checkMFGLivePermission ? false : true}
         >
-          {val === true ? 'Yes' : 'No'}
+          {val === true ? 'YES' : 'NO'}
         </button>
       </div>
     );
   };
 
   const onUpdateStatusOfJob = useCallback(
-    async (_id, status, isJobsOnly) => {
-      const res = await dispatch(updateStatusSalesOrderJob(_id, status));
-      if (res) {
-        if (isJobsOnly) {
-          dispatch(
-            getSalesOrderJobsList(jobsPageLimit, 1, searchQuery, applied),
-          );
-        } else {
-          dispatch(
-            getSalesOrdersList(pageLimit, 1, searchQuery, applied, dates),
-          );
+    async (_id, status, isJobsOnly, orderData) => {
+      dispatch(updateStatusSalesOrderJob(_id, status));
+      // if (res) {
+      //   if (isJobsOnly) {
+      //     dispatch(
+      //       getSalesOrderJobsList(jobsPageLimit, 1, searchQuery, applied),
+      //     );
+      //   } else {
+      //     dispatch(
+      //       getSalesOrdersList(pageLimit, 1, searchQuery, applied, dates),
+      //     );
+      //   }
+      // }
+
+      if (isJobsOnly) {
+        let updatedSalesJobListData = [...salesOrderOnlyJobsList];
+        const index = updatedSalesJobListData?.findIndex(i => i._id === _id);
+
+        if (index !== -1) {
+          const oldObj = updatedSalesJobListData[index];
+          const newObj = {
+            ...oldObj,
+            status: status,
+            status_str: getStatusText(status),
+          };
+
+          updatedSalesJobListData[index] = newObj;
         }
+        dispatch(setSalesOrderOnlyJobsList(updatedSalesJobListData));
+      } else {
+        let updatedOrderListData = [...salesOrderList];
+        let updatedOrderJobListData = [...(orderData?.order_job ?? [])];
+
+        const orderDataIndex = updatedOrderListData?.findIndex(
+          i => i._id === orderData?._id,
+        );
+        const jobOrderIndex = updatedOrderJobListData?.findIndex(
+          i => i._id === _id,
+        );
+
+        if (orderDataIndex !== -1 && jobOrderIndex !== -1) {
+          const oldOrderObj = { ...orderData };
+          const oldOrderJobObj = updatedOrderJobListData[jobOrderIndex];
+
+          const newOrderJobObj = {
+            ...oldOrderJobObj,
+            status: status,
+            status_str: getStatusText(status),
+          };
+
+          updatedOrderJobListData[jobOrderIndex] = newOrderJobObj;
+
+          const newOrderObj = {
+            ...oldOrderObj,
+            order_job: updatedOrderJobListData,
+          };
+
+          updatedOrderListData[orderDataIndex] = newOrderObj;
+        }
+        dispatch(setSalesOrderList(updatedOrderListData));
       }
     },
-    [dispatch, pageLimit, jobsPageLimit, searchQuery, applied, dates],
+    [dispatch, salesOrderList, salesOrderOnlyJobsList],
   );
 
   const innerAction = useCallback(
     ({ status, _id, is_cancelled, salesOrder_id, ...rest }) => {
       const checkPermission =
         is_edit_access || is_delete_access || is_print_access;
+
       return (
         <>
           <div className="edit_row">
@@ -625,6 +726,27 @@ export default function Order({ hasAccess }) {
                       <img src={TrashIcon} alt="" /> Delete
                     </Dropdown.Item>
                   )}
+
+                <Dropdown.Item
+                  onClick={() => {
+                    dispatch(
+                      getOrderRateHistoryDetail({
+                        party_name: rest.party_name,
+                        product_id: rest.product_id,
+                      }),
+                    );
+
+                    setOrderRateHistoryPopup(true);
+                  }}
+                >
+                  <img
+                    src={HistoryIcon}
+                    alt=""
+                    style={{ marginRight: '9px', marginLeft: '2px' }}
+                  />{' '}
+                  Rate History
+                </Dropdown.Item>
+
                 {is_print_access && (
                   <Dropdown.Item
                     onClick={() => {
@@ -633,6 +755,25 @@ export default function Order({ hasAccess }) {
                     }}
                   >
                     <img src={Whatsapp} alt="" /> WhatsApp
+                  </Dropdown.Item>
+                )}
+
+                {UserPreferences?.role_name === 'Admin' && (
+                  <Dropdown.Item
+                    onClick={() => {
+                      setAuditLogsPopup(true);
+
+                      dispatch(setOrderAuditLogsDetail([]));
+
+                      dispatch(
+                        getOrderAuditLogsDetail({
+                          ref_id: _id,
+                          ref_type: 'JOB',
+                        }),
+                      );
+                    }}
+                  >
+                    <img src={HistoryIcon} alt="" /> Audit Logs
                   </Dropdown.Item>
                 )}
               </Dropdown.Menu>
@@ -651,7 +792,8 @@ export default function Order({ hasAccess }) {
   );
 
   const innerVerify = useCallback(
-    ({ status, _id, is_cancelled, attachment }) => {
+    (rowData, orderData) => {
+      const { status, _id } = rowData;
       return (
         <>
           {status !== 4 || status !== 2 || status !== 3 ? (
@@ -659,16 +801,31 @@ export default function Order({ hasAccess }) {
               {(status === 0 || status === 5) && (
                 <Button
                   className="btn_transperant"
-                  onClick={() => onUpdateStatusOfJob(_id, 1, isJobsOnly)}
+                  onClick={() =>
+                    onUpdateStatusOfJob(_id, 1, isJobsOnly, orderData)
+                  }
                   disabled={is_edit_access ? false : true}
                 >
                   <img src={CheckGreen} alt="" />
                 </Button>
               )}
+              {(status === 0 || status === 5) && (
+                <Button
+                  className="btn_transperant"
+                  onClick={() =>
+                    onUpdateStatusOfJob(_id, 6, isJobsOnly, orderData)
+                  }
+                  disabled={is_edit_access ? false : true}
+                >
+                  <img src={StockDispatch} alt="" />
+                </Button>
+              )}
               {(status === 0 || status === 1) && (
                 <Button
                   className="btn_transperant"
-                  onClick={() => onUpdateStatusOfJob(_id, 5, isJobsOnly)}
+                  onClick={() =>
+                    onUpdateStatusOfJob(_id, 5, isJobsOnly, orderData)
+                  }
                   disabled={is_edit_access ? false : true}
                 >
                   <img src={CheckRed} alt="" />
@@ -881,24 +1038,49 @@ export default function Order({ hasAccess }) {
             ></Column>
             {/* <Column field="action" header="Action" body={innerAction}></Column> */}
             {['Admin', 'Sub Admin'].includes(currentUser?.role_name) && (
-              <Column field="verify" header="Verify" body={innerVerify} />
+              <Column
+                field="verify"
+                header="Verify"
+                body={e => innerVerify(e, data)}
+              />
             )}
             <Column field="action" header="Action" body={innerAction} />
           </DataTable>
         </div>
       );
     },
-    [currentUser, salesOrderListLoading],
+    [
+      currentUser,
+      salesOrderListLoading,
+      innerVerify,
+      bedgeBagLrBodyTemplate,
+      innerAction,
+      productTemplate,
+    ],
   );
 
   const onUpdateStatusOfOrderJob = useCallback(
     async (id, status) => {
-      const res = await dispatch(updateStatusSalesOrder(id, status));
-      if (res) {
-        dispatch(getSalesOrdersList(pageLimit, 1, searchQuery, applied, dates));
+      dispatch(updateStatusSalesOrder(id, status));
+      // if (res) {
+      //   dispatch(getSalesOrdersList(pageLimit, 1, searchQuery, applied, dates));
+      // }
+      let updatedOrderListData = [...salesOrderList];
+      const index = updatedOrderListData?.findIndex(i => i._id === id);
+
+      if (index !== -1) {
+        const oldObj = updatedOrderListData[index];
+        const newObj = {
+          ...oldObj,
+          status: status,
+          status_str: getStatusText(status),
+        };
+
+        updatedOrderListData[index] = newObj;
       }
+      dispatch(setSalesOrderList(updatedOrderListData));
     },
-    [dispatch, searchQuery, pageLimit, applied, dates],
+    [dispatch, salesOrderList],
   );
 
   const partiesVerify = useCallback(
@@ -916,6 +1098,17 @@ export default function Order({ hasAccess }) {
                   disabled={is_edit_access ? false : true}
                 >
                   <img src={CheckGreen} alt="" />
+                </Button>
+              )}
+              {(status === 0 || status === 5) && (
+                <Button
+                  className="btn_transperant"
+                  onClick={() =>
+                    is_edit_access && onUpdateStatusOfOrderJob(_id, 6)
+                  }
+                  disabled={is_edit_access ? false : true}
+                >
+                  <img src={StockDispatch} alt="" />
                 </Button>
               )}
               {(status === 0 || status === 1) && (
@@ -938,12 +1131,19 @@ export default function Order({ hasAccess }) {
   );
 
   const partiesAction = useCallback(
-    ({ status, _id, is_cancelled, attachment }) => {
+    row => {
+      const { status, _id } = row;
+
       const checkPermission =
         is_create_access ||
         is_edit_access ||
         is_delete_access ||
         checkTaxInvoicePermission;
+
+      const advisorRole = ['Advisor'].includes(currentUser?.role_name);
+
+      const checkAdvisorWithApproveStatus = advisorRole && status === 1;
+
       return (
         <>
           <div className="edit_row">
@@ -985,8 +1185,11 @@ export default function Order({ hasAccess }) {
                     status === 5) && (
                     <Dropdown.Item
                       onClick={() => {
-                        setOrderDeletePopup(_id);
+                        if (!checkAdvisorWithApproveStatus) {
+                          setOrderDeletePopup(_id);
+                        }
                       }}
+                      disabled={checkAdvisorWithApproveStatus}
                     >
                       <img src={TrashIcon} alt="" /> Delete
                     </Dropdown.Item>
@@ -1011,10 +1214,13 @@ export default function Order({ hasAccess }) {
                   (status === 0 || status === 1 || status === 2) && (
                     <Dropdown.Item
                       onClick={() => {
-                        setCancelOrder(true);
-                        setSelectId(_id);
-                        // handleCancelOrder(_id);
+                        if (!checkAdvisorWithApproveStatus) {
+                          setCancelOrder(true);
+                          setSelectId(_id);
+                          // handleCancelOrder(_id);
+                        }
                       }}
+                      disabled={checkAdvisorWithApproveStatus}
                     >
                       <img src={CancelOrder} alt="" />
                       Cancel Order
@@ -1028,6 +1234,25 @@ export default function Order({ hasAccess }) {
                     <img src={SalesInvoice} alt="" /> Sales Invoice
                   </Dropdown.Item>
                 )}
+
+                {UserPreferences?.role_name === 'Admin' && (
+                  <Dropdown.Item
+                    onClick={() => {
+                      setAuditLogsPopup(true);
+
+                      dispatch(setOrderAuditLogsDetail([]));
+
+                      dispatch(
+                        getOrderAuditLogsDetail({
+                          ref_id: _id,
+                          ref_type: 'ORDER',
+                        }),
+                      );
+                    }}
+                  >
+                    <img src={HistoryIcon} alt="" /> Audit Logs
+                  </Dropdown.Item>
+                )}
               </Dropdown.Menu>
             </Dropdown>
           </div>
@@ -1035,11 +1260,14 @@ export default function Order({ hasAccess }) {
       );
     },
     [
+      dispatch,
       navigate,
       is_edit_access,
       is_create_access,
       is_delete_access,
+      isGetInitialValuesOrder,
       checkTaxInvoicePermission,
+      UserPreferences?.role_name,
     ],
   );
 
@@ -1094,6 +1322,10 @@ export default function Order({ hasAccess }) {
     (index, field, value) => {
       const updatedFilters = [...filters];
 
+      const checkPendingStatusValue = value?.includes('0');
+
+      const isStatusFilter = updatedFilters[index]?.filter === 'status';
+
       if (field === 'filter' && updatedFilters[index]['value'] !== '') {
         updatedFilters[index] = {
           ...updatedFilters[index],
@@ -1101,6 +1333,18 @@ export default function Order({ hasAccess }) {
           value: '',
         };
       } else {
+        if (isStatusFilter) {
+          dispatch(
+            setAllCommon({
+              ...allCommon,
+              order: {
+                ...allCommon?.order,
+                isPendingJobsOnly: checkPendingStatusValue,
+              },
+            }),
+          );
+        }
+
         updatedFilters[index] = { ...updatedFilters[index], [field]: value };
       }
       dispatch(
@@ -1110,7 +1354,7 @@ export default function Order({ hasAccess }) {
         }),
       );
     },
-    [filters, allFilters, dispatch],
+    [filters, allFilters, dispatch, allCommon],
   );
 
   const handleAddFilter = useCallback(() => {
@@ -1129,6 +1373,20 @@ export default function Order({ hasAccess }) {
     index => {
       const updatedFilters = [...filters];
       updatedFilters.splice(index, 1);
+
+      const isStatusFilter = filters[index]?.filter === 'status';
+
+      if (isStatusFilter && !!isPendingJobsOnly) {
+        dispatch(
+          setAllCommon({
+            ...allCommon,
+            order: {
+              ...allCommon?.order,
+              isPendingJobsOnly: false,
+            },
+          }),
+        );
+      }
 
       const updatedAppliedFilters =
         updatedFilters?.length === 0 &&
@@ -1192,6 +1450,7 @@ export default function Order({ hasAccess }) {
 
   const selectedFilters = useMemo(() => {
     let list = isJobsOnly ? jobsFilterDetails : filterDetails;
+
     let filter = filters?.map(filter => {
       let filterDetail = list?.find(detail => detail.value === filter.filter);
       return filterDetail ? filterDetail : null;
@@ -1312,12 +1571,12 @@ export default function Order({ hasAccess }) {
       'order_qty',
       'advance_amount',
       'total_amount',
-      'job_no',
-      'width',
-      'height',
-      'length',
-      'gusset',
-      'stereo_charge',
+      // 'job_no',
+      // 'width',
+      // 'height',
+      // 'length',
+      // 'gusset',
+      // 'stereo_charge',
       'status',
     ];
 
@@ -1330,8 +1589,10 @@ export default function Order({ hasAccess }) {
     if (filterArray?.length > 0) {
       let filterObj = {};
       filterArray.forEach(item => {
-        const convertedArray = filter_fields.includes(item?.filter)
-          ? item.value.map(item => Number(item))
+        const convertedArray = filter_fields?.includes(item?.filter)
+          ? Array.isArray(item?.value)
+            ? item.value.map(item => Number(item))
+            : Number(item.value)
           : item.value;
 
         filterObj = {
@@ -1543,6 +1804,7 @@ export default function Order({ hasAccess }) {
           order: { ...allFilters?.order, currentPage: pageIndex },
         }),
       );
+
       dispatch(
         getSalesOrdersList(pageLimit, pageIndex, searchQuery, applied, dates),
       );
@@ -1644,9 +1906,59 @@ export default function Order({ hasAccess }) {
     return '';
   };
 
+  const customSortFunction = event => {
+    const { data, field, order } = event;
+
+    if (!data || !Array.isArray(data) || !field) {
+      return data;
+    }
+
+    const updatedData = [...data];
+
+    // Sort the data array based on the specified field and order
+    updatedData.sort((a, b) => {
+      const first_amount = parseDate(a[field]);
+      const second_amount = parseDate(b[field]);
+
+      // Compare the date values based on the sort order
+      if (order === 1) {
+        return first_amount - second_amount; // Ascending order
+      } else {
+        return second_amount - first_amount; // Descending order
+      }
+    });
+
+    return updatedData;
+  };
+
+  const parseDate = amountString => {
+    if (amountString) {
+      const amount = convertCurrencyToNumber(amountString);
+      return amount;
+    }
+  };
+
+  const footerGroup = (
+    <ColumnGroup>
+      <Row>
+        <Column footer="Total" colSpan={6} />
+        <Column style={{ textAlign: 'start' }} footer={salesTotalQty} />
+        <Column
+          style={{ textAlign: 'start' }}
+          footer={
+            salesTotalAmount
+              ? `₹${roundValueThousandSeparator(salesTotalAmount)}`
+              : ''
+          }
+        />
+        <Column footer="" colSpan={13} />
+      </Row>
+    </ColumnGroup>
+  );
+
   const renderOrderTable = useMemo(() => {
     return (
-      <div className="data_table_wrapper cell_padding_large is_filter break_header vertical_space_medium">
+      <div className="data_table_wrapper cell_padding_large is_filter break_header vertical_space_medium summation_table">
         <button
           type="button"
           className="table_filter_btn"
@@ -1674,7 +1986,12 @@ export default function Order({ hasAccess }) {
           }
           dataKey="_id"
           filterDisplay="row"
+          sortMode="single"
+          onSort={customSort}
+          sortField={sortOrderDataField}
+          sortOrder={sortOrderDataOrder}
           filters={orderFilters}
+          footerColumnGroup={footerGroup}
           onFilter={event => {
             dispatch(
               setAllCommon({
@@ -1685,7 +2002,7 @@ export default function Order({ hasAccess }) {
           }}
           rowClassName={getRowClassName}
           ref={tableRef}
-          emptyMessage={salesOrderListLoading && <Skeleton count={10} />}
+          emptyMessage={salesOrderListLoading && <Skeleton count={13} />}
           // emptyMessage={
           //   salesOrderLoading ||
           //   salesOrderListLoading ||
@@ -1724,6 +2041,12 @@ export default function Order({ hasAccess }) {
             body={partieTemplate}
           />
           <Column
+            header="Tripta Due Amount"
+            field="tripta_due_amount"
+            sortable
+            filter={filterToggle}
+          />
+          <Column
             field="order_qty"
             header="Order Qty"
             sortable
@@ -1734,12 +2057,14 @@ export default function Order({ hasAccess }) {
             header="Total Amount"
             sortable
             filter={filterToggle}
+            sortFunction={event => customSortFunction(event)}
           />
           <Column
             field="advance_amount"
             header="Advance Amount"
             sortable
             filter={filterToggle}
+            body={e => advanceAmountTemplate(e)}
           />
           <Column
             field="present_advisor_name"
@@ -1808,6 +2133,7 @@ export default function Order({ hasAccess }) {
           onPageRowsChange={onPageRowsChange}
           currentPage={currentPage}
           totalCount={salesOrderCount}
+          isRestrictTotalEntries
         />
       </div>
     );
@@ -1823,6 +2149,8 @@ export default function Order({ hasAccess }) {
     allCommon,
     orderFilters,
     dispatch,
+    sortOrderDataField,
+    sortOrderDataOrder,
   ]);
 
   const renderJobsTable = useMemo(() => {
@@ -1849,6 +2177,9 @@ export default function Order({ hasAccess }) {
         <DataTable
           value={salesOrderOnlyJobsList}
           dataKey="_id"
+          onSort={salesOrderJobCustomSort}
+          sortField={sortOrderOnlyJobDataField}
+          sortOrder={sortOrderOnlyJobDataOrder}
           filters={jobFilters}
           onFilter={event => {
             dispatch(
@@ -1858,8 +2189,7 @@ export default function Order({ hasAccess }) {
               }),
             );
           }}
-          sortMode="multiple"
-          sortField=" "
+          sortMode="single"
           filterDisplay="row"
           // emptyMessage={
           //   (salesOrderLoading ||
@@ -1867,7 +2197,7 @@ export default function Order({ hasAccess }) {
           //     salesOrderExportLoading ||
           //     miscMasterLoading) && <Skeleton count={10} />
           // }
-          emptyMessage={salesOrderListLoading && <Skeleton count={10} />}
+          emptyMessage={salesOrderListLoading && <Skeleton count={13} />}
         >
           <Column
             field="job_no"
@@ -2007,7 +2337,6 @@ export default function Order({ hasAccess }) {
             filter={jobFilterToggle}
             body={statusOrderBodyTemplate}
           ></Column>
-          {/* <Column field="action" header="Action" body={innerAction}></Column> */}
           {['Admin', 'Sub Admin'].includes(currentUser?.role_name) && (
             <Column field="verify" header="Verify" body={innerVerify} />
           )}
@@ -2020,6 +2349,7 @@ export default function Order({ hasAccess }) {
           onPageRowsChange={onJobsPageRowsChange}
           currentPage={jobsCurrentPage}
           totalCount={salesOrderJobsCount}
+          isRestrictTotalEntries
         />
       </div>
     );
@@ -2027,12 +2357,22 @@ export default function Order({ hasAccess }) {
     dispatch,
     allCommon,
     jobFilters,
-    jobsPageLimit,
+    salesOrderListLoading,
     jobFilterToggle,
+    productTemplate,
+    currentUser?.role_name,
+    innerVerify,
+    innerAction,
+    jobsPageLimit,
+    onJobsPageChange,
+    onJobsPageRowsChange,
     jobsCurrentPage,
     salesOrderJobsCount,
-    salesOrderListLoading,
+    bedgeBagLrBodyTemplate,
     salesOrderOnlyJobsList,
+    salesOrderJobCustomSort,
+    sortOrderOnlyJobDataField,
+    sortOrderOnlyJobDataOrder,
   ]);
 
   const handleSearchInput = (e, jobsOnly) => {
@@ -2083,7 +2423,6 @@ export default function Order({ hasAccess }) {
         miscMasterLoading ||
         salesOrderLoading ||
         salesOrderCRUDLoading) && <Loader />} */}
-      {salesOrderCRUDLoading && <Loader />}
       <div className="main_Wrapper">
         <div className="table_main_Wrapper bg-white">
           <div className="top_filter_wrap">
@@ -2099,16 +2438,115 @@ export default function Order({ hasAccess }) {
                     <li className="order_checkbox_wrap">
                       <div className="form_group checkbox_wrap">
                         <Checkbox
+                          inputId="ShowPendingJobsOnly"
+                          name="ShowPendingJobsOnly"
+                          value={isPendingJobsOnly}
+                          onChange={e => {
+                            dispatch(
+                              setAllCommon({
+                                ...allCommon,
+                                order: {
+                                  ...allCommon?.order,
+                                  isPendingJobsOnly: e.checked,
+                                  filterToggle: false,
+                                  jobFilterToggle: false,
+                                  searchQuery: '',
+                                },
+                              }),
+                            );
+
+                            if (e.checked) {
+                              const appliedFilters = {
+                                ...applied,
+                                status: [0],
+                              };
+
+                              dispatch(
+                                setAllFilters({
+                                  ...allFilters,
+                                  order: {
+                                    ...allFilters?.order,
+                                    filters: [
+                                      ...filters,
+                                      {
+                                        filter: 'status',
+                                        value: ['0'],
+                                      },
+                                    ],
+                                    applied: appliedFilters,
+                                  },
+                                }),
+                              );
+
+                              dispatch(
+                                getSalesOrderJobsList(
+                                  jobsPageLimit,
+                                  jobsCurrentPage,
+                                  '',
+                                  appliedFilters,
+                                ),
+                              );
+                            } else {
+                              const exceptStatusFilters = filters.filter(
+                                item => {
+                                  return item.filter !== 'status';
+                                },
+                              );
+
+                              const { status, ...restAppliedFilters } = applied;
+
+                              dispatch(
+                                setAllFilters({
+                                  ...allFilters,
+                                  order: {
+                                    ...allFilters?.order,
+                                    filters: exceptStatusFilters,
+                                    applied: restAppliedFilters,
+                                  },
+                                }),
+                              );
+
+                              dispatch(
+                                getSalesOrdersList(
+                                  pageLimit,
+                                  currentPage,
+                                  '',
+                                  restAppliedFilters,
+                                  dates,
+                                ),
+                              );
+                            }
+
+                            tableRef.current?.reset();
+                          }}
+                          checked={isPendingJobsOnly}
+                        />
+                        <label htmlFor="ShowTransportersonly" className="mb-0">
+                          Show Pending Jobs Only
+                        </label>
+                      </div>
+                    </li>
+                    <li className="order_checkbox_wrap">
+                      <div className="form_group checkbox_wrap">
+                        <Checkbox
                           inputId="ShowTransportersonly"
                           name="ShowTransportersonly"
                           value={isJobsOnly}
                           onChange={e => {
+                            const existedStatusFilter = filters.some(
+                              item => item.filter === 'status',
+                            );
+
+                            const appliedFilters = existedStatusFilter
+                              ? applied
+                              : {};
+
                             dispatch(
                               setAllFilters({
                                 ...allFilters,
                                 order: {
                                   ...allFilters?.order,
-                                  applied: {},
+                                  ...(!existedStatusFilter && { applied: {} }),
                                 },
                               }),
                             );
@@ -2132,7 +2570,7 @@ export default function Order({ hasAccess }) {
                                   jobsPageLimit,
                                   jobsCurrentPage,
                                   '',
-                                  {},
+                                  appliedFilters,
                                 ),
                               );
                             } else {
@@ -2141,7 +2579,7 @@ export default function Order({ hasAccess }) {
                                   pageLimit,
                                   currentPage,
                                   '',
-                                  {},
+                                  appliedFilters,
                                   dates,
                                 ),
                               );
@@ -2497,6 +2935,14 @@ export default function Order({ hasAccess }) {
         setWhatsappPopup={setWhatsappPopup}
         data={whatsappData}
         isBagDetail={true}
+      />
+      <OrderRateHistoryDialog
+        orderRateHistoryPopup={orderRateHistoryPopup}
+        setOrderRateHistoryPopup={setOrderRateHistoryPopup}
+      />
+      <AuditLogsDialog
+        auditLogsPopup={auditLogsPopup}
+        setAuditLogsPopup={setAuditLogsPopup}
       />
     </>
   );

@@ -41,6 +41,8 @@ import {
 import {
   ClearAddSelectedSalesInvoiceData,
   setIsGetInitialValuesSalesInvoice,
+  setSortSalesInvoiceField,
+  setSortSalesInvoiceOrder,
 } from 'Store/Reducers/Sales/SalesInvoiceSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterOverlay from 'Components/Common/FilterOverlay';
@@ -102,6 +104,8 @@ export default function SalesInvoice({ hasAccess }) {
   );
   const {
     salesInvoiceLoading,
+    sortSalesInvoiceField,
+    sortSalesInvoiceOrder,
     salesInvoiceList,
     salesInvoiceCount,
     isGetInitialValuesSalesInvoice,
@@ -641,6 +645,11 @@ export default function SalesInvoice({ hasAccess }) {
     loadTableData(e);
   };
 
+  const customSort = e => {
+    dispatch(setSortSalesInvoiceField(e.sortField));
+    dispatch(setSortSalesInvoiceOrder(e.sortOrder));
+  };
+
   return (
     <>
       <div className="main_Wrapper">
@@ -830,8 +839,10 @@ export default function SalesInvoice({ hasAccess }) {
             <DataTable
               value={salesInvoiceList}
               sortMode="single"
-              sortField="name"
               filterDisplay="row"
+              onSort={customSort}
+              sortField={sortSalesInvoiceField}
+              sortOrder={sortSalesInvoiceOrder}
               filters={salesFilters}
               onFilter={event => {
                 dispatch(
@@ -844,7 +855,6 @@ export default function SalesInvoice({ hasAccess }) {
                   }),
                 );
               }}
-              sortOrder={1}
               rows={10}
               dataKey="_id"
               emptyMessage={salesInvoiceLoading && <Skeleton count={10} />}

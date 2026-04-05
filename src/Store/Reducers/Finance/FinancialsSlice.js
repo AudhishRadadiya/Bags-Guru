@@ -8,6 +8,10 @@ let initialState = {
   brokerOptionsList: [],
   brokerMarginAnalysisList: {},
   pendingBrokerMarginList: {},
+  sortProfitAnalysisField: '',
+  sortProfitAnalysisOrder: 1,
+  sortBrokerMarginField: '',
+  sortBrokerMarginOrder: 1,
 };
 
 const financeSlice = createSlice({
@@ -35,6 +39,18 @@ const financeSlice = createSlice({
     setPendingBrokerMarginList: (state, action) => {
       state.pendingBrokerMarginList = action.payload;
     },
+    setSortProfitAnalysisField: (state, action) => {
+      state.sortProfitAnalysisField = action.payload;
+    },
+    setSortProfitAnalysisOrder: (state, action) => {
+      state.sortProfitAnalysisOrder = action.payload;
+    },
+    setSortBrokerMarginField: (state, action) => {
+      state.sortBrokerMarginField = action.payload;
+    },
+    setSortBrokerMarginOrder: (state, action) => {
+      state.sortBrokerMarginOrder = action.payload;
+    },
   },
 });
 
@@ -46,6 +62,10 @@ export const {
   setBrokerOptionsList,
   setBrokerMarginAnalysisList,
   setPendingBrokerMarginList,
+  setSortProfitAnalysisField,
+  setSortProfitAnalysisOrder,
+  setSortBrokerMarginField,
+  setSortBrokerMarginOrder,
 } = financeSlice.actions;
 
 export default financeSlice.reducer;

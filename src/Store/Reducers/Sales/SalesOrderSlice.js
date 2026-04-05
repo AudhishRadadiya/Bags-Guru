@@ -30,11 +30,19 @@ let initialState = {
     dispatch_after_payment: 0,
     multiple_billing: 0,
     dispatch_on_invoice: 0,
+    tripta_0_to_15_amount: '₹0',
+    tripta_16_to_30_amount: '₹0',
+    tripta_31_to_45_amount: '₹0',
+    tripta_46_to_90_amount: '₹0',
+    tripta_above_90_amount: '₹0',
+    tripta_total_due: '₹0',
+    tripta_last_updated_date: '',
   },
   orderData: {
     is_editable: true,
     party_name: '',
     gst: '',
+    tripta_due_amount: 0,
     order_date: new Date(),
     due_date: '',
     transporter: '',
@@ -62,6 +70,7 @@ let initialState = {
     salesOrder_id: '',
     old_stereo: 1,
     unit_pc: 1,
+    broker_unit_pc: 1,
     qty: '',
     rate: '',
     amount: 0,
@@ -134,6 +143,7 @@ let initialState = {
     due_date: new Date(),
     old_stereo: 1,
     unit_pc: 1,
+    broker_unit_pc: 1,
     final_amount: 0,
     amount: 0,
     amount_kg: 0,
@@ -163,6 +173,12 @@ let initialState = {
     update: false,
     view: false,
   },
+  sortOrderDataField: null,
+  sortOrderDataOrder: null,
+  sortOrderOnlyJobDataOrder: null,
+  sortOrderOnlyJobDataField: null,
+  orderRateHistoryDetails: [],
+  orderAuditLogsDetail: [],
 };
 
 const SalesOrderSlice = createSlice({
@@ -183,6 +199,12 @@ const SalesOrderSlice = createSlice({
     },
     setSalesOrderList: (state, action) => {
       state.salesOrderList = action.payload;
+    },
+    setSalesTotalAmount: (state, action) => {
+      state.salesTotalAmount = action.payload;
+    },
+    setSalesTotalQty: (state, action) => {
+      state.salesTotalQty = action.payload;
     },
     setSalesOrderOnlyJobsList: (state, action) => {
       state.salesOrderOnlyJobsList = action.payload;
@@ -256,6 +278,24 @@ const SalesOrderSlice = createSlice({
     clearViewSelectedJobData: state => {
       state.viewSelectedJobData = initialState.jobInitialValues;
     },
+    setSortOrderDataField: (state, action) => {
+      state.sortOrderDataField = action.payload;
+    },
+    setSortOrderDataOrder: (state, action) => {
+      state.sortOrderDataOrder = action.payload;
+    },
+    setSortOrderOnlyJobDataField: (state, action) => {
+      state.sortOrderOnlyJobDataField = action.payload;
+    },
+    setSortOrderOnlyJobDataOrder: (state, action) => {
+      state.sortOrderOnlyJobDataOrder = action.payload;
+    },
+    setOrderRateHistoryDetails: (state, action) => {
+      state.orderRateHistoryDetails = action.payload;
+    },
+    setOrderAuditLogsDetail: (state, action) => {
+      state.orderAuditLogsDetail = action.payload;
+    },
   },
 });
 
@@ -265,6 +305,8 @@ export const {
   setSalesOrderCRUDLoading,
   setSalesOrderExportLoading,
   setSalesOrderList,
+  setSalesTotalQty,
+  setSalesTotalAmount,
   setSalesOrderOnlyJobsList,
   setSalesOrderJobsCount,
   setSalesOrderCount,
@@ -289,6 +331,12 @@ export const {
   clearUpdateSelectedJobData,
   setViewSelectedJobData,
   clearViewSelectedJobData,
+  setSortOrderDataField,
+  setSortOrderDataOrder,
+  setSortOrderOnlyJobDataField,
+  setSortOrderOnlyJobDataOrder,
+  setOrderRateHistoryDetails,
+  setOrderAuditLogsDetail,
 } = SalesOrderSlice.actions;
 
 export default SalesOrderSlice.reducer;

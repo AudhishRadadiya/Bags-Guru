@@ -191,6 +191,11 @@ let initialState = {
   }, // Update Product:
   viewSelectedProductData: {}, // View Product:
   dupicateSelectedProductData: {}, // Duplicate Product:
+  sortProductTransferField: '',
+  sortProductTransferOrder: 1,
+  sortMobileAppPriceField: '',
+  sortMobileAppPriceOrder: 1,
+  productHistoryDetails: [],
 };
 
 const productSlice = createSlice({
@@ -288,6 +293,21 @@ const productSlice = createSlice({
     clearDuplicateSelectedProductData: state => {
       state.dupicateSelectedProductData = initialState.initialProduct;
     },
+    setSortProductTransferField: (state, action) => {
+      state.sortProductTransferField = action.payload;
+    },
+    setSortProductTransferOrder: (state, action) => {
+      state.sortProductTransferOrder = action.payload;
+    },
+    setSortMobileAppPriceField: (state, action) => {
+      state.sortMobileAppPriceField = action.payload;
+    },
+    setSortMobileAppPriceOrder: (state, action) => {
+      state.sortMobileAppPriceOrder = action.payload;
+    },
+    setProductHistoryDetails: (state, action) => {
+      state.productHistoryDetails = action.payload;
+    },
   },
 });
 
@@ -322,6 +342,11 @@ export const {
   clearViewSelectedProductData,
   setDupicateSelectedProductData,
   clearDuplicateSelectedProductData,
+  setSortProductTransferField,
+  setSortProductTransferOrder,
+  setSortMobileAppPriceField,
+  setSortMobileAppPriceOrder,
+  setProductHistoryDetails,
 } = productSlice.actions;
 
 export default productSlice.reducer;

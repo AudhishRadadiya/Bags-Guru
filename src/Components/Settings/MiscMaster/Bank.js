@@ -32,6 +32,8 @@ import { uploadFile } from 'Services/CommonService';
 import Loader from 'Components/Common/Loader';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 
+const defaultBankFormData = { name: '', code: '', is_active: 1, is_default: 0 };
+
 export default function Bank({ hasAccess }) {
   const dispatch = useDispatch();
   const { is_create_access, is_edit_access, is_delete_access } = hasAccess;
@@ -67,11 +69,13 @@ export default function Bank({ hasAccess }) {
           ...values,
           bank_id: selectedBank?._id,
         };
+
         result = await dispatch(updateBank(payload));
       } else {
         const payload = {
           ...values,
         };
+
         result = await dispatch(createBank(payload));
       }
       if (result) {
@@ -86,7 +90,7 @@ export default function Bank({ hasAccess }) {
           }),
         );
         setSaveFilterModal(false);
-        dispatch(setSelectedBank({ name: '', code: '', is_active: 1 }));
+        dispatch(setSelectedBank(defaultBankFormData));
         dispatch(getBankList(pageLimit, 1, searchQuery));
       }
     },
@@ -151,7 +155,7 @@ export default function Bank({ hasAccess }) {
 
   const onCancel = useCallback(() => {
     resetForm();
-    dispatch(setSelectedBank({ name: '', code: '', is_active: 1 }));
+    dispatch(setSelectedBank(defaultBankFormData));
     setSaveFilterModal(false);
   }, [dispatch, resetForm]);
 
@@ -421,7 +425,7 @@ export default function Bank({ hasAccess }) {
           onHide={() => {
             setSaveFilterModal(false);
             resetForm();
-            dispatch(setSelectedBank({ name: '', code: '', is_active: 1 }));
+            dispatch(setSelectedBank(defaultBankFormData));
           }}
         >
           <div className="form_group mb-3">
@@ -538,20 +542,37 @@ export default function Bank({ hasAccess }) {
                 <p className="text-danger">{errors?.payment_Qrcode}</p>
               )}
             </div>
-            <div className="me-2">
-              <Checkbox
-                value={values?.is_active}
-                inputId="is_active"
-                name="is_active"
-                checked={values?.is_active === 1}
-                onChange={e =>
-                  setFieldValue('is_active', e.target.checked ? 1 : 0)
-                }
-              />
-              <label htmlFor="Create1">Active </label>
-              {touched?.is_active && errors?.is_active && (
-                <p className="text-danger"> {errors?.is_active}</p>
-              )}
+            <div className="d-flex flex-nowrap gap-2">
+              <div className="me-1 d-flex align-items-center">
+                <Checkbox
+                  value={values?.is_active}
+                  inputId="is_active"
+                  name="is_active"
+                  checked={values?.is_active === 1}
+                  onChange={e =>
+                    setFieldValue('is_active', e.target.checked ? 1 : 0)
+                  }
+                />
+                <label htmlFor="Create1">Active </label>
+                {touched?.is_active && errors?.is_active && (
+                  <p className="text-danger"> {errors?.is_active}</p>
+                )}
+              </div>
+              <div className="me-1 d-flex align-items-center">
+                <Checkbox
+                  value={values?.is_default}
+                  inputId="is_default"
+                  name="is_default"
+                  checked={values?.is_default === 1}
+                  onChange={e =>
+                    setFieldValue('is_default', e.target.checked ? 1 : 0)
+                  }
+                />
+                <label htmlFor="Create1">Default</label>
+                {touched?.is_default && errors?.is_default && (
+                  <p className="text-danger"> {errors?.is_default}</p>
+                )}
+              </div>
             </div>
             {bankList?.filter(x => x?.is_default === true)?.length ===
             1 ? null : (

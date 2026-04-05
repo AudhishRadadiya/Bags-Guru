@@ -62,7 +62,7 @@ export const getmfgLiveList =
               ? 'YES'
               : 'NO',
           hndl_str: x?.hndl ? 'YES' : 'NO',
-          old_str_str: x?.old_str ? 'YES' : 'NO',
+          old_str_str: x?.old_stereo ? 'YES' : 'NO',
           str_ord_str:
             x?.str_ord === 2 ? 'SENT' : x?.str_ord === 1 ? 'YES' : 'NO',
           str_rcv_str: x?.str_rcv ? 'YES' : 'NO',
@@ -355,11 +355,12 @@ export const getSuggestedRollList =
 
       const nonHiddenData = updated?.filter(data => {
         if (mfgLive?.assignedRollList?.length) {
-          return mfgLive?.assignedRollList?.some(
-            item => data?._id !== item?._id && !item?.is_hidden,
+          const checkAssignedRoll = mfgLive?.assignedRollList?.some(
+            item => data?._id !== item?._id,
           );
+          return checkAssignedRoll && !data?.is_hidden && data;
         } else {
-          return !data?.is_hidden;
+          return !data?.is_hidden && data;
         }
       });
 
@@ -367,7 +368,7 @@ export const getSuggestedRollList =
         Object.keys(mfgLive?.mfgLivePrintingFilterList).map(key => {
           filterData[key]?.forEach(value => {
             const keyValue =
-              typeof value === 'string' ? value?.toLowerCase() : value;
+              typeof value === 'string' ? value?.toLowerCase()?.trim() : value;
             const findFilterData = mfgLive?.mfgLivePrintingFilterList[key]
               .filter(
                 item =>
@@ -487,7 +488,7 @@ export const addBagDetailForBagMade = payload => async dispatch => {
 export const updateHandleStatus = payload => async dispatch => {
   try {
     if (payload) {
-      dispatch(setMfgLiveLoading(true));
+      // dispatch(setMfgLiveLoading(true));
       const response = await axios.post(
         `update/mfgProcess/hndleStatus`,
         payload,
@@ -507,7 +508,7 @@ export const updateHandleStatus = payload => async dispatch => {
     roastError(e);
     return false;
   } finally {
-    dispatch(setMfgLiveLoading(false));
+    // dispatch(setMfgLiveLoading(false));
   }
 };
 
@@ -518,7 +519,7 @@ export const updateHandleStatus = payload => async dispatch => {
 export const updateStrOrderStatus = payload => async dispatch => {
   try {
     if (payload) {
-      dispatch(setMfgLiveLoading(true));
+      // dispatch(setMfgLiveLoading(true));
       const response = await axios.post(
         `update/mfgProcess/stereoOrder`,
         payload,
@@ -538,7 +539,7 @@ export const updateStrOrderStatus = payload => async dispatch => {
     roastError(e);
     return false;
   } finally {
-    dispatch(setMfgLiveLoading(false));
+    // dispatch(setMfgLiveLoading(false));
   }
 };
 
@@ -549,7 +550,7 @@ export const updateStrOrderStatus = payload => async dispatch => {
 export const updateStrReceiveStatus = payload => async dispatch => {
   try {
     if (payload) {
-      dispatch(setMfgLiveLoading(true));
+      // dispatch(setMfgLiveLoading(true));
       const response = await axios.post(
         `update/mfgProcess/stereoReceive`,
         payload,
@@ -569,7 +570,7 @@ export const updateStrReceiveStatus = payload => async dispatch => {
     roastError(e);
     return false;
   } finally {
-    dispatch(setMfgLiveLoading(false));
+    // dispatch(setMfgLiveLoading(false));
   }
 };
 
@@ -580,7 +581,7 @@ export const updateStrReceiveStatus = payload => async dispatch => {
 export const updateBagSentStatus = payload => async dispatch => {
   try {
     if (payload) {
-      dispatch(setMfgLiveLoading(true));
+      // dispatch(setMfgLiveLoading(true));
       const response = await axios.post(
         `update/mfgProcess/bagSentStatus`,
         payload,
@@ -600,7 +601,7 @@ export const updateBagSentStatus = payload => async dispatch => {
     roastError(e);
     return false;
   } finally {
-    dispatch(setMfgLiveLoading(false));
+    // dispatch(setMfgLiveLoading(false));
   }
 };
 
@@ -611,7 +612,7 @@ export const updateBagSentStatus = payload => async dispatch => {
 export const updateLrSentStatus = payload => async dispatch => {
   try {
     if (payload) {
-      dispatch(setMfgLiveLoading(true));
+      // dispatch(setMfgLiveLoading(true));
       const response = await axios.post(
         `update/mfgProcess/lrSentStatus`,
         payload,
@@ -631,7 +632,7 @@ export const updateLrSentStatus = payload => async dispatch => {
     roastError(e);
     return false;
   } finally {
-    dispatch(setMfgLiveLoading(false));
+    // dispatch(setMfgLiveLoading(false));
   }
 };
 
@@ -751,8 +752,8 @@ export const getExportMfgExcel =
       const response = await axios.post(`export/mfgProcess/excel`, {
         filter: filter,
         search: query,
-        start_date: dates?.[0] ? getDMYDateFormat(dates?.[0]) : '',
-        end_date: dates?.[1] ? getDMYDateFormat(dates?.[1]) : '',
+        start_date: dates?.startDate ? getDMYDateFormat(dates?.startDate) : '',
+        end_date: dates?.endDate ? getDMYDateFormat(dates?.endDate) : '',
         field_filter: field_filter,
       });
       const { msg, err, data } = response.data;
@@ -807,5 +808,22 @@ export const getMfgLivePrintingFilterList = payload => async dispatch => {
     return false;
   } finally {
     // dispatch(setMfgLiveLoading(false));
+  }
+};
+
+export const getMfgLivePrintStatusList = id => async dispatch => {
+  try {
+    const response = await axios.get(`view/mfgProcess/printStatus/${id}`);
+    const { msg, err, data } = response.data;
+
+    if (err === 0) {
+      return data;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
   }
 };

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Col, Dropdown, Row } from 'react-bootstrap';
 import { InputText } from 'primereact/inputtext';
 import PlusIcon from '../../../../Assets/Images/plus.svg';
@@ -30,6 +30,10 @@ import { getSeverity } from '../Warehouse';
 import Skeleton from 'react-loading-skeleton';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 import Loader from 'Components/Common/Loader';
+import { MultiSelect } from 'primereact/multiselect';
+import { getPartiesAdvisor } from 'Services/partiesService';
+
+const defaultValues = { name: '', budget: '', advisor: [], is_active: 1 };
 
 export const statusBodyTemplate = data => {
   return (
@@ -55,6 +59,7 @@ export default function CustomerSourceDetail({ hasAccess }) {
     selectedCustomerSourceDetail,
   } = useSelector(({ miscMaster }) => miscMaster);
   const { allFilters, allCommon } = useSelector(({ common }) => common);
+  const { partiesAdvisor } = useSelector(({ parties }) => parties);
   const { searchQuery, customerSourceDetailFilters, filterToggle } =
     allCommon?.customerSourceDetail;
   const { currentPage, pageLimit } = allFilters?.customerSourceDetail;
@@ -65,25 +70,43 @@ export default function CustomerSourceDetail({ hasAccess }) {
         getCustomerSourceDetailList(pageLimit, currentPage, searchQuery),
       );
     }, 700);
+
+    dispatch(getPartiesAdvisor());
     return () => clearTimeout(getData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageLimit]);
 
+  const advisorOptions = useMemo(() => {
+    let updatedAdvisorList = [];
+
+    if (partiesAdvisor?.length > 0) {
+      updatedAdvisorList = partiesAdvisor?.map(item => {
+        return { label: item.label, value: item.value };
+      });
+    }
+
+    return updatedAdvisorList;
+  }, [partiesAdvisor]);
+
   const submitHandle = useCallback(
     async values => {
       let result;
+
+      let payload = {
+        name: values.name,
+        budget: values.budget,
+        advisor: values.advisor,
+        ...(selectedCustomerSourceDetail?._id && {
+          customerSourceDetail_id: selectedCustomerSourceDetail._id,
+        }),
+      };
+
       if (selectedCustomerSourceDetail?._id) {
-        const payload = {
-          ...values,
-          customerSourceDetail_id: selectedCustomerSourceDetail?._id,
-        };
         result = await dispatch(updateCustomerSourceDetail(payload));
       } else {
-        const payload = {
-          ...values,
-        };
         result = await dispatch(createCustomerSourceDetail(payload));
       }
+
       if (result) {
         resetForm();
         dispatch(
@@ -96,7 +119,7 @@ export default function CustomerSourceDetail({ hasAccess }) {
           }),
         );
         setSaveFilterModal(false);
-        dispatch(setSelectedCustomerSourceDetail({ name: '', is_active: 1 }));
+        dispatch(setSelectedCustomerSourceDetail(defaultValues));
         dispatch(getCustomerSourceDetailList(pageLimit, 1, searchQuery));
       }
     },
@@ -104,8 +127,8 @@ export default function CustomerSourceDetail({ hasAccess }) {
       dispatch,
       pageLimit,
       searchQuery,
-      selectedCustomerSourceDetail?._id,
       allFilters,
+      selectedCustomerSourceDetail?._id,
     ],
   );
 
@@ -163,7 +186,7 @@ export default function CustomerSourceDetail({ hasAccess }) {
 
   const onCancel = useCallback(() => {
     resetForm();
-    dispatch(setSelectedCustomerSourceDetail({ name: '', is_active: 1 }));
+    dispatch(setSelectedCustomerSourceDetail(defaultValues));
     setSaveFilterModal(false);
   }, [dispatch, resetForm]);
 
@@ -187,7 +210,6 @@ export default function CustomerSourceDetail({ hasAccess }) {
           deleteCustomerSourceDetail(customerSourceDetail_id),
         );
         if (result) {
-          setDeletePopup(false);
           dispatch(
             setAllFilters({
               ...allFilters,
@@ -199,6 +221,7 @@ export default function CustomerSourceDetail({ hasAccess }) {
           );
           dispatch(getCustomerSourceDetailList(pageLimit, 1, searchQuery));
         }
+        setDeletePopup(false);
       }
     },
     [dispatch, pageLimit, searchQuery, allFilters],
@@ -378,9 +401,7 @@ export default function CustomerSourceDetail({ hasAccess }) {
           onHide={() => {
             setSaveFilterModal(false);
             resetForm();
-            dispatch(
-              setSelectedCustomerSourceDetail({ name: '', is_active: 1 }),
-            );
+            dispatch(setSelectedCustomerSourceDetail(defaultValues));
           }}
         >
           <div className="form_group mb-3">
@@ -399,6 +420,39 @@ export default function CustomerSourceDetail({ hasAccess }) {
               <p className="text-danger">{errors?.name}</p>
             )}
           </div>
+          <div className="form_group mb-3">
+            <label htmlFor="budget">Budget</label>
+            <InputText
+              placeholder="Enter Budget"
+              type="number"
+              id="budget"
+              name="budget"
+              value={values?.budget}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
+            {touched?.budget && errors?.budget && (
+              <p className="text-danger">{errors?.budget}</p>
+            )}
+          </div>
+
+          <div className="form_group mb-3">
+            <label>Advisor</label>
+            <MultiSelect
+              filter
+              name="advisor"
+              value={values?.advisor}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              placeholder="Show Advisor"
+              options={advisorOptions}
+              className="w-100"
+            />
+            {touched?.advisor && errors?.advisor && (
+              <p className="text-danger">{errors?.advisor}</p>
+            )}
+          </div>
+
           <div className="form_group checkbox_wrap with_input mt-0">
             <Checkbox
               value={values?.is_active}

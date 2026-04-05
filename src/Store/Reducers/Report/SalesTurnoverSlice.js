@@ -10,6 +10,7 @@ let initialState = {
   updatedSalesTurnoverValuationList: [],
   salesTurnoverPercentageList: {},
   updatedSalesTurnoverPercentageList: [],
+  designerReportList: [],
 };
 
 const SalesTurnoverSlice = createSlice({
@@ -43,6 +44,9 @@ const SalesTurnoverSlice = createSlice({
     setUpdatedSalesTurnoverPercentageList: (state, action) => {
       state.updatedSalesTurnoverPercentageList = action.payload;
     },
+    setDesignerReportList: (state, action) => {
+      state.designerReportList = action.payload;
+    },
   },
 });
 
@@ -56,6 +60,7 @@ export const {
   setSalesTurnoverPercentageList,
   setUpdatedSalesTurnoverValuationList,
   setUpdatedSalesTurnoverPercentageList,
+  setDesignerReportList,
 } = SalesTurnoverSlice.actions;
 
 export default SalesTurnoverSlice.reducer;

@@ -24,6 +24,10 @@ import CustomPaginator from 'Components/Common/CustomPaginator';
 import Skeleton from 'react-loading-skeleton';
 import Loader from 'Components/Common/Loader';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
+import {
+  setSortRollConsumptionField,
+  setSortRollConsumptionOrder,
+} from 'Store/Reducers/Inventory/StockRawMaterialSlice';
 
 const RollConsumption = ({ accessPermission }) => {
   const dispatch = useDispatch();
@@ -37,6 +41,8 @@ const RollConsumption = ({ accessPermission }) => {
 
   const {
     stockRawLoading,
+    sortRollConsumptionField,
+    sortRollConsumptionOrder,
     stockRawExportLoading,
     rollConsumptionList,
     rollConsumptionCount,
@@ -140,6 +146,11 @@ const RollConsumption = ({ accessPermission }) => {
     [dispatch],
   );
 
+  const onSort = e => {
+    dispatch(setSortRollConsumptionField(e.sortField));
+    dispatch(setSortRollConsumptionOrder(e.sortOrder));
+  };
+
   return (
     <>
       {stockRawExportLoading && <Loader />}
@@ -207,6 +218,10 @@ const RollConsumption = ({ accessPermission }) => {
             filterDisplay="row"
             dataKey="_id"
             filters={rollFilters}
+            sortMode="single"
+            onSort={onSort}
+            sortField={sortRollConsumptionField}
+            sortOrder={sortRollConsumptionOrder}
             onFilter={event => {
               dispatch(
                 setAllCommon({

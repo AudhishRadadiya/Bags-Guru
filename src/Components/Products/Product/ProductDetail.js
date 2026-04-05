@@ -36,33 +36,24 @@ import {
   clearSelectedBagTagData,
   clearSelectedProduct,
   clearUpdateSelectedProductData,
-  clearViewSelectedProductData,
   setAddSelectedProductData,
   setDupicateSelectedProductData,
   setIsGetInitialValuesProduct,
-  setSelectedBagTagData,
   setUpdateSelectedProductData,
-  setViewSelectedProductData,
 } from 'Store/Reducers/Products/ProductSlice';
 import { useFormik } from 'formik';
 import { addProductSchema } from 'Schemas/Products/addProductSchema';
-import {
-  createProduct,
-  getProductItem,
-  updateProduct,
-} from 'Services/Products/ProductService';
+import { createProduct, updateProduct } from 'Services/Products/ProductService';
 import { useSelector } from 'react-redux';
-import {
-  getAllBagTagList,
-  getFullBagTagList,
-  getbagTagList,
-} from 'Services/Products/BagService';
+import { getbagTagList } from 'Services/Products/BagService';
 import { toast } from 'react-toastify';
 import copy from 'copy-to-clipboard';
 import Loader from 'Components/Common/Loader';
 import { MultiSelect } from 'primereact/multiselect';
 import { getExtensionFromName } from 'Helper/Common';
+import HistoryIcon from '../../../Assets/Images/history-icon.svg';
 import ReactSelectSingle from 'Components/Common/ReactSelectSingle';
+import ProductHistoryDialog from './ProductHistoryDialog';
 
 export const toastCongig = {
   position: toast.POSITION.TOP_CENTER,
@@ -76,6 +67,11 @@ export default function ProductDetail({ initialValues }) {
   const { pathname } = useLocation();
   const locationPath = pathname?.split('/');
 
+  const isUpdateAndViewFlow = ['update-product', 'product-details'].includes(
+    locationPath[1],
+  );
+
+  const [productHistoryPopup, setProductHistoryPopup] = useState(false);
   const [primaryUnit, setPrimaryUnit] = useState('Inch');
   const [shortlistedBagTags, setShortlistedBagTags] = useState([]);
   const [isFirstRender, setIsFirstRender] = useState(true);
@@ -86,13 +82,9 @@ export default function ProductDetail({ initialValues }) {
   const { settingsCRUDLoading } = useSelector(({ settings }) => settings);
   const {
     productLoading,
-    selectedProduct,
     productCRUDLoading,
-    selectedBagTagData,
-
     addSelectedProductData,
     updateSelectedProductData,
-    viewSelectedProductData,
     dupicateSelectedProductData,
     isGetInitialValuesProduct,
   } = useSelector(({ product }) => product);
@@ -302,7 +294,6 @@ export default function ProductDetail({ initialValues }) {
       );
     }
 
-    // setFieldValue(fieldName, fieldValue);
     Object.keys(fieldObject)?.forEach(keys => {
       setFieldValue(keys, fieldObject[keys]);
     });
@@ -732,9 +723,7 @@ export default function ProductDetail({ initialValues }) {
 
   return (
     <>
-      {(productLoading || miscMasterLoading || settingsCRUDLoading) && (
-        <Loader />
-      )}
+      {(miscMasterLoading || settingsCRUDLoading) && <Loader />}
       <div className="main_Wrapper">
         <div className="add_prodict_detail_wrap p-3 bg_white rounded-3 border mb-3">
           <h3 className="mb-3">Product Details</h3>
@@ -1431,9 +1420,26 @@ export default function ProductDetail({ initialValues }) {
                   <Row>
                     <Col lg={3} md={4} sm={6}>
                       <div className="form_group mb-3">
-                        <label htmlFor="DesignerName">
-                          Designer Name{' '}
-                          <span className="text-danger fs-4">*</span>
+                        <label
+                          htmlFor="DesignerName"
+                          className="d-flex justify-content-between"
+                        >
+                          <div className="position-relative">
+                            <span>Designer Name</span>{' '}
+                            <span className="text-danger fs-4">*</span>
+                          </div>
+
+                          {isUpdateAndViewFlow && (
+                            <div>
+                              <img
+                                src={HistoryIcon}
+                                alt=""
+                                onClick={e => {
+                                  setProductHistoryPopup(true);
+                                }}
+                              />
+                            </div>
+                          )}
                         </label>
                         <ReactSelectSingle
                           filter
@@ -2640,12 +2646,20 @@ export default function ProductDetail({ initialValues }) {
             Cancel
           </Button>
           {locationPath?.[1] === 'product-details' ? null : (
-            <Button className="btn_primary ms-3" onClick={handleSubmit}>
+            <Button
+              className="btn_primary ms-3"
+              onClick={handleSubmit}
+              disabled={settingsCRUDLoading || productLoading}
+            >
               {values?._id ? 'Update' : 'Save'}
             </Button>
           )}
         </div>
       </div>
+      <ProductHistoryDialog
+        productHistoryPopup={productHistoryPopup}
+        setProductHistoryPopup={setProductHistoryPopup}
+      />
     </>
   );
 }

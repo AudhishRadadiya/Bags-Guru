@@ -45,7 +45,7 @@ const Index = ({ hasAccess }) => {
   useEffect(() => {
     if (Object.keys(activeTabData)?.length > 0) {
       dispatch(getMachineByMachineTypeList(activeTabData?._id));
-      dispatch(mfgProcessByMachineTypeList(activeTabData?._id));
+      dispatch(mfgProcessByMachineTypeList(activeTabData?._id, 'list'));
     }
   }, [dispatch, activeTabData]);
 

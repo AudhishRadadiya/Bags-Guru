@@ -1,7 +1,6 @@
 import React, { useRef, useCallback, useState, memo } from 'react';
 import { Button } from 'react-bootstrap';
 import Webcam from 'react-webcam';
-import ShareIcon from '../../../Assets/Images/share.svg';
 import { useDispatch } from 'react-redux';
 import { whatsappUploadFile } from 'Services/CommonService';
 
@@ -16,6 +15,8 @@ const ImageCapture = props => {
 
   const capture = useCallback(() => {
     const imageSrc = webcamRef?.current?.getScreenshot();
+    // const imageSrc = webcamRef?.current?.getScreenshot({ width: 1920 });
+
     setCapturedImage(imageSrc);
     setUploadedImage('');
     const tracks = webcamRef?.current?.video?.srcObject?.getTracks();
@@ -23,10 +24,10 @@ const ImageCapture = props => {
   }, [webcamRef]);
 
   const videoConstraints = {
-    // width: 220,
-    // height: 200,
-    width: 1920, // 1280
-    height: 1080, // 720
+    width: 3840,
+    height: 2160,
+    // width: 1920, // 1280
+    // height: 1080, // 720
     facingMode: changeCameraMode ? 'environment' : 'user',
   };
 
@@ -165,6 +166,8 @@ const ImageCapture = props => {
             screenshotFormat="image/jpeg"
             videoConstraints={videoConstraints}
             className="w-100 mb-3"
+            forceScreenshotSourceSize={true}
+            screenshotQuality={1}
           />
           <div className="d-flex justify-content-center">
             <Button className="btn_primary mx-2" onClick={capture}>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -12,6 +12,7 @@ import { setAuthLoading } from 'Store/Reducers/Auth/auth.slice';
 import Logo from '../../Assets/Images/logo.svg';
 import LoginImg from '../../Assets/Images/login-img.png';
 import moment from 'moment';
+import { getVerificationSessionData } from 'Helper/AuthTokenHelper';
 
 const inputRefs = [];
 export default function EmailVerification() {
@@ -21,18 +22,30 @@ export default function EmailVerification() {
   const { email } = state || {};
 
   const { loading } = useSelector(({ auth }) => auth);
+  const [verificationData] = useState(() => getVerificationSessionData());
+
+  useEffect(() => {
+    if (verificationData && verificationData?.email) {
+      dispatch(forgotPassword(verificationData));
+    }
+  }, [dispatch, verificationData]);
 
   const submitHandle = useCallback(
     async values => {
+      const mailId = email || verificationData?.email;
+
       const res = await dispatch(
         emailVerification({
-          email_id: email,
+          email_id: mailId,
           otp: Object.values(values).join(''),
         }),
       );
-      if (res) navigate('/set-new-password', { state: { email: email } });
+      if (res)
+        navigate('/set-new-password', {
+          state: { email: mailId },
+        });
     },
-    [dispatch, email, navigate],
+    [dispatch, email, verificationData?.email, navigate],
   );
 
   const initialValues = [...Array(4)].map(() => '');
@@ -89,7 +102,10 @@ export default function EmailVerification() {
                   <img src={Logo} alt="" />
                 </div>
                 <h1>Email Verification</h1>
-                <p>We sent a code to {email}</p>
+                <p>
+                  Enter the verification code provided by the Bags Guru admin
+                  team to continue.
+                </p>
                 <form onSubmit={handleSubmit}>
                   <div className="form_group mb-5">
                     <label className="mb-3 fw_500" htmlFor="email">

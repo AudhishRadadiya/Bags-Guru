@@ -26,22 +26,26 @@ function ViewJob() {
         view: true,
       }),
     );
+
     dispatch(getProductList(0, 0));
+
     const response = await dispatch(getJobItem(job_id));
 
     let updated = { ...response };
 
+    const brokerUnitPc = response.broker_unit_pc;
+
     const pcsTaxableAmount =
-      (response.unit_pc === 1 ? response?.amount : 0) -
+      (response.unit_pc === 1 ? convertIntoNumber(response?.amount) : 0) -
       convertIntoNumber(response?.discount) +
       convertIntoNumber(response?.stereo_charge) +
-      convertIntoNumber(response?.freight_inclusive_rate);
+      convertIntoNumber(response?.additional_charge);
 
     const kgsTaxableAmount =
-      (response.unit_pc === 0 ? response?.amount : 0) -
+      (response.unit_pc === 0 ? convertIntoNumber(response?.amount) : 0) -
       convertIntoNumber(response?.discount) +
       convertIntoNumber(response?.stereo_charge) +
-      convertIntoNumber(response?.freight_inclusive_rate);
+      convertIntoNumber(response?.additional_charge);
 
     if (response) {
       updated = {
@@ -57,6 +61,8 @@ function ViewJob() {
           ? new Date(response?.due_date)
           : new Date(),
         sales_order_id: response?.salesOrder_id,
+        broker_rate: brokerUnitPc === 1 ? response.broker_rate : '',
+        broker_rate_kg: brokerUnitPc === 0 ? response.broker_rate : '',
         //   order_id: response?.salesOrder_id ? response?.salesOrder_id : '',
       };
     }

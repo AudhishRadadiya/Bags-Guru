@@ -39,9 +39,12 @@ import {
   getActivePrintTypeList,
 } from 'Services/Settings/MiscMasterService';
 import Skeleton from 'react-loading-skeleton';
-import Loader from 'Components/Common/Loader';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 import { Button } from 'primereact/button';
+import {
+  setSortTrendingProductsField,
+  setSortTrendingProductsOrder,
+} from 'Store/Reducers/Products/TrendingProductSlice';
 
 const filterDetails = [
   { label: 'Design Name', value: 'design_name', type: 'inputBox' },
@@ -79,6 +82,8 @@ const TrendingProducts = ({ hasAccess }) => {
     trendingProductLoading,
     trendingProductList,
     trendingProductCount,
+    sortTrendingProductsField,
+    sortTrendingProductsOrder,
   } = useSelector(({ trendingProduct }) => trendingProduct);
   const {
     miscMasterLoading,
@@ -212,24 +217,26 @@ const TrendingProducts = ({ hasAccess }) => {
 
   const onPageChange = useCallback(
     page => {
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
 
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          trendingProduct: {
-            ...allFilters?.trendingProduct,
-            currentPage: pageIndex,
-          },
-        }),
-      );
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            trendingProduct: {
+              ...allFilters?.trendingProduct,
+              currentPage: pageIndex,
+            },
+          }),
+        );
 
-      dispatch(
-        getTrendingProductList(pageLimit, pageIndex, searchQuery, applied),
-      );
+        dispatch(
+          getTrendingProductList(pageLimit, pageIndex, searchQuery, applied),
+        );
+      }
     },
     [currentPage, dispatch, allFilters, pageLimit, searchQuery, applied],
   );
@@ -587,6 +594,11 @@ const TrendingProducts = ({ hasAccess }) => {
     [],
   );
 
+  const onSort = e => {
+    dispatch(setSortTrendingProductsField(e.sortField));
+    dispatch(setSortTrendingProductsOrder(e.sortOrder));
+  };
+
   return (
     <>
       {/* {(trendingProductExportLoading || trendingProductLoading) && <Loader />} */}
@@ -685,9 +697,12 @@ const TrendingProducts = ({ hasAccess }) => {
             <img src={SearchIcon} alt="" />
           </button>
           <DataTable
-            sortMode="multiple"
             value={trendingProductList}
             filterDisplay="row"
+            sortMode="single"
+            onSort={onSort}
+            sortField={sortTrendingProductsField}
+            sortOrder={sortTrendingProductsOrder}
             selectionMode="false"
             dataKey="product_detail._id"
             filters={trendingProductfilter}

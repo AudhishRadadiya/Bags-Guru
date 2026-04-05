@@ -38,6 +38,10 @@ import moment from 'moment';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import DateRangeCalender from 'Components/Common/DateRangeCalender';
 import { getActiveLaminationTypeList } from 'Services/Settings/MiscMasterService';
+import {
+  setSortStockConsumptionField,
+  setSortStockConsumptionOrder,
+} from 'Store/Reducers/Inventory/StockConsumptionSlice';
 
 const filterDetails = [
   { label: 'Item Name', value: 'item_name', type: 'inputBox' },
@@ -72,9 +76,10 @@ const StockConsumption = ({ hasAccess }) => {
   const { listFilter } = useSelector(({ parties }) => parties);
   const {
     stockConsumptionLoading,
-    stockConsumptionExportLoading,
     stockConsumptionCount,
     stockConsumptionList,
+    sortStockConsumptionField,
+    sortStockConsumptionOrder,
   } = useSelector(({ stockConsumption }) => stockConsumption);
   const { allFilters, allCommon } = useSelector(({ common }) => common);
   const { activeLaminationTypeList } = useSelector(
@@ -135,29 +140,31 @@ const StockConsumption = ({ hasAccess }) => {
 
   const onPageChange = useCallback(
     page => {
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          stockConsumption: {
-            ...allFilters?.stockConsumption,
-            currentPage: pageIndex,
-          },
-        }),
-      );
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
+        dispatch(
+          setAllFilters({
+            ...allFilters,
+            stockConsumption: {
+              ...allFilters?.stockConsumption,
+              currentPage: pageIndex,
+            },
+          }),
+        );
 
-      dispatch(
-        getStockConsumptionList(
-          pageLimit,
-          pageIndex,
-          searchQuery,
-          applied,
-          dates,
-        ),
-      );
+        dispatch(
+          getStockConsumptionList(
+            pageLimit,
+            pageIndex,
+            searchQuery,
+            applied,
+            dates,
+          ),
+        );
+      }
     },
     [currentPage, dispatch, allFilters, pageLimit, searchQuery, applied, dates],
   );
@@ -620,6 +627,11 @@ const StockConsumption = ({ hasAccess }) => {
     );
   };
 
+  const onSort = e => {
+    dispatch(setSortStockConsumptionField(e.sortField));
+    dispatch(setSortStockConsumptionOrder(e.sortOrder));
+  };
+
   return (
     <>
       {/* {(stockConsumptionExportLoading || stockConsumptionLoading) && <Loader />} */}
@@ -830,7 +842,9 @@ const StockConsumption = ({ hasAccess }) => {
             <DataTable
               value={stockConsumptionList}
               sortMode="single"
-              sortField="name"
+              onSort={onSort}
+              sortField={sortStockConsumptionField}
+              sortOrder={sortStockConsumptionOrder}
               filters={stockConsumptionFilters}
               onFilter={event => {
                 dispatch(
@@ -845,7 +859,6 @@ const StockConsumption = ({ hasAccess }) => {
               }}
               filterDisplay="row"
               dataKey="_id"
-              sortOrder={1}
               emptyMessage={stockConsumptionLoading && <Skeleton count={10} />}
             >
               <Column

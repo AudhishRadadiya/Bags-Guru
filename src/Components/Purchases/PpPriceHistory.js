@@ -27,6 +27,10 @@ import SearchIcon from '../../Assets/Images/search.svg';
 import ConfirmDialog from 'Components/Common/ConfirmDialog';
 import CustomPaginator from 'Components/Common/CustomPaginator';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
+import {
+  setSortPriceHistoryField,
+  setSortPriceHistoryOrder,
+} from 'Store/Reducers/Purchase/PpPriceHistorySlice';
 
 export default function PpPriceHistory({ hasAccess }) {
   const dispatch = useDispatch();
@@ -49,6 +53,8 @@ export default function PpPriceHistory({ hasAccess }) {
     ppPriceHistoryListLoading,
     ppPriceHistoryList,
     ppPriceHistoryCount,
+    sortPriceHistoryField,
+    sortPriceHistoryOrder,
   } = useSelector(({ ppPriceHistory }) => ppPriceHistory);
   const { allFilters, allCommon } = useSelector(({ common }) => common);
 
@@ -198,6 +204,11 @@ export default function PpPriceHistory({ hasAccess }) {
     [dispatch, pageLimit, currentPage],
   );
 
+  const customSort = e => {
+    dispatch(setSortPriceHistoryField(e.sortField));
+    dispatch(setSortPriceHistoryOrder(e.sortOrder));
+  };
+
   return (
     <div className="main_Wrapper">
       {ppPriceHistoryLoading && <Loader />}
@@ -275,9 +286,10 @@ export default function PpPriceHistory({ hasAccess }) {
           <DataTable
             value={ppPriceHistoryList}
             sortMode="single"
-            sortField="name"
+            onSort={customSort}
+            sortField={sortPriceHistoryField}
+            sortOrder={sortPriceHistoryOrder}
             filterDisplay="row"
-            sortOrder={1}
             rows={10}
             dataKey="_id"
             filters={ppPriceHistoryFilters}

@@ -32,6 +32,8 @@ import {
 import {
   setIsGetInitialValuesPurchaseOrder,
   setIsGetInitialValuesReceivePurchaseOrder,
+  setSortPurchaseOrderField,
+  setSortPurchaseOrderOrder,
 } from 'Store/Reducers/Purchase/PurchaseOrderSlice';
 import PDFIcon from '../../Assets/Images/pdf.svg';
 import PlusIcon from '../../Assets/Images/plus.svg';
@@ -84,6 +86,8 @@ export default function PurchaseOrder({ hasAccess }) {
   const [orderDeletePopup, setOrderDeletePopup] = useState(false);
 
   const {
+    sortPurchaseOrderField,
+    sortPurchaseOrderOrder,
     POTotalAmount,
     purchaseOrderList,
     purchaseOrderListLoading,
@@ -799,6 +803,11 @@ export default function PurchaseOrder({ hasAccess }) {
     }
   }, []);
 
+  const onSort = e => {
+    dispatch(setSortPurchaseOrderField(e.sortField));
+    dispatch(setSortPurchaseOrderOrder(e.sortOrder));
+  };
+
   return (
     <div className="main_Wrapper">
       {purchaseOrderLoading && <Loader />}
@@ -1010,11 +1019,12 @@ export default function PurchaseOrder({ hasAccess }) {
           <DataTable
             value={purchaseOrderList}
             sortMode="single"
-            sortField="name"
             filterDisplay="row"
-            sortOrder={1}
             rows={10}
             dataKey="_id"
+            onSort={onSort}
+            sortField={sortPurchaseOrderField}
+            sortOrder={sortPurchaseOrderOrder}
             rowClassName={getRowClassName}
             filters={purchaseOrderFilters}
             footerColumnGroup={footerGroup}

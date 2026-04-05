@@ -1,15 +1,32 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useFormik } from 'formik';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Button, Badge, Col, Dropdown, Row } from 'react-bootstrap';
+import {
+  Button,
+  Badge,
+  Col,
+  Dropdown,
+  Row,
+  Tooltip,
+  OverlayTrigger,
+} from 'react-bootstrap';
 import SearchIcon from '../../Assets/Images/search.svg';
 import { Column } from 'primereact/column';
 import { Checkbox } from 'primereact/checkbox';
+import { InputSwitch } from 'primereact/inputswitch';
 import { DataTable } from 'primereact/datatable';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import DropZone from 'Components/Common/DropZone';
+import UploadIcon from '../../Assets/Images/upload.svg';
 import {
   addParties,
   getCustomerRating,
@@ -24,6 +41,7 @@ import {
   getPartiesState,
   getPartiesStateWithoutCountry,
   updateParties,
+  uploadTransporterListFile,
 } from 'Services/partiesService';
 import { addPartiesSchema } from 'Schemas/AllSchemas';
 
@@ -34,6 +52,7 @@ import MinusIcon from '../../Assets/Images/minus.svg';
 import ActionBtn from '../../Assets/Images/action.svg';
 import EditIcon from '../../Assets/Images/edit.svg';
 import TrashIcon from '../../Assets/Images/trash.svg';
+import DownloadIcon from '../../Assets/Images/download-icon-white.svg';
 import {
   clearAddSelectedPartyData,
   clearPartiesInitialValues,
@@ -53,6 +72,8 @@ import {
 import Loader from 'Components/Common/Loader';
 import { getSingleListGC } from '../../../src/Services/Settings/generalConfigurationService';
 import ConfirmDialog from 'Components/Common/ConfirmDialog';
+import { FileDrop } from 'react-file-drop';
+import pinCodesDemoExcel from '../../Assets/PinCodes Demo.xlsx';
 
 const paymentsTerms = [
   { label: 10, value: 10 },
@@ -64,8 +85,12 @@ const paymentsTerms = [
 ];
 
 const PartiesDetail = ({ initialValues }) => {
+  const ref = useRef();
+  const inputRef = useRef();
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
   const { id } = useParams();
   const { state, pathname } = useLocation();
   const locationPath = pathname?.split('/');
@@ -104,6 +129,8 @@ const PartiesDetail = ({ initialValues }) => {
     updateSelectedPartyData,
     viewSelectedPartyData,
     customerRating,
+    transporterFileLink,
+    transporterPrevFileLink,
   } = useSelector(({ parties }) => parties);
   const { singleListGC, gCLoading } = useSelector(
     ({ generalConfiguration }) => generalConfiguration,
@@ -207,11 +234,11 @@ const PartiesDetail = ({ initialValues }) => {
     );
   };
   const checkAddressTypeDefault = (isDefault, addressType) => {
-    let xyz = values?.party_address?.filter(
+    let defaultAddressData = values?.party_address?.filter(
       data =>
         data?.is_default === isDefault && data?.address_type === addressType,
     );
-    return xyz;
+    return defaultAddressData;
   };
 
   const customActionColumn = (rowData, index) => {
@@ -277,6 +304,8 @@ const PartiesDetail = ({ initialValues }) => {
         city: values?.city ? values?.city : '',
         state: values?.state ? values?.state : '',
         country: values?.country ? values?.country : '',
+        is_reviewed: values?.is_reviewed,
+        review_snapshot: values?.review_snapshot,
         is_mobile_app_registered: values?.is_mobile_app_registered ? 1 : 0,
         register_mobile_number: phoneNumbers,
         register_email: emailAddress,
@@ -302,6 +331,9 @@ const PartiesDetail = ({ initialValues }) => {
         is_regular_customer: values?.is_regular_customer ? 1 : 0,
         is_active: values?.is_active ? 1 : 0,
         bag_rate_list: values?.bag_rate_list || 0,
+        pincode_file: transporterFileLink,
+        collection_note: values?.collection_note ?? '',
+        no_of_outlets: values?.no_of_outlets ?? 1,
       };
       if (id) {
         let newPartyAddress = getDifference(
@@ -354,7 +386,7 @@ const PartiesDetail = ({ initialValues }) => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [id, navigate, dispatch],
+    [id, navigate, dispatch, transporterFileLink],
   );
 
   const {
@@ -371,6 +403,19 @@ const PartiesDetail = ({ initialValues }) => {
     validationSchema: addPartiesSchema,
     onSubmit: submitHandle,
   });
+
+  const partyType = useMemo(() => {
+    let partyTypeLabel = '';
+
+    if (values.party_type) {
+      const partyTypeData = partyTypeOptions.find(
+        item => item.value === values.party_type,
+      );
+
+      partyTypeLabel = partyTypeData.label;
+    }
+    return partyTypeLabel;
+  }, [values?.party_type, partyTypeOptions]);
 
   const handleDelete = useCallback(
     data => {
@@ -410,11 +455,22 @@ const PartiesDetail = ({ initialValues }) => {
           } else {
             isDefaultKey = true;
           }
+        } else {
+          // check in edit mode :
+          if (values?.is_default) {
+            isDefaultKey = true;
+          }
+
+          if (values?.is_same_as_shipping) {
+            setSameForDefault(true);
+          } else {
+            setSameForDefault(false);
+          }
         }
       } else {
         isDefaultKey = true;
       }
-      setSameForDefault(false);
+      // setSameForDefault(false); // Old Flow
     } else {
       if (values?.party_address?.length > 0) {
         let isDefault = checkAddressTypeDefault(1, values?.address_type);
@@ -428,6 +484,7 @@ const PartiesDetail = ({ initialValues }) => {
       }
       setSameForDefault(false);
     }
+
     setCheckDefault({
       default: isDefaultKey,
       view: isViewKey,
@@ -494,6 +551,7 @@ const PartiesDetail = ({ initialValues }) => {
             x => x?._id !== values?.address_type,
           );
           let isDefault = checkAddressTypeDefault(1, anotherAddress?._id);
+
           let payload2 = {
             address_type: anotherAddress?._id,
             business_name: values?.business_name,
@@ -647,6 +705,7 @@ const PartiesDetail = ({ initialValues }) => {
     async (rowData, index) => {
       let stateOption = [];
       let cityOption = [];
+
       const {
         address_type,
         business_name,
@@ -701,7 +760,8 @@ const PartiesDetail = ({ initialValues }) => {
           address_details_cityOption: cityOption,
         }),
       }));
-      if (is_default) {
+
+      if (is_default === 1) {
         setCheckDefault({
           default: true,
           view: false,
@@ -813,6 +873,61 @@ const PartiesDetail = ({ initialValues }) => {
     handleUpdateMultiFieldsValue(changeFieldObj);
   };
 
+  const fileHandler = useCallback(
+    async files => {
+      if (!files || files.length === 0) return;
+
+      const validExtensions = ['xls', 'xlsx'];
+
+      const uploadedFiles = Array.from(files).filter(file => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        return validExtensions.includes(ext);
+      });
+
+      if (uploadedFiles.length === 0) {
+        alert('Only Excel files (.xls, .xlsx) are allowed.');
+        return;
+      }
+
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        setFieldValue(
+          'transporter_attachment_file_name',
+          uploadedFiles[i].name,
+        );
+
+        const payload = {
+          file: uploadedFiles[i],
+        };
+
+        dispatch(uploadTransporterListFile(payload));
+      }
+    },
+    [dispatch, setFieldValue],
+  );
+
+  const onRemove = useCallback(
+    e => {
+      setFieldValue('transporter_attachment_file_name', '');
+      e.stopPropagation();
+    },
+    [setFieldValue],
+  );
+
+  const onDownloadSample = useCallback(async e => {
+    const newWindow = window.open(pinCodesDemoExcel, '_self');
+    newWindow.location.href = pinCodesDemoExcel;
+  }, []);
+
+  const selectedPartyType = useMemo(() => {
+    if (values?.party_type) {
+      const selectedPartyTypeObj = partyTypeOptions.find(
+        i => i.value === values?.party_type,
+      );
+
+      return selectedPartyTypeObj?.label;
+    }
+  }, [partyTypeOptions, values?.party_type]);
+
   return (
     <div className="main_Wrapper">
       {(partiesLoading ||
@@ -835,7 +950,16 @@ const PartiesDetail = ({ initialValues }) => {
                 value={values?.party_type || ''}
                 onBlur={handleBlur}
                 onChange={e => {
-                  commonUpdateFieldValue('party_type', e.target.value);
+                  const partyTypeData = partyTypeOptions.find(
+                    i => i.value === e.target.value,
+                  );
+
+                  const changeFieldObj = {
+                    party_type: e.target.value,
+                    party_type_label: partyTypeData.label,
+                  };
+
+                  handleUpdateMultiFieldsValue(changeFieldObj);
                 }}
                 required
                 disabled={state?.isView}
@@ -868,18 +992,19 @@ const PartiesDetail = ({ initialValues }) => {
             </div>
           </Col>
           <Col xl={3} lg={4}>
-            <div className="form_group checkbox_wrap with_input mb-3">
-              <Checkbox
-                inputId="is_active"
-                name="is_active"
-                checked={values?.is_active}
-                onChange={e => {
-                  commonUpdateFieldValue('is_active', e.checked);
-                }}
-                disabled={state?.isView}
-              />
-              <label htmlFor="is_active">Active</label>
-              {/* <Checkbox
+            <div className="d-flex gap-3">
+              <div className="form_group checkbox_wrap with_input mb-3">
+                <Checkbox
+                  inputId="is_active"
+                  name="is_active"
+                  checked={values?.is_active}
+                  onChange={e => {
+                    commonUpdateFieldValue('is_active', e.checked);
+                  }}
+                  disabled={state?.isView}
+                />
+                <label htmlFor="is_active">Active</label>
+                {/* <Checkbox
                 inputId="is_regular_customer"
                 name="is_regular_customer"
                 checked={values?.is_regular_customer}
@@ -890,6 +1015,22 @@ const PartiesDetail = ({ initialValues }) => {
                 disabled={state?.isView}
               />
               <label htmlFor="is_regular_customer">Regular Customer</label> */}
+              </div>
+              <div className="form_group checkbox_wrap with_input mb-3 toggle_btn">
+                <InputSwitch
+                  name="is_reviewed"
+                  checked={values?.is_reviewed}
+                  onChange={e => {
+                    const changeFieldObj = {
+                      is_reviewed: e.value,
+                      ...(!e.value && { review_snapshot: '' }),
+                    };
+                    handleUpdateMultiFieldsValue(changeFieldObj);
+                  }}
+                  disabled={state?.isView}
+                />
+                <label htmlFor="is_reviewed">Google Review Collected</label>
+              </div>
             </div>
           </Col>
         </Row>
@@ -1055,6 +1196,156 @@ const PartiesDetail = ({ initialValues }) => {
                     />
                   </div>
                 </Col>
+                {selectedPartyType?.toLowerCase() === 'transporter' && (
+                  <Col sm={6} md={6} xs={12}>
+                    <div className="form_group mb-3">
+                      <label htmlFor="city_address_details">
+                        Pincode
+                        {isValidate && (
+                          <span className="text-danger fs-4">*</span>
+                        )}
+                      </label>
+                      <FileDrop
+                        ref={ref}
+                        onTargetClick={() => {
+                          inputRef?.current?.click();
+                        }}
+                        onDrop={f => fileHandler(f)}
+                        className="image-dropzone"
+                      >
+                        <div className="upload_file_custom">
+                          <input
+                            accept=".xls, .xlsx"
+                            value={''}
+                            style={{ visibility: 'hidden', opacity: 0 }}
+                            ref={inputRef}
+                            type="file"
+                            multiple
+                            onChange={e => fileHandler(e.target.files)}
+                          />
+                          <label
+                            htmlFor="UploadFile"
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <img
+                              src={UploadIcon}
+                              alt=""
+                              className="img-fluid"
+                              style={{
+                                height: '60px',
+                                objectFit: 'contain',
+                                margin: '0',
+                              }}
+                            />
+                            <div
+                              className="upload_text"
+                              style={{
+                                margin: '0',
+                                marginLeft: '15px',
+                                maxWidth: 'auto',
+                              }}
+                            >
+                              Upload your files
+                            </div>
+                          </label>
+                        </div>
+                      </FileDrop>
+                      {(locationPath[1] === 'update-parties' ||
+                        locationPath[1] === 'parties-details') &&
+                        transporterPrevFileLink && (
+                          <div className="d-flex gap-3 mt-3 mb-3 align-items-center">
+                            {/* <a
+                              href={`${process.env.REACT_APP_SOCKET_URL}${transporterPrevFileLink}`}
+                            > */}
+                            <div
+                              onClick={() =>
+                                window.open(
+                                  `${process.env.REACT_APP_SOCKET_URL}${transporterPrevFileLink}`,
+                                  '_blank',
+                                )
+                              }
+                            >
+                              Download Previous Uploaded File
+                            </div>
+                            {/* </a> */}
+                          </div>
+                        )}
+
+                      <div className="d-flex gap-3 mt-3 mb-3 align-items-center">
+                        {!!values?.transporter_attachment_file_name && (
+                          <>
+                            <h5 className="m-0">
+                              {values.transporter_attachment_file_name}
+                            </h5>
+                            <div
+                              style={{ height: '15px' }}
+                              className="d-flex align-items-center"
+                            >
+                              <Button
+                                className="btn_transperant"
+                                onClick={e => {
+                                  onRemove(e);
+                                }}
+                              >
+                                <img src={TrashIcon} alt="" className="mb-0" />
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                        <OverlayTrigger
+                          overlay={props => (
+                            <Tooltip {...props}> Download Sample File</Tooltip>
+                          )}
+                          placement="bottom"
+                        >
+                          <Button
+                            className="btn_primary d-flex ms-auto p-2"
+                            onClick={onDownloadSample}
+                          >
+                            <img
+                              src={DownloadIcon}
+                              alt=""
+                              className="m-0 "
+                              style={{ filter: 'none ' }}
+                            />
+                          </Button>
+                        </OverlayTrigger>
+                      </div>
+                    </div>
+                  </Col>
+                )}
+
+                {!!values?.is_reviewed && (
+                  <Col md={6}>
+                    <div className="form_group">
+                      <label htmlFor="Review Snapshot">
+                        Google Review Snapshot
+                      </label>
+
+                      <DropZone
+                        value={values?.review_snapshot}
+                        module="party"
+                        setFieldValue={setFieldValue}
+                        initialAddImgValue={addSelectedPartyData}
+                        initialUpdateImgValue={updateSelectedPartyData}
+                        setAddInitialImgValue={setAddSelectedPartyData}
+                        setUpdateInitialImgValue={setUpdateSelectedPartyData}
+                        fieldName="review_snapshot"
+                        fieldImgName="review_snapshot_name"
+                        fieldImgValue={values?.review_snapshot_name}
+                        disabled={state?.isView}
+                      />
+                    </div>
+
+                    {touched?.review_snapshot && errors?.review_snapshot && (
+                      <p className="text-danger">{errors?.review_snapshot}</p>
+                    )}
+                  </Col>
+                )}
               </Row>
               <div className="form_group checkbox_wrap large mb-3">
                 <Checkbox
@@ -1326,7 +1617,12 @@ const PartiesDetail = ({ initialValues }) => {
               <Row>
                 <Col sm={6}>
                   <div className="form_group mb-3">
-                    <label htmlFor="original_advisor">Original Advisor</label>
+                    <label htmlFor="original_advisor">
+                      Original Advisor
+                      {['TRADER', 'END USER'].includes(partyType) && (
+                        <span className="text-danger fs-4">*</span>
+                      )}
+                    </label>
                     <ReactSelectSingle
                       filter
                       options={advisorOptions}
@@ -1342,11 +1638,19 @@ const PartiesDetail = ({ initialValues }) => {
                       }}
                       disabled={state?.isView}
                     />
+                    {touched?.original_advisor && errors?.original_advisor && (
+                      <p className="text-danger">{errors?.original_advisor}</p>
+                    )}
                   </div>
                 </Col>
                 <Col sm={6}>
                   <div className="form_group mb-3">
-                    <label htmlFor="present_advisor">Present Advisor</label>
+                    <label htmlFor="present_advisor">
+                      Present Advisor
+                      {['TRADER', 'END USER'].includes(partyType) && (
+                        <span className="text-danger fs-4">*</span>
+                      )}
+                    </label>
                     <ReactSelectSingle
                       filter
                       options={advisorOptions}
@@ -1362,6 +1666,9 @@ const PartiesDetail = ({ initialValues }) => {
                       }}
                       disabled={state?.isView}
                     />
+                    {touched?.present_advisor && errors?.present_advisor && (
+                      <p className="text-danger">{errors?.present_advisor}</p>
+                    )}
                   </div>
                 </Col>
                 {checkCity === 'Surat' && (
@@ -1385,7 +1692,12 @@ const PartiesDetail = ({ initialValues }) => {
                 )}
                 <Col sm={6}>
                   <div className="form_group mb-3">
-                    <label htmlFor="industry">Industry</label>
+                    <label htmlFor="industry">
+                      Industry
+                      {['TRADER', 'END USER'].includes(partyType) && (
+                        <span className="text-danger fs-4">*</span>
+                      )}
+                    </label>
                     <ReactSelectSingle
                       filter
                       options={industryOptions}
@@ -1398,11 +1710,19 @@ const PartiesDetail = ({ initialValues }) => {
                       }}
                       disabled={state?.isView}
                     />
+                    {touched?.industry && errors?.industry && (
+                      <p className="text-danger">{errors?.industry}</p>
+                    )}
                   </div>
                 </Col>
                 <Col sm={6}>
                   <div className="form_group mb-3">
-                    <label htmlFor="customer_source">Customer Source</label>
+                    <label htmlFor="customer_source">
+                      Customer Source
+                      {['TRADER', 'END USER'].includes(partyType) && (
+                        <span className="text-danger fs-4">*</span>
+                      )}
+                    </label>
                     <ReactSelectSingle
                       filter
                       options={customerSourceOptions}
@@ -1418,12 +1738,18 @@ const PartiesDetail = ({ initialValues }) => {
                       }}
                       disabled={state?.isView}
                     />
+                    {touched?.customer_source && errors?.customer_source && (
+                      <p className="text-danger">{errors?.customer_source}</p>
+                    )}
                   </div>
                 </Col>
                 <Col sm={6}>
                   <div className="form_group mb-3">
                     <label htmlFor="customer_source_detail">
                       Customer Source Detail
+                      {['TRADER', 'END USER'].includes(partyType) && (
+                        <span className="text-danger fs-4">*</span>
+                      )}
                     </label>
                     <ReactSelectSingle
                       filter
@@ -1440,6 +1766,12 @@ const PartiesDetail = ({ initialValues }) => {
                       }}
                       disabled={state?.isView}
                     />
+                    {touched?.customer_source_detail &&
+                      errors?.customer_source_detail && (
+                        <p className="text-danger">
+                          {errors?.customer_source_detail}
+                        </p>
+                      )}
                   </div>
                 </Col>
                 <Col sm={6}>
@@ -1569,7 +1901,7 @@ const PartiesDetail = ({ initialValues }) => {
                   </div>
                 </Col>
                 <Col sm={6}>
-                  <div className="form_group">
+                  <div className="form_group mb-3">
                     <label htmlFor="repeat_order_days">
                       Max days for repeat order
                     </label>
@@ -1586,6 +1918,42 @@ const PartiesDetail = ({ initialValues }) => {
                         );
                       }}
                       disabled={state?.isView}
+                    />
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="form_group mb-3">
+                    <label htmlFor="collection_note">Collection Note</label>
+                    <InputTextarea
+                      placeholder="Write Collection Note"
+                      rows={3}
+                      name="collection_note"
+                      value={values?.collection_note}
+                      onBlur={handleBlur}
+                      onChange={e => {
+                        commonUpdateFieldValue(
+                          'collection_note',
+                          e.target.value,
+                        );
+                      }}
+                      disabled={state?.isView}
+                    />
+                  </div>
+                </Col>
+                <Col sm={6}>
+                  <div className="form_group mb-3">
+                    <label htmlFor="no_of_outlets">No of Outlets</label>
+                    <InputText
+                      type="number"
+                      placeholder="No of Outlets"
+                      name="no_of_outlets"
+                      value={values?.no_of_outlets ?? ''}
+                      onBlur={handleBlur}
+                      onChange={e => {
+                        commonUpdateFieldValue('no_of_outlets', e.target.value);
+                      }}
+                      disabled={state?.isView}
+                      min={0}
                     />
                   </div>
                 </Col>
@@ -1833,7 +2201,8 @@ const PartiesDetail = ({ initialValues }) => {
                         onChange={e => {
                           commonUpdateFieldValue('is_default', e.checked);
                         }}
-                        disabled={checkDefault?.default || state?.isView}
+                        // disabled={checkDefault?.default || state?.isView} // Old Flow
+                        disabled
                         checked={checkDefault?.default}
                       />
                       <label htmlFor="is_default">Is Default</label>
@@ -2079,7 +2448,11 @@ const PartiesDetail = ({ initialValues }) => {
           Cancel
         </Button>
         {locationPath && locationPath[1] === 'parties-details' ? null : (
-          <Button className="btn_primary ms-3" onClick={handleSubmit}>
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            className="btn_primary ms-3"
+          >
             {id ? 'Update' : 'Save'}
           </Button>
         )}

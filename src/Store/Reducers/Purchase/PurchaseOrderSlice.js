@@ -122,8 +122,9 @@ let initialState = {
   rollRequirementLoading: false,
   rollRequirementListLoading: false,
   rollRequirementList: [],
-  rollStockWithoutOrderList: {},
+  rollStockWithoutOrderList: [],
   rollRequirementCount: 0,
+  rollStockWithoutOrderCount: 0,
   importtedPurchaseReceive: [],
   importtedPurchaseReceiveExcelData: [],
   importedPurchaseReceiveData: [],
@@ -186,6 +187,16 @@ let initialState = {
   addSelectedReceivePurchaseOrderData: {},
   // viewSelectedReceivePurchaseOrderData: {},
   intialReceivePurchaseOrder: intialReceivePurchaseOrderData,
+  sortPurchaseOrderField: null,
+  sortPurchaseOrderOrder: null,
+  sortPurchaseReceiveField: null,
+  sortPurchaseReceiveOrder: null,
+  sortNLRequirementField: null,
+  sortNLRequirementOrder: null,
+  sortStockWithoutField: null,
+  sortStockWithoutOrder: null,
+  rollStockHistory: [],
+  rollStockConsumptionHistory: [],
 };
 
 const purchaseOrderSlice = createSlice({
@@ -239,6 +250,9 @@ const purchaseOrderSlice = createSlice({
     },
     setRollStockWithoutOrderList: (state, action) => {
       state.rollStockWithoutOrderList = action.payload;
+    },
+    setRollStockWithoutOrderCount: (state, action) => {
+      state.rollStockWithoutOrderCount = action.payload;
     },
     setRollRequirementCount: (state, action) => {
       state.rollRequirementCount = action.payload;
@@ -319,6 +333,36 @@ const purchaseOrderSlice = createSlice({
     // clearViewSelectedPurchaseOrderData: state => {
     //   state.viewSelectedPurchaseOrderData = initialState.initialPurchaseOrder;
     // },
+    setSortPurchaseOrderField: (state, action) => {
+      state.sortPurchaseOrderField = action.payload;
+    },
+    setSortPurchaseOrderOrder: (state, action) => {
+      state.sortPurchaseOrderOrder = action.payload;
+    },
+    setSortPurchaseReceiveField: (state, action) => {
+      state.sortPurchaseReceiveField = action.payload;
+    },
+    setSortPurchaseReceiveOrder: (state, action) => {
+      state.sortPurchaseReceiveOrder = action.payload;
+    },
+    setSortNLRequirementField: (state, action) => {
+      state.sortNLRequirementField = action.payload;
+    },
+    setSortNLRequirementOrder: (state, action) => {
+      state.sortNLRequirementOrder = action.payload;
+    },
+    setSortStockWithoutField: (state, action) => {
+      state.sortStockWithoutField = action.payload;
+    },
+    setSortStockWithoutOrder: (state, action) => {
+      state.sortStockWithoutOrder = action.payload;
+    },
+    setRollStockHistory: (state, action) => {
+      state.rollStockHistory = action.payload;
+    },
+    setRollStockConsumptionHistory: (state, action) => {
+      state.rollStockConsumptionHistory = action.payload;
+    },
   },
 });
 
@@ -340,6 +384,7 @@ export const {
   setRollRequirementCount,
   setRollRequirementList,
   setRollStockWithoutOrderList,
+  setRollStockWithoutOrderCount,
   setRollRequirementLoading,
   setRollRequirementListLoading,
   setImporttedPurchaseReceive,
@@ -366,6 +411,16 @@ export const {
   clearAddSelectedReceivePurchaseOrderData,
   // setViewSelectedReceivePurchaseOrderData,
   // clearViewSelectedReceivePurchaseOrderData,
+  setSortPurchaseOrderField,
+  setSortPurchaseOrderOrder,
+  setSortPurchaseReceiveField,
+  setSortPurchaseReceiveOrder,
+  setSortNLRequirementField,
+  setSortNLRequirementOrder,
+  setSortStockWithoutField,
+  setSortStockWithoutOrder,
+  setRollStockHistory,
+  setRollStockConsumptionHistory,
 } = purchaseOrderSlice.actions;
 
 export default purchaseOrderSlice.reducer;

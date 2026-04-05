@@ -44,7 +44,11 @@ import {
   getActiveLaminationTypeList,
 } from 'Services/Settings/MiscMasterService';
 import { Checkbox } from 'primereact/checkbox';
-import { setFinanceList } from 'Store/Reducers/Finance/FinancialsSlice';
+import {
+  setFinanceList,
+  setSortProfitAnalysisField,
+  setSortProfitAnalysisOrder,
+} from 'Store/Reducers/Finance/FinancialsSlice';
 
 export const getSeverity = val => {
   switch (val) {
@@ -118,9 +122,13 @@ export default function ProfitAnalysis() {
   // const [filterForProfitAnalysisToggle, setFilterForProfitAnalysisToggle] =
   //   useState(false);
 
-  const { financeLoading, financeList, financeDataCount } = useSelector(
-    ({ finance }) => finance,
-  );
+  const {
+    financeLoading,
+    financeList,
+    financeDataCount,
+    sortProfitAnalysisField,
+    sortProfitAnalysisOrder,
+  } = useSelector(({ finance }) => finance);
   const { allFilters, allCommon } = useSelector(({ common }) => common);
   const { filterToggle, financeFilters, searchQuery } = allCommon?.finance;
   const { applied, filters, currentPage, pageLimit, selectedItemIndex } =
@@ -755,6 +763,11 @@ export default function ProfitAnalysis() {
     }
   };
 
+  const customSort = e => {
+    dispatch(setSortProfitAnalysisField(e.sortField));
+    dispatch(setSortProfitAnalysisOrder(e.sortOrder));
+  };
+
   return (
     <>
       {/* {financeLoading && <Loader />} */}
@@ -852,7 +865,9 @@ export default function ProfitAnalysis() {
               value={financeList}
               filterDisplay="row"
               sortMode="single"
-              sortField="name"
+              onSort={customSort}
+              sortField={sortProfitAnalysisField}
+              sortOrder={sortProfitAnalysisOrder}
               dataKey="_id"
               selectionMode="checkbox"
               filters={financeFilters}
@@ -871,7 +886,6 @@ export default function ProfitAnalysis() {
               //   setSelectedFinanceData(e.value);
               // }}
               // selection={selectedFinanceData}
-              sortOrder={1}
               scrollable={isMobile === true ? false : true}
               rowClassName={getRowClassName}
               emptyMessage={financeLoading && <Skeleton count={11} />}

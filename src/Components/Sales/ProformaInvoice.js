@@ -47,6 +47,8 @@ import moment from 'moment';
 import {
   clearAddProformaInvoiceData,
   setIsGetInitialValuesProformaInvoice,
+  setSortProformaInvoiceField,
+  setSortProformaInvoiceOrder,
 } from 'Store/Reducers/Sales/ProformaInvoiceSlice';
 import Skeleton from 'react-loading-skeleton';
 import { useNavigate } from 'react-router-dom';
@@ -85,6 +87,8 @@ export default function ProformaInvoice({ hasAccess }) {
 
   const {
     proformaLoading,
+    sortProformaInvoiceField,
+    sortProformaInvoiceOrder,
     proformaListLoading,
     proformaInvoiceList,
     proformaInvoiceCount,
@@ -688,6 +692,12 @@ export default function ProformaInvoice({ hasAccess }) {
     loadTableData(e);
   };
 
+  const onSort = e => {
+    const { sortField, sortOrder } = e;
+    dispatch(setSortProformaInvoiceField(sortField));
+    dispatch(setSortProformaInvoiceOrder(sortOrder));
+  };
+
   return (
     <>
       {proformaLoading && <Loader />}
@@ -886,9 +896,10 @@ export default function ProformaInvoice({ hasAccess }) {
             <DataTable
               value={proformaInvoiceList}
               sortMode="single"
-              sortField="name"
               filterDisplay="row"
-              sortOrder={1}
+              onSort={onSort}
+              sortField={sortProformaInvoiceField}
+              sortOrder={sortProformaInvoiceOrder}
               dataKey="_id"
               filters={proformaFilters}
               onFilter={event => {
@@ -983,6 +994,7 @@ export default function ProformaInvoice({ hasAccess }) {
               onPageRowsChange={onPageRowsChange}
               currentPage={currentPage}
               totalCount={proformaInvoiceCount}
+              isRestrictTotalEntries // Not showing total data entries:
             />
           </div>
         </div>

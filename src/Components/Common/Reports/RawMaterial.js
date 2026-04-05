@@ -15,6 +15,7 @@ import {
   fabrickStockByGSMExportPDF,
   laminatedRollStockExportExcel,
   laminatedRollStockExportPDF,
+  nonLaminatedRollsStockExportExcel,
   rollAgeingReportExportExcel,
 } from 'Services/Report/RawMaterialService';
 import Loader from '../Loader';
@@ -54,6 +55,8 @@ const RawMaterial = () => {
       dispatch(laminatedRollStockExportExcel());
     } else if (report?.toLowerCase() === 'roll ageing report') {
       dispatch(rollAgeingReportExportExcel());
+    } else if (report?.toLowerCase() === 'non laminated rolls stock') {
+      dispatch(nonLaminatedRollsStockExportExcel());
     }
     setMaterial('');
     setReportData('');
@@ -131,6 +134,17 @@ const RawMaterial = () => {
                   <img src={ReportIcon} alt="" /> Roll Ageing Report
                 </Button>
               </div>
+              <div className="col-md-3">
+                <Button
+                  className="btn_border"
+                  onClick={() => {
+                    setReportModal(true);
+                    setReportData('Non Laminated Rolls Stock');
+                  }}
+                >
+                  <img src={ReportIcon} alt="" /> Non Laminated Rolls Stock
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -145,7 +159,8 @@ const RawMaterial = () => {
             setMaterial('');
           }}
         >
-          {reportData?.toLowerCase() === 'roll ageing report' ? (
+          {reportData?.toLowerCase() === 'roll ageing report' ||
+          reportData?.toLowerCase() === 'non laminated rolls stock' ? (
             <Row>
               <Col xs={12}>
                 <Button

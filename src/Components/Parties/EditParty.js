@@ -5,6 +5,8 @@ import { useParams } from 'react-router-dom';
 import {
   setIsGetInitialValuesParty,
   setPartiesAddressList,
+  setTransporterFileLink,
+  setTransporterPrevFileLink,
   setUpdateSelectedPartyData,
 } from 'Store/Reducers/Parties/parties.slice';
 import PartiesDetail from './PartiesDetail';
@@ -114,6 +116,8 @@ const EditParty = () => {
       state_option: stateOption,
     };
 
+    dispatch(setTransporterPrevFileLink(res.pincode_file));
+    dispatch(setTransporterFileLink(res.pincode_file));
     setInitialData(updated);
     dispatch(setUpdateSelectedPartyData(updated));
   };

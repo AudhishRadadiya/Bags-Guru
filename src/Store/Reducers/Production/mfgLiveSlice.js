@@ -27,6 +27,7 @@ let initialState = {
     completed: 0,
     partial: 1,
     pending_bag: 0,
+    total_used_rolls: 0,
     // machine_id: '',
     // roll_printed: [],
   },
@@ -43,6 +44,7 @@ let initialState = {
     warehouse: '',
     completed: 0,
     partial: 1,
+    total_used_rolls: 0,
   },
   hotStampingData: {
     pending_bag: 0,
@@ -59,6 +61,8 @@ let initialState = {
     partial: 1,
   },
   updatedPrintStatus: [],
+  sortMFGLiveField: null,
+  sortMFGLiveOrder: null,
 };
 
 const mfgLiveSlice = createSlice({
@@ -137,6 +141,12 @@ const mfgLiveSlice = createSlice({
     setMfgLiveTotalQty: (state, action) => {
       state.mfgLiveTotalQty = action.payload;
     },
+    setSortMFGLiveField: (state, action) => {
+      state.sortMFGLiveField = action.payload;
+    },
+    setSortMFGLiveOrder: (state, action) => {
+      state.sortMFGLiveOrder = action.payload;
+    },
   },
 });
 
@@ -165,6 +175,8 @@ export const {
   setBagToBagData,
   setHotStampingData,
   setMfgLiveTotalQty,
+  setSortMFGLiveField,
+  setSortMFGLiveOrder,
 } = mfgLiveSlice.actions;
 
 export default mfgLiveSlice.reducer;

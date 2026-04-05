@@ -195,3 +195,27 @@ export const rollAgeingReportExportExcel = payload => async dispatch => {
     dispatch(setRawMaterialLoading(false));
   }
 };
+
+/**
+ * @desc Non Laminated Rolls Stock Excel Export:
+ */
+export const nonLaminatedRollsStockExportExcel = payload => async dispatch => {
+  try {
+    dispatch(setRawMaterialLoading(true));
+    const response = await axios.post(`/export/reportRollRequirement/excel`);
+    const { msg, err, data } = response.data;
+
+    if (err === 0) {
+      window.open(data, '_blank');
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setRawMaterialLoading(false));
+  }
+};

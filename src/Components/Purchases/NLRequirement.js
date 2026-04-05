@@ -11,6 +11,8 @@ import { Checkbox } from 'primereact/checkbox';
 import { DataTable } from 'primereact/datatable';
 import { InputText } from 'primereact/inputtext';
 import { OverlayPanel } from 'primereact/overlaypanel';
+import HistoryIcon from '../../Assets/Images/history-icon.svg';
+import CheckGreen from '../../Assets/Images/check-round-green.svg';
 import { Col, Dropdown, OverlayTrigger, Row, Tooltip } from 'react-bootstrap';
 
 import {
@@ -25,9 +27,13 @@ import {
   exportStockWithoutOrderExcel,
   exportStockWithoutOrderPdf,
   getNlRollRequirement,
+  getRollStockConsumptionHistory,
+  getRollStockHistory,
   getRollStockWithoutOrderList,
+  updateRollStocks,
 } from 'Services/Purchase/purchaseOrderService';
 import Loader from 'Components/Common/Loader';
+import { Calendar } from 'primereact/calendar';
 import EditIcon from '../../Assets/Images/edit.svg';
 import TrashIcon from '../../Assets/Images/trash.svg';
 import FilterIcon from '../../Assets/Images/filter.svg';
@@ -37,6 +43,17 @@ import CustomPaginator from 'Components/Common/CustomPaginator';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 import DateRangeCalender from 'Components/Common/DateRangeCalender';
 import { getActiveFabricColorList } from 'Services/Settings/MiscMasterService';
+import {
+  setRollRequirementCount,
+  setRollStockWithoutOrderCount,
+  setSortNLRequirementField,
+  setSortNLRequirementOrder,
+  setSortStockWithoutField,
+  setSortStockWithoutOrder,
+} from 'Store/Reducers/Purchase/PurchaseOrderSlice';
+import StockHistoryDialog from './NLRequirement/StockHistoryDialog';
+import NLRequirementMultiSelect from './NLRequirement/NLRequirementMultiSelect';
+import StockConsumptionHistoryDialog from './NLRequirement/StockConsumptionHistoryDialog';
 
 const nlRequirementFilterDetail = [
   { label: 'Material', value: 'material', type: 'inputBox' },
@@ -84,13 +101,31 @@ export default function NLRequirement({ hasAccess }) {
     requiredRollModal: false,
     requiredRollData: {},
   });
+  const [lastMonthsUsedPopup, setLastMonthsUsedPopup] = useState({
+    openLastMonthsUsedPopup: false,
+    lastMonthsUsedDetails: {},
+  });
+  const [lastThreeMonthsUsedPopup, setLastThreeMonthsUsedPopup] = useState({
+    openLastThreeMonthsUsedPopup: false,
+    lastThreeMonthsUsedDetails: {},
+  });
+  const [stockHistoryPopup, setStockHistoryPopup] = useState(false);
+  const [stockConsumptionHistoryPopup, setStockConsumptionHistoryPopup] =
+    useState(false);
+  const [rollRequirementData, setRollRequirementData] = useState([]);
+  const [rollStockWithoutData, setRollStockWithoutData] = useState([]);
 
   const {
+    sortStockWithoutField,
+    sortStockWithoutOrder,
     rollRequirementLoading,
     rollRequirementListLoading,
     rollRequirementCount,
     rollRequirementList,
     rollStockWithoutOrderList,
+    sortNLRequirementField,
+    sortNLRequirementOrder,
+    rollStockWithoutOrderCount,
   } = useSelector(({ purchaseOrder }) => purchaseOrder);
   const { listFilter } = useSelector(({ parties }) => parties);
   const { allFilters, allCommon } = useSelector(({ common }) => common);
@@ -100,6 +135,7 @@ export default function NLRequirement({ hasAccess }) {
     filterToggle,
     stockWithoutOrderFilterToggle,
     searchQuery,
+    field_filter,
     isStockWithoutOrder,
   } = allCommon?.nlRequirement;
   const {
@@ -113,27 +149,57 @@ export default function NLRequirement({ hasAccess }) {
     dates,
   } = allFilters?.nlRequirement;
 
+  const onRollStockWithoutOrderList = ({
+    pageLimit,
+    currentPage,
+    searchData,
+    filters,
+    date,
+  }) => {
+    dispatch(
+      getRollStockWithoutOrderList(
+        pageLimit,
+        currentPage,
+        searchData,
+        filters,
+        date,
+      ),
+    );
+  };
+
+  const onNlRollRequirementList = ({
+    pageLimit,
+    currentPage,
+    searchData,
+    filters,
+    date,
+  }) => {
+    dispatch(
+      getNlRollRequirement(pageLimit, currentPage, searchData, filters, date),
+    );
+  };
+
   const handleNLRequirementListing = useCallback(() => {
     if (isStockWithoutOrder) {
-      dispatch(
-        getRollStockWithoutOrderList(
-          isStockWithoutOrderPageLimit,
-          isStockWithoutOrderCurrentPage,
-          searchQuery,
-          applied,
-          dates,
-        ),
-      );
+      const payload = {
+        pageLimit: isStockWithoutOrderPageLimit,
+        currentPage: isStockWithoutOrderCurrentPage,
+        searchData: searchQuery,
+        filters: applied,
+        date: dates,
+      };
+
+      onRollStockWithoutOrderList(payload);
     } else {
-      dispatch(
-        getNlRollRequirement(
-          pageLimit,
-          currentPage,
-          searchQuery,
-          applied,
-          dates,
-        ),
-      );
+      const payload = {
+        pageLimit,
+        currentPage,
+        searchData: searchQuery,
+        filters: applied,
+        date: dates,
+      };
+
+      onNlRollRequirementList(payload);
     }
   }, [
     applied,
@@ -185,20 +251,47 @@ export default function NLRequirement({ hasAccess }) {
     loadRequiredData();
   }, [loadRequiredData]);
 
+  useEffect(() => {
+    if (rollRequirementList?.length > 0) {
+      setRollRequirementData(rollRequirementList);
+    }
+
+    if (rollStockWithoutOrderList?.length > 0) {
+      setRollStockWithoutData(rollStockWithoutOrderList);
+    }
+  }, [rollRequirementList, rollStockWithoutOrderList]);
+
+  const NLRequirementCustomSort = useCallback(
+    e => {
+      dispatch(setSortNLRequirementField(e.sortField));
+      dispatch(setSortNLRequirementOrder(e.sortOrder));
+    },
+    [dispatch],
+  );
+
+  const stockWithoutCustomSort = useCallback(
+    e => {
+      dispatch(setSortStockWithoutField(e.sortField));
+      dispatch(setSortStockWithoutOrder(e.sortOrder));
+    },
+    [dispatch],
+  );
+
   const filterOption = useMemo(() => {
-    let flterOptionArray = isStockWithoutOrder
+    let filterOptionArray = isStockWithoutOrder
       ? [...stockWithoutOrderFilterDetail]
       : [...nlRequirementFilterDetail];
+
     if (filters?.length > 0) {
-      flterOptionArray = flterOptionArray?.map(item => {
+      filterOptionArray = filterOptionArray?.map(item => {
         if (filters.find(item2 => item2.filter === item.value)) {
           return { ...item, disabled: true };
         }
         return item;
       });
     }
-    return flterOptionArray;
-  }, [filters]);
+    return filterOptionArray;
+  }, [isStockWithoutOrder, filters]);
 
   const filterOptions = useMemo(() => {
     return {
@@ -241,9 +334,34 @@ export default function NLRequirement({ hasAccess }) {
     );
   };
 
-  const pendingTemplete = data => {
+  const InStockTemplate = data => {
+    const { rollstock_id, opening_stock_date } = data;
+
     return (
       <div
+        className="cursor-pointer column_hover_effect"
+        onClick={() => {
+          setStockConsumptionHistoryPopup(true);
+
+          const payload = {
+            rollstock_id,
+            opening_stock_date: moment(new Date(opening_stock_date)).format(
+              'YYYY-MM-DD',
+            ),
+          };
+
+          dispatch(getRollStockConsumptionHistory(payload));
+        }}
+      >
+        {data?.in_stock}
+      </div>
+    );
+  };
+
+  const pendingTemplate = data => {
+    return (
+      <div
+        className="cursor-pointer column_hover_effect"
         onClick={() =>
           setRequiredRollPopup({
             requiredRollModal: true,
@@ -252,6 +370,275 @@ export default function NLRequirement({ hasAccess }) {
         }
       >
         {data?.required_roll}
+      </div>
+    );
+  };
+
+  const lastMonthUsedTemplate = data => {
+    return (
+      <div
+        onClick={() =>
+          setLastMonthsUsedPopup({
+            openLastMonthsUsedPopup: true,
+            lastMonthsUsedDetails: data,
+          })
+        }
+      >
+        {data?.last_month_used}
+      </div>
+    );
+  };
+
+  const lastThreeMonthUsedTemplate = data => {
+    return (
+      <div
+        onClick={() =>
+          setLastThreeMonthsUsedPopup({
+            openLastThreeMonthsUsedPopup: true,
+            lastThreeMonthsUsedDetails: data,
+          })
+        }
+      >
+        {data?.last_3_months_used}
+      </div>
+    );
+  };
+
+  const updateTableRowData = (uniqueId, updatedData) => {
+    let updatedRollStock = isStockWithoutOrder
+      ? [...(rollStockWithoutData || [])]
+      : [...(rollRequirementData || [])];
+
+    const index = updatedRollStock.findIndex(
+      item => item.unique_id === uniqueId,
+    );
+
+    if (index >= 0) {
+      const oldObj = {
+        ...updatedRollStock[index],
+      };
+
+      const newObj = {
+        ...oldObj,
+        ...updatedData,
+      };
+
+      updatedRollStock[index] = newObj;
+
+      if (isStockWithoutOrder) {
+        setRollStockWithoutData(updatedRollStock);
+      }
+
+      if (!isStockWithoutOrder) {
+        setRollRequirementData(updatedRollStock);
+      }
+    }
+  };
+
+  const openingDateTemplate = row => {
+    return (
+      <div className="date_select_wrapper">
+        <Calendar
+          showIcon
+          style={{ minWidth: '145px' }}
+          placeholder="Opening Date"
+          dateFormat="dd-mm-yy"
+          name="opening_stock_date"
+          value={row?.opening_stock_date || ''}
+          onChange={e => {
+            const updateData = {
+              opening_stock_date: e.value,
+            };
+
+            updateTableRowData(row?.unique_id, updateData);
+          }}
+          showButtonBar
+          onClearButtonClick={() => {
+            const updateData = {
+              opening_stock_date: new Date(),
+            };
+
+            updateTableRowData(row?.unique_id, updateData);
+          }}
+        />
+      </div>
+    );
+  };
+
+  const openingStockTemplate = data => {
+    const {
+      rollstock_id,
+      gsm,
+      unique_id,
+      roll_width,
+      gsm_length,
+      fabric_color,
+      material,
+      opening_stock_date,
+      required_roll,
+      opening_stock,
+      lamination_type,
+      buffering_stock,
+    } = data;
+    return (
+      <div className="d-flex align-items-center">
+        <div style={{ width: '14px' }}>
+          {rollstock_id && (
+            <img
+              src={HistoryIcon}
+              alt=""
+              onClick={e => {
+                setStockHistoryPopup(true);
+
+                const payload = {
+                  ...(rollstock_id && { rollstock_id: rollstock_id }),
+                  type: 'opening_stock',
+                };
+
+                dispatch(getRollStockHistory(payload));
+              }}
+            />
+          )}
+        </div>
+        <div className="form_group mb-0 mx-1">
+          <InputText
+            type="number"
+            placeholder="0"
+            className="w-100"
+            value={data?.opening_stock}
+            onChange={e => {
+              const updateData = {
+                opening_stock: e.target.value,
+              };
+
+              updateTableRowData(data?.unique_id, updateData);
+            }}
+          />
+        </div>
+        <Button
+          className="btn_transperant opening_btn"
+          onClick={async () => {
+            const payload = {
+              ...(rollstock_id && { rollstock_id: rollstock_id }),
+              gsm,
+              roll_width,
+              gsm_length,
+              fabric_color,
+              material,
+              lamination: lamination_type ?? null,
+              opening_stock,
+              opening_stock_date:
+                moment(opening_stock_date).format('YYYY-MM-DD'),
+            };
+
+            const res = await dispatch(updateRollStocks(payload));
+
+            if (Object.keys(res)?.length > 0) {
+              const estimated_order = Math.max(
+                required_roll + Number(buffering_stock) - Number(res.in_stock),
+                0,
+              );
+
+              const updateData = {
+                in_stock: res.in_stock,
+                estimated_order,
+                ...(!rollstock_id && { rollstock_id: res._id }),
+              };
+
+              updateTableRowData(unique_id, updateData);
+            }
+          }}
+          disabled={!opening_stock}
+        >
+          <img src={CheckGreen} alt="" />
+        </Button>
+      </div>
+    );
+  };
+
+  const bufferingStockTemplate = data => {
+    const {
+      unique_id,
+      rollstock_id,
+      gsm,
+      roll_width,
+      gsm_length,
+      fabric_color,
+      material,
+      lamination_type,
+      required_roll,
+      buffering_stock,
+    } = data;
+
+    return (
+      <div className="d-flex align-items-center">
+        <div style={{ width: '14px' }}>
+          {rollstock_id && (
+            <img
+              src={HistoryIcon}
+              alt=""
+              onClick={e => {
+                setStockHistoryPopup(true);
+
+                const payload = {
+                  ...(rollstock_id && { rollstock_id: rollstock_id }),
+                  type: 'buffering_stock',
+                };
+
+                dispatch(getRollStockHistory(payload));
+              }}
+            />
+          )}
+        </div>
+        <div className="form_group mb-0 mx-1">
+          <InputText
+            type="number"
+            placeholder="0"
+            className="w-100"
+            value={data?.buffering_stock}
+            onChange={e => {
+              const updateData = {
+                buffering_stock: e.target.value,
+              };
+
+              updateTableRowData(data?.unique_id, updateData);
+            }}
+          />
+        </div>
+        <Button
+          className="btn_transperant opening_btn"
+          onClick={async () => {
+            const payload = {
+              ...(rollstock_id && { rollstock_id: rollstock_id }),
+              gsm,
+              roll_width,
+              gsm_length,
+              fabric_color,
+              material,
+              lamination: lamination_type ?? null,
+              buffering_stock,
+            };
+
+            const res = await dispatch(updateRollStocks(payload));
+
+            if (Object.keys(res)?.length > 0) {
+              const estimated_order = Math.max(
+                required_roll + Number(buffering_stock) - Number(res.in_stock),
+                0,
+              );
+
+              const updateData = {
+                estimated_order,
+                ...(!rollstock_id && { rollstock_id: res._id }),
+              };
+
+              updateTableRowData(unique_id, updateData);
+            }
+          }}
+          disabled={!buffering_stock}
+        >
+          <img src={CheckGreen} alt="" />
+        </Button>
       </div>
     );
   };
@@ -325,17 +712,35 @@ export default function NLRequirement({ hasAccess }) {
       );
 
       if (isStockWithoutOrder) {
-        dispatch(
-          getRollStockWithoutOrderList(
-            isStockWithoutOrderPageLimit,
-            1,
-            searchQuery,
-            {},
-            dates,
-          ),
-        );
+        setRollStockWithoutData([]);
+        dispatch(setRollStockWithoutOrderCount(0));
+
+        const payload = {
+          pageLimit: isStockWithoutOrderPageLimit,
+          currentPage: 1,
+          searchData: searchQuery,
+          filters: {},
+          date: dates,
+        };
+
+        onRollStockWithoutOrderList(payload);
+
+        // dispatch(getRollStockWithoutOrderList(payload));
       } else {
-        dispatch(getNlRollRequirement(pageLimit, 1, searchQuery, {}, dates));
+        setRollRequirementData([]);
+        dispatch(setRollRequirementCount(0));
+
+        const payload = {
+          pageLimit: pageLimit,
+          currentPage: 1,
+          searchData: searchQuery,
+          filters: {},
+          date: dates,
+        };
+
+        onNlRollRequirementList(payload);
+
+        // dispatch(getNlRollRequirement(pageLimit, 1, searchQuery, {}, dates));
       }
 
       op.current?.hide();
@@ -358,8 +763,10 @@ export default function NLRequirement({ hasAccess }) {
           item.filter === 'in_stock' ||
           item.filter === 'pending_order' ||
           item.filter === 'used_in_last_period';
+
         filterObj = {
           ...filterObj,
+          ...(field_filter.fabric_color.length > 0 && field_filter),
           [item.filter]: check_key ? Number(item.value) : item.value,
         };
       });
@@ -370,25 +777,51 @@ export default function NLRequirement({ hasAccess }) {
         }),
       );
       if (isStockWithoutOrder) {
-        dispatch(
-          getRollStockWithoutOrderList(
-            isStockWithoutOrderPageLimit,
-            isStockWithoutOrderCurrentPage,
-            searchQuery,
-            filterObj,
-            dates,
-          ),
-        );
+        setRollStockWithoutData([]);
+        dispatch(setRollStockWithoutOrderCount(0));
+
+        const payload = {
+          pageLimit: isStockWithoutOrderPageLimit,
+          currentPage: isStockWithoutOrderCurrentPage,
+          searchData: searchQuery,
+          filters: filterObj,
+          date: dates,
+        };
+
+        onRollStockWithoutOrderList(payload);
+
+        // dispatch(
+        //   getRollStockWithoutOrderList(
+        //     isStockWithoutOrderPageLimit,
+        //     isStockWithoutOrderCurrentPage,
+        //     searchQuery,
+        //     filterObj,
+        //     dates,
+        //   ),
+        // );
       } else {
-        dispatch(
-          getNlRollRequirement(
-            pageLimit,
-            currentPage,
-            searchQuery,
-            filterObj,
-            dates,
-          ),
-        );
+        setRollRequirementData([]);
+        dispatch(setRollRequirementCount(0));
+
+        const payload = {
+          pageLimit: pageLimit,
+          currentPage: currentPage,
+          searchData: searchQuery,
+          filters: filterObj,
+          date: dates,
+        };
+
+        onNlRollRequirementList(payload);
+
+        // dispatch(
+        //   getNlRollRequirement(
+        //     pageLimit,
+        //     currentPage,
+        //     searchQuery,
+        //     filterObj,
+        //     dates,
+        //   ),
+        // );
       }
     }
   }, [
@@ -408,25 +841,51 @@ export default function NLRequirement({ hasAccess }) {
     index => {
       if (Object.keys(applied)?.length > 0) {
         if (isStockWithoutOrder) {
-          dispatch(
-            getRollStockWithoutOrderList(
-              isStockWithoutOrderPageLimit,
-              isStockWithoutOrderCurrentPage,
-              searchQuery,
-              {},
-              dates,
-            ),
-          );
+          setRollStockWithoutData([]);
+          dispatch(setRollStockWithoutOrderCount(0));
+
+          const payload = {
+            pageLimit: isStockWithoutOrderPageLimit,
+            currentPage: isStockWithoutOrderCurrentPage,
+            searchData: searchQuery,
+            filters: {},
+            date: dates,
+          };
+
+          onRollStockWithoutOrderList(payload);
+
+          // dispatch(
+          //   getRollStockWithoutOrderList(
+          //     isStockWithoutOrderPageLimit,
+          //     isStockWithoutOrderCurrentPage,
+          //     searchQuery,
+          //     {},
+          //     dates,
+          //   ),
+          // );
         } else {
-          dispatch(
-            getNlRollRequirement(
-              pageLimit,
-              currentPage,
-              searchQuery,
-              {},
-              dates,
-            ),
-          );
+          setRollRequirementData([]);
+          dispatch(setRollRequirementCount(0));
+
+          const payload = {
+            pageLimit: pageLimit,
+            currentPage: currentPage,
+            searchData: searchQuery,
+            filters: {},
+            date: dates,
+          };
+
+          onNlRollRequirementList(payload);
+
+          // dispatch(
+          //   getNlRollRequirement(
+          //     pageLimit,
+          //     currentPage,
+          //     searchQuery,
+          //     {},
+          //     dates,
+          //   ),
+          // );
         }
 
         dispatch(
@@ -533,25 +992,51 @@ export default function NLRequirement({ hasAccess }) {
 
       if (updateAppliedFilters) {
         if (isStockWithoutOrder) {
-          dispatch(
-            getRollStockWithoutOrderList(
-              isStockWithoutOrderPageLimit,
-              isStockWithoutOrderCurrentPage,
-              searchQuery,
-              {},
-              dates,
-            ),
-          );
+          setRollStockWithoutData([]);
+          dispatch(setRollStockWithoutOrderCount(0));
+
+          const payload = {
+            pageLimit: isStockWithoutOrderPageLimit,
+            currentPage: isStockWithoutOrderCurrentPage,
+            searchData: searchQuery,
+            filters: {},
+            date: dates,
+          };
+
+          onRollStockWithoutOrderList(payload);
+
+          // dispatch(
+          //   getRollStockWithoutOrderList(
+          //     isStockWithoutOrderPageLimit,
+          //     isStockWithoutOrderCurrentPage,
+          //     searchQuery,
+          //     {},
+          //     dates,
+          //   ),
+          // );
         } else {
-          dispatch(
-            getNlRollRequirement(
-              pageLimit,
-              currentPage,
-              searchQuery,
-              {},
-              dates,
-            ),
-          );
+          setRollRequirementData([]);
+          dispatch(setRollRequirementCount(0));
+
+          const payload = {
+            pageLimit: pageLimit,
+            currentPage: currentPage,
+            searchData: searchQuery,
+            filters: {},
+            date: dates,
+          };
+
+          onNlRollRequirementList(payload);
+
+          // dispatch(
+          //   getNlRollRequirement(
+          //     pageLimit,
+          //     currentPage,
+          //     searchQuery,
+          //     {},
+          //     dates,
+          //   ),
+          // );
         }
       }
 
@@ -647,11 +1132,35 @@ export default function NLRequirement({ hasAccess }) {
         }),
       );
 
-      dispatch(
-        getNlRollRequirement(pageLimit, pageIndex, searchQuery, applied, dates),
-      );
+      const headerFilters = {
+        ...applied,
+        ...(field_filter.fabric_color.length > 0 && field_filter),
+      };
+
+      const payload = {
+        pageLimit: pageLimit,
+        currentPage: pageIndex,
+        searchData: searchQuery,
+        filters: headerFilters,
+        date: dates,
+      };
+
+      onNlRollRequirementList(payload);
+
+      // dispatch(
+      //   getNlRollRequirement(pageLimit, pageIndex, searchQuery, applied, dates),
+      // );
     },
-    [currentPage, dispatch, allFilters, pageLimit, searchQuery, applied, dates],
+    [
+      currentPage,
+      dispatch,
+      allFilters,
+      pageLimit,
+      searchQuery,
+      field_filter,
+      applied,
+      dates,
+    ],
   );
 
   const onPageRowsChange = useCallback(
@@ -668,17 +1177,33 @@ export default function NLRequirement({ hasAccess }) {
           },
         }),
       );
-      dispatch(
-        getNlRollRequirement(
-          page,
-          updateCurrentPage,
-          searchQuery,
-          applied,
-          dates,
-        ),
-      );
+
+      const headerFilters = {
+        ...applied,
+        ...(field_filter.fabric_color.length > 0 && field_filter),
+      };
+
+      const payload = {
+        pageLimit: page,
+        currentPage: updateCurrentPage,
+        searchData: searchQuery,
+        filters: headerFilters,
+        date: dates,
+      };
+
+      onNlRollRequirementList(payload);
+
+      // dispatch(
+      //   getNlRollRequirement(
+      //     page,
+      //     updateCurrentPage,
+      //     searchQuery,
+      //     applied,
+      //     dates,
+      //   ),
+      // );
     },
-    [allFilters, applied, dates, dispatch, searchQuery],
+    [allFilters, applied, dates, dispatch, searchQuery, field_filter],
   );
 
   const isStockWithoutOrderOnPageChange = useCallback(
@@ -687,6 +1212,12 @@ export default function NLRequirement({ hasAccess }) {
       if (page?.page === 'Prev') pageIndex--;
       else if (page?.page === 'Next') pageIndex++;
       else pageIndex = page;
+
+      const headerFilters = {
+        ...applied,
+        ...(field_filter.fabric_color.length > 0 && field_filter),
+      };
+
       dispatch(
         setAllFilters({
           ...allFilters,
@@ -697,15 +1228,25 @@ export default function NLRequirement({ hasAccess }) {
         }),
       );
 
-      dispatch(
-        getRollStockWithoutOrderList(
-          isStockWithoutOrderPageLimit,
-          pageIndex,
-          searchQuery,
-          applied,
-          dates,
-        ),
-      );
+      const payload = {
+        pageLimit: isStockWithoutOrderPageLimit,
+        currentPage: pageIndex,
+        searchData: searchQuery,
+        filters: headerFilters,
+        date: dates,
+      };
+
+      onRollStockWithoutOrderList(payload);
+
+      // dispatch(
+      //   getRollStockWithoutOrderList(
+      //     isStockWithoutOrderPageLimit,
+      //     pageIndex,
+      //     searchQuery,
+      //     applied,
+      //     dates,
+      //   ),
+      // );
     },
     [
       dispatch,
@@ -721,6 +1262,12 @@ export default function NLRequirement({ hasAccess }) {
   const isStockWithoutOrderOnPageRowsChange = useCallback(
     page => {
       const updateCurrentPage = page === 0 ? 0 : 1;
+
+      const headerFilters = {
+        ...applied,
+        ...(field_filter.fabric_color.length > 0 && field_filter),
+      };
+
       dispatch(
         setAllFilters({
           ...allFilters,
@@ -732,20 +1279,35 @@ export default function NLRequirement({ hasAccess }) {
         }),
       );
 
-      dispatch(
-        getRollStockWithoutOrderList(
-          page,
-          updateCurrentPage,
-          searchQuery,
-          applied,
-          dates,
-        ),
-      );
+      const payload = {
+        pageLimit: page,
+        currentPage: updateCurrentPage,
+        searchData: searchQuery,
+        filters: headerFilters,
+        date: dates,
+      };
+
+      onRollStockWithoutOrderList(payload);
+
+      // dispatch(
+      //   getRollStockWithoutOrderList(
+      //     page,
+      //     updateCurrentPage,
+      //     searchQuery,
+      //     filters,
+      //     dates,
+      //   ),
+      // );
     },
-    [allFilters, dates, dispatch, searchQuery, applied],
+    [allFilters, dates, dispatch, searchQuery, field_filter, applied],
   );
 
   const handleSearchInput = (e, isStockWithoutOrder) => {
+    const headerFilters = {
+      ...applied,
+      ...(field_filter.fabric_color.length > 0 && field_filter),
+    };
+
     dispatch(
       setAllFilters({
         ...allFilters,
@@ -758,19 +1320,45 @@ export default function NLRequirement({ hasAccess }) {
     );
 
     if (isStockWithoutOrder) {
-      dispatch(
-        getRollStockWithoutOrderList(
-          isStockWithoutOrderPageLimit,
-          1,
-          e.target.value,
-          applied,
-          dates,
-        ),
-      );
+      setRollStockWithoutData([]);
+      dispatch(setRollStockWithoutOrderCount(0));
+
+      const payload = {
+        pageLimit: isStockWithoutOrderPageLimit,
+        currentPage: 1,
+        searchData: e.target.value,
+        filters: headerFilters,
+        date: dates,
+      };
+
+      onRollStockWithoutOrderList(payload);
+
+      // dispatch(
+      //   getRollStockWithoutOrderList(
+      //     isStockWithoutOrderPageLimit,
+      //     1,
+      //     e.target.value,
+      //     filters,
+      //     dates,
+      //   ),
+      // );
     } else {
-      dispatch(
-        getNlRollRequirement(pageLimit, 1, e.target.value, applied, dates),
-      );
+      setRollRequirementData([]);
+      dispatch(setRollRequirementCount(0));
+
+      const payload = {
+        pageLimit: pageLimit,
+        currentPage: 1,
+        searchData: e.target.value,
+        filters: headerFilters,
+        date: dates,
+      };
+
+      onNlRollRequirementList(payload);
+
+      // dispatch(
+      //   getNlRollRequirement(pageLimit, 1, e.target.value, applied, dates),
+      // );
     }
   };
 
@@ -812,32 +1400,64 @@ export default function NLRequirement({ hasAccess }) {
       }),
     );
 
+    const headerFilters = {
+      ...applied,
+      ...(field_filter.fabric_color.length > 0 && field_filter),
+    };
+
     if (isStockWithoutOrder) {
-      dispatch(
-        getRollStockWithoutOrderList(
-          isStockWithoutOrderPageLimit,
-          isStockWithoutOrderCurrentPage,
-          searchQuery,
-          applied,
-          e,
-        ),
-      );
+      setRollStockWithoutData([]);
+      dispatch(setRollStockWithoutOrderCount(0));
+
+      const payload = {
+        pageLimit: isStockWithoutOrderPageLimit,
+        currentPage: isStockWithoutOrderCurrentPage,
+        searchData: searchQuery,
+        filters: headerFilters,
+        date: e,
+      };
+
+      onRollStockWithoutOrderList(payload);
+
+      // dispatch(
+      //   getRollStockWithoutOrderList(
+      //     isStockWithoutOrderPageLimit,
+      //     isStockWithoutOrderCurrentPage,
+      //     searchQuery,
+      //     applied,
+      //     e,
+      //   ),
+      // );
     } else {
-      dispatch(
-        getNlRollRequirement(pageLimit, currentPage, searchQuery, applied, e),
-      );
+      setRollRequirementData([]);
+      dispatch(setRollRequirementCount(0));
+
+      const payload = {
+        pageLimit: pageLimit,
+        currentPage: currentPage,
+        searchData: searchQuery,
+        filters: headerFilters,
+        date: e,
+      };
+
+      onNlRollRequirementList(payload);
+
+      // dispatch(
+      //   getNlRollRequirement(pageLimit, currentPage, searchQuery, applied, e),
+      // );
     }
   };
 
   const NlRollRequirementTable = useMemo(() => {
     return (
-      <div className="data_table_wrapper cell_padding_large is_filter">
+      <div className="data_table_wrapper cell_padding_large is_filter rolls_requirement_table">
         <DataTable
-          value={rollRequirementList}
+          value={rollRequirementData}
           sortMode="single"
-          sortField="name"
+          onSort={NLRequirementCustomSort}
+          sortField={sortNLRequirementField}
+          sortOrder={sortNLRequirementOrder}
           filterDisplay="row"
-          sortOrder={1}
           rows={10}
           dataKey="_id"
           emptyMessage={rollRequirementListLoading && <Skeleton count={10} />}
@@ -847,17 +1467,60 @@ export default function NLRequirement({ hasAccess }) {
           <Column field="roll_width" header="Width" sortable></Column>
           <Column field="gsm_length" header="Length" sortable></Column>
           <Column field="gsm" header="GSM" sortable></Column>
-          <Column field="in_stock" header="In Stock" sortable></Column>
+          <Column
+            field="in_stock"
+            header="In Stock"
+            sortable
+            body={InStockTemplate}
+          ></Column>
           <Column
             field="required_roll"
             header="Pending Order"
-            body={pendingTemplete}
-            className="view_detail"
+            body={pendingTemplate}
+            // className="view_detail"
+            sortable
+          ></Column>
+          <Column
+            field="opening_stock_date"
+            header="Opening Stock Date"
+            body={openingDateTemplate}
+            className="width-100"
+            sortable
+          ></Column>
+          <Column
+            field="opening_stock"
+            header="Opening Stock"
+            body={openingStockTemplate}
+            sortable
+          ></Column>
+          <Column
+            field="buffering_stock"
+            header="Buffering Stock"
+            body={bufferingStockTemplate}
+            sortable
+          ></Column>
+          <Column
+            field="estimated_order"
+            header="Estimate Order"
             sortable
           ></Column>
           <Column
             field="used_in_last_period"
             header="Used in Last Period"
+            sortable
+          ></Column>
+          <Column
+            field="last_3_months_used"
+            header="Last 3 Months Used"
+            body={lastThreeMonthUsedTemplate}
+            className="view_detail"
+            sortable
+          ></Column>
+          <Column
+            field="last_month_used"
+            header="Last Months Used"
+            body={lastMonthUsedTemplate}
+            className="view_detail"
             sortable
           ></Column>
           <Column
@@ -868,7 +1531,7 @@ export default function NLRequirement({ hasAccess }) {
           ></Column>
         </DataTable>
         <CustomPaginator
-          dataList={rollRequirementList}
+          dataList={rollRequirementData}
           pageLimit={pageLimit}
           onPageChange={onPageChange}
           onPageRowsChange={onPageRowsChange}
@@ -878,11 +1541,15 @@ export default function NLRequirement({ hasAccess }) {
       </div>
     );
   }, [
-    currentPage,
-    filterToggle,
     pageLimit,
+    currentPage,
+    onPageChange,
+    onPageRowsChange,
+    rollRequirementData,
     rollRequirementCount,
-    rollRequirementList,
+    sortNLRequirementField,
+    sortNLRequirementOrder,
+    NLRequirementCustomSort,
     rollRequirementListLoading,
   ]);
 
@@ -890,11 +1557,12 @@ export default function NLRequirement({ hasAccess }) {
     return (
       <div className="data_table_wrapper cell_padding_large is_filter">
         <DataTable
-          value={rollStockWithoutOrderList?.list}
+          value={rollStockWithoutData}
           sortMode="single"
-          sortField="name"
+          onSort={stockWithoutCustomSort}
+          sortField={sortStockWithoutField}
+          sortOrder={sortStockWithoutOrder}
           filterDisplay="row"
-          sortOrder={1}
           rows={10}
           dataKey="_id"
           emptyMessage={rollRequirementListLoading && <Skeleton count={10} />}
@@ -904,15 +1572,60 @@ export default function NLRequirement({ hasAccess }) {
           <Column field="roll_width" header="Width" sortable></Column>
           <Column field="gsm_length" header="Length" sortable></Column>
           <Column field="gsm" header="GSM" sortable></Column>
-          <Column field="in_stock" header="In Stock" sortable></Column>
+          <Column
+            field="in_stock"
+            header="In Stock"
+            sortable
+            body={InStockTemplate}
+          ></Column>
           <Column
             field="required_roll"
             header="Pending Order"
+            body={pendingTemplate}
+            // className="view_detail"
+            sortable
+          ></Column>
+          <Column
+            field="opening_stock_date"
+            header="Opening Stock Date"
+            body={openingDateTemplate}
+            className="width-100"
+            sortable
+          ></Column>
+          <Column
+            field="opening_stock"
+            header="Opening Stock"
+            body={openingStockTemplate}
+            sortable
+          ></Column>
+          <Column
+            field="buffering_stock"
+            header="Buffering Stock"
+            body={bufferingStockTemplate}
+            sortable
+          ></Column>
+          <Column
+            field="estimated_order"
+            header="Estimate Order"
             sortable
           ></Column>
           <Column
             field="used_in_last_period"
             header="Used in Last Period"
+            sortable
+          ></Column>
+          <Column
+            field="last_3_months_used"
+            header="Last 3 Months Used"
+            body={lastThreeMonthUsedTemplate}
+            className="view_detail"
+            sortable
+          ></Column>
+          <Column
+            field="last_month_used"
+            header="Last Months Used"
+            body={lastMonthUsedTemplate}
+            className="view_detail"
             sortable
           ></Column>
           <Column
@@ -923,22 +1636,26 @@ export default function NLRequirement({ hasAccess }) {
           ></Column>
         </DataTable>
         <CustomPaginator
-          dataList={rollStockWithoutOrderList?.list}
+          dataList={rollStockWithoutData}
           pageLimit={isStockWithoutOrderPageLimit}
           onPageChange={isStockWithoutOrderOnPageChange}
           onPageRowsChange={isStockWithoutOrderOnPageRowsChange}
           currentPage={isStockWithoutOrderCurrentPage}
-          totalCount={rollStockWithoutOrderList?.count}
+          totalCount={rollStockWithoutOrderCount}
         />
       </div>
     );
   }, [
+    rollStockWithoutData,
+    sortStockWithoutField,
+    sortStockWithoutOrder,
+    stockWithoutCustomSort,
     rollRequirementListLoading,
-    stockWithoutOrderFilterToggle,
-    isStockWithoutOrderCurrentPage,
+    rollStockWithoutOrderCount,
     isStockWithoutOrderPageLimit,
-    rollRequirementLoading,
-    rollStockWithoutOrderList,
+    isStockWithoutOrderCurrentPage,
+    isStockWithoutOrderOnPageChange,
+    isStockWithoutOrderOnPageRowsChange,
   ]);
 
   return (
@@ -950,16 +1667,16 @@ export default function NLRequirement({ hasAccess }) {
       <div className="table_main_Wrapper bg-white">
         <div className="top_filter_wrap">
           <Row className="align-items-center">
-            <Col xxl={6}>
+            <Col xl={4} xxl={3}>
               <div className="page_title">
                 <h3 className="m-0">
                   Nonwoven Nonlaminated Rolls Requirement{' '}
                 </h3>
               </div>
             </Col>
-            <Col xxl={6}>
+            <Col xl={8} xxl={9}>
               <div className="right_filter_wrapper">
-                <ul>
+                <ul className="nl_requirement_rolls">
                   <li className="order_checkbox_wrap">
                     <div className="form_group checkbox_wrap">
                       <Checkbox
@@ -978,26 +1695,58 @@ export default function NLRequirement({ hasAccess }) {
                             }),
                           );
 
+                          const headerFilters = {
+                            ...applied,
+                            ...(field_filter.fabric_color.length > 0 &&
+                              field_filter),
+                          };
+
                           if (e.checked) {
-                            dispatch(
-                              getRollStockWithoutOrderList(
-                                isStockWithoutOrderPageLimit,
-                                isStockWithoutOrderCurrentPage,
-                                '',
-                                applied,
-                                dates,
-                              ),
-                            );
+                            setRollStockWithoutData([]);
+                            dispatch(setRollStockWithoutOrderCount(0));
+
+                            const payload = {
+                              pageLimit: isStockWithoutOrderPageLimit,
+                              currentPage: isStockWithoutOrderCurrentPage,
+                              searchData: '',
+                              filters: headerFilters,
+                              date: dates,
+                            };
+
+                            onRollStockWithoutOrderList(payload);
+
+                            // dispatch(
+                            //   getRollStockWithoutOrderList(
+                            //     isStockWithoutOrderPageLimit,
+                            //     isStockWithoutOrderCurrentPage,
+                            //     '',
+                            //     filters,
+                            //     dates,
+                            //   ),
+                            // );
                           } else {
-                            dispatch(
-                              getNlRollRequirement(
-                                pageLimit,
-                                currentPage,
-                                '',
-                                applied,
-                                dates,
-                              ),
-                            );
+                            setRollRequirementData([]);
+                            dispatch(setRollRequirementCount(0));
+
+                            const payload = {
+                              pageLimit: pageLimit,
+                              currentPage: currentPage,
+                              searchData: '',
+                              filters: headerFilters,
+                              date: dates,
+                            };
+
+                            onNlRollRequirementList(payload);
+
+                            // dispatch(
+                            //   getNlRollRequirement(
+                            //     pageLimit,
+                            //     currentPage,
+                            //     '',
+                            //     headerFilters,
+                            //     dates,
+                            //   ),
+                            // );
                           }
                         }}
                         checked={isStockWithoutOrder}
@@ -1007,7 +1756,8 @@ export default function NLRequirement({ hasAccess }) {
                       </label>
                     </div>
                   </li>
-                  <li className="search_input_wrap">
+
+                  <li className="search_input_wrap nl_requirement_input">
                     <div className="form_group">
                       <InputText
                         id="search"
@@ -1176,19 +1926,48 @@ export default function NLRequirement({ hasAccess }) {
                                   },
                                 }),
                               );
-                              dispatch(
-                                getNlRollRequirement(
-                                  pageLimit,
-                                  currentPage,
-                                  searchQuery,
-                                  applied,
-                                  {
+
+                              const headerFilters = {
+                                ...applied,
+                                ...(field_filter.fabric_color.length > 0 &&
+                                  field_filter),
+                              };
+
+                              if (isStockWithoutOrder) {
+                                setRollStockWithoutData([]);
+                                dispatch(setRollStockWithoutOrderCount(0));
+
+                                const payload = {
+                                  pageLimit: isStockWithoutOrderPageLimit,
+                                  currentPage: isStockWithoutOrderCurrentPage,
+                                  searchData: searchQuery,
+                                  filters: headerFilters,
+                                  date: {
                                     startDate: '',
                                     endDate: '',
                                     key: 'selection',
                                   },
-                                ),
-                              );
+                                };
+
+                                onRollStockWithoutOrderList(payload);
+                              } else {
+                                setRollRequirementData([]);
+                                dispatch(setRollRequirementCount(0));
+
+                                const payload = {
+                                  pageLimit: pageLimit,
+                                  currentPage: currentPage,
+                                  searchData: searchQuery,
+                                  filters: headerFilters,
+                                  date: {
+                                    startDate: '',
+                                    endDate: '',
+                                    key: 'selection',
+                                  },
+                                };
+
+                                onNlRollRequirementList(payload);
+                              }
                             }}
                           >
                             Clear
@@ -1221,6 +2000,12 @@ export default function NLRequirement({ hasAccess }) {
                         </Dropdown.Item>
                       </Dropdown.Menu>
                     </Dropdown>
+                  </li>
+                  <li>
+                    <NLRequirementMultiSelect
+                      setRollRequirementData={setRollRequirementData}
+                      setRollStockWithoutData={setRollStockWithoutData}
+                    />
                   </li>
                   {/* <li>
                     <Button
@@ -1271,15 +2056,62 @@ export default function NLRequirement({ hasAccess }) {
         className="modal_Wrapper modal_small"
         onHide={() =>
           setRequiredRollPopup({
-            ...requiredRollPopup,
             requiredRollModal: false,
             requiredRollData: {},
           })
         }
       >
         <div className="panding_orders_Wrapper">
+          {requiredRollPopup?.requiredRollData?.required_roll > 0 && (
+            <ul>
+              {requiredRollPopup?.requiredRollData?.design_wise_requirement?.map(
+                (item, i) => {
+                  return <li key={i}>{item}</li>;
+                },
+              )}
+            </ul>
+          )}
+        </div>
+      </Dialog>
+
+      <Dialog
+        header="Used in Last Period"
+        visible={!!lastMonthsUsedPopup?.openLastMonthsUsedPopup}
+        draggable={false}
+        className="modal_Wrapper modal_small"
+        onHide={() =>
+          setLastMonthsUsedPopup({
+            openLastMonthsUsedPopup: false,
+            lastMonthsUsedDetails: {},
+          })
+        }
+      >
+        <div className="panding_orders_Wrapper">
           <ul>
-            {requiredRollPopup?.requiredRollData?.design_wise_requirement?.map(
+            {lastMonthsUsedPopup?.lastMonthsUsedDetails?.last_month_design_wise?.map(
+              (item, i) => {
+                return <li key={i}>{item}</li>;
+              },
+            )}
+          </ul>
+        </div>
+      </Dialog>
+
+      <Dialog
+        header="Last 3 Months Used"
+        visible={!!lastThreeMonthsUsedPopup?.openLastThreeMonthsUsedPopup}
+        draggable={false}
+        className="modal_Wrapper modal_small"
+        onHide={() =>
+          setLastThreeMonthsUsedPopup({
+            openLastThreeMonthsUsedPopup: false,
+            lastThreeMonthsUsedDetails: {},
+          })
+        }
+      >
+        <div className="panding_orders_Wrapper">
+          <ul>
+            {lastThreeMonthsUsedPopup?.lastThreeMonthsUsedDetails?.last_3_month_design_wise?.map(
               (item, i) => {
                 return <li key={i}>{item}</li>;
               },
@@ -1306,6 +2138,16 @@ export default function NLRequirement({ hasAccess }) {
         setSaveFilterModal={setSaveFilterModal}
         content={content}
         selectedItemIndex={selectedItemIndex}
+      />
+
+      <StockHistoryDialog
+        stockHistoryPopup={stockHistoryPopup}
+        setStockHistoryPopup={setStockHistoryPopup}
+      />
+
+      <StockConsumptionHistoryDialog
+        stockConsumptionHistoryPopup={stockConsumptionHistoryPopup}
+        setStockConsumptionHistoryPopup={setStockConsumptionHistoryPopup}
       />
     </div>
   );

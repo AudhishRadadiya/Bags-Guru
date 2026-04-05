@@ -15,17 +15,30 @@
       }
     }
     .right_filter_wrapper {
+      &.table_header_search {
+        ul {
+          flex-wrap: nowrap;
+        }
+      }
       ul {
         display: flex;
         align-items: center;
         justify-content: flex-end;
         flex-wrap: wrap;
         gap: 5px;
+        @media (max-width: 767px) {
+          &.nl_requirement_rolls {
+            justify-content: start;
+          }
+        }
         li {
           @media (max-width: 767px) {
             &.search_input_wrap {
               width: 100%;
               padding: 0;
+              &.nl_requirement_input {
+                width: auto;
+              }
             }
           }
           &.add_btn {
@@ -191,6 +204,11 @@
       line-height: 17px;
       display: flex;
       align-items: center;
+      &.disabled {
+        img {
+          filter: opacity(0.5);
+        }
+      }
       img {
         margin-right: 5px;
         filter: grayscale(1);
@@ -204,6 +222,97 @@
         }
       }
     }
+  }
+}
+
+.average_table {
+  overflow-x: scroll;
+  width: 100%;
+  border-radius: 6px;
+  table {
+    overflow-x: scroll;
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: rgb(219, 182, 127);
+      color: white;
+    }
+
+    .text_end {
+      text-align: end;
+    }
+
+    .highlight-row {
+      background-color: #70c27091;
+    }
+
+    .sup_head {
+      background-color: rgb(15, 15, 94);
+      color: white;
+    }
+
+    .average_head {
+      background-color: #00b0f0;
+    }
+  }
+
+  .progress-bar {
+    display: flex;
+    align-items: center;
+    div {
+      height: 10px;
+      background-color: #007bff;
+      border-radius: 5px;
+    }
+
+    span {
+      margin-left: 10px;
+      font-size: 14px;
+    }
+  }
+
+  .p-progressbar-value {
+    .p-progressbar-label {
+      display: none !important;
+    }
+  }
+}
+
+.exhibition-sub-table {
+  border-collapse: collapse;
+  width: 400px;
+  font-family: sans-serif;
+  font-size: 14px;
+  margin: 0 auto;
+
+  td {
+    border: 1px solid #444;
+    padding: 6px 12px;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+
+    &:empty {
+      border-left: none;
+      border-right: none;
+    }
+  }
+
+  th {
+    background-color: #f2f2f2;
+  }
+
+  .data-cell {
+    max-width: 150px;
+    text-align: start;
   }
 }
 

@@ -1,4 +1,23 @@
+import moment from 'moment';
 import { toast } from 'react-toastify';
+
+export const color_code = [
+  '#FBCF4F',
+  '#C1AFE8',
+  '#ED701E',
+  '#0094FF',
+  '#A8E9FF',
+  '#58f2b0',
+  '#dfa8f1',
+  '#9492ff',
+  '#322972',
+  '#29725C',
+  '#FF5C5C',
+  '#8E5FF5',
+  '#F5B85B',
+  '#1EB4B2',
+  '#DCDCDC',
+];
 
 export const statusObj = [
   { label: 'Yes', value: true },
@@ -76,6 +95,13 @@ export const countDaysBetweenTwoDays = date => {
 
   const years = Math.floor(months / 12);
   return `${years} year${years > 1 ? 's' : ''} before`;
+};
+
+export const pastYearGeneratedDate = () => {
+  const todayDate = new Date(); // now
+  const oneYearAgoDate = moment().subtract(1, 'year').endOf('month').toString();
+
+  return { oneYearAgoDate: new Date(oneYearAgoDate), todayDate };
 };
 
 export const getYTDDateRange = () => {
@@ -463,9 +489,17 @@ export const checkModulePermission = (
   return checkModulePermission;
 };
 
-export const convertIntoNumber = value => {
-  return parseFloat(Number(value).toFixed(2));
+export const convertIntoNumber = (value, decimalValue = 2) => {
+  return parseFloat(Number(value).toFixed(decimalValue));
 };
+
+export const convertCurrencyToNumber = currency => {
+  const numberString = currency?.replace(/[₹,]/g, '');
+  const number = parseFloat(numberString);
+  return number;
+};
+
+export const decimalPattern = /^(\d+)?(\.\d{0,2})?$/;
 
 export const removeSpecialCharacter = value => {
   const stringWithoutSpecialChars = value?.replace(/[^a-zA-Z0-9]/g, ' ');
@@ -508,6 +542,16 @@ export const areObjectsEqual = (obj1, obj2) => {
   return true;
 };
 
+export const handleFieldFocus = e => {
+  return e.target.addEventListener(
+    'wheel',
+    function (e) {
+      e.preventDefault();
+    },
+    { passive: false },
+  );
+};
+
 export const infinityOrNanToZero = value => {
   if (value === Infinity || value === -Infinity || isNaN(value)) {
     return 0;
@@ -530,3 +574,52 @@ export function isPositive(val) {
   if (typeof val === 'number') return val > 0;
   else if (typeof val === 'string') return !val?.startsWith('-');
 }
+
+export const getDateWithTime = date => {
+  const formattedDate = moment(date).format('YYYY-MM-DD HH:mm:ss');
+
+  return date ? formattedDate : '';
+};
+
+export const toastConfig = {
+  position: toast.POSITION.TOP_CENTER,
+  theme: 'light',
+};
+
+export const activeSeverity = status => {
+  switch (status) {
+    case 1:
+      return 'success';
+    case 0:
+      return 'danger';
+    default:
+      return null;
+  }
+};
+
+export const colorOptions = [
+  { label: '#FCF8F8', value: '#FCF8F8' },
+  { label: '#F9F8F6', value: '#F9F8F6' },
+  { label: '#ECF4E8', value: '#ECF4E8' },
+  { label: '#F5F5F0', value: '#F5F5F0' },
+  { label: '#F1E7E7', value: '#F1E7E7' },
+  { label: '#FAF1E6', value: '#FAF1E6' },
+  { label: '#E4EFE7', value: '#E4EFE7' },
+  { label: '#F6F0F0', value: '#F6F0F0' },
+  { label: '#FFEDFA', value: '#FFEDFA' },
+  { label: '#F2F9FF', value: '#F2F9FF' },
+  { label: '#F8FAFC', value: '#F8FAFC' },
+  { label: '#F6F5F2', value: '#F6F5F2' },
+  { label: '#FDF7E4', value: '#FDF7E4' },
+  { label: '#F1EAFF', value: '#F1EAFF' },
+  { label: '#FFFBF5', value: '#FFFBF5' },
+  { label: '#FFEEEE', value: '#FFEEEE' },
+  { label: '#EFFFFD', value: '#EFFFFD' },
+  { label: '#F0ECE3', value: '#F0ECE3' },
+  { label: '#FAEEE0', value: '#FAEEE0' },
+  { label: '#EEEDEC', value: '#EEEDEC' },
+];
+
+export const stripHtml = html => {
+  return html?.replace(/<[^>]+>/g, '').trim();
+};

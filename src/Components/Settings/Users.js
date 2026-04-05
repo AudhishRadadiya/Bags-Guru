@@ -37,7 +37,11 @@ import FilterOverlay from 'Components/Common/FilterOverlay';
 import Skeleton from 'react-loading-skeleton';
 import { statusObj } from 'Helper/Common';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
-import { setIsGetInitialValuesUser } from 'Store/Reducers/Settings/User.slice';
+import {
+  setIsGetInitialValuesUser,
+  setSortUsersField,
+  setSortUsersOrder,
+} from 'Store/Reducers/Settings/User.slice';
 
 const filterDetails = [
   { label: 'Emp No', value: 'emp_no', type: 'inputBox' },
@@ -118,6 +122,8 @@ export default function Users({ hasAccess }) {
     userList,
     userCount,
     listFilter,
+    sortUsersField,
+    sortUsersOrder,
     isGetInitialValuesUser,
   } = useSelector(({ user }) => user);
   const {
@@ -145,7 +151,14 @@ export default function Users({ hasAccess }) {
   }, []);
 
   useEffect(() => {
-    dispatch(getUserList(pageLimit, currentPage, searchQuery, applied));
+    const payload = {
+      limit: pageLimit,
+      start: currentPage,
+      query: searchQuery,
+      filter: applied,
+    };
+
+    dispatch(getUserList(payload));
   }, [currentPage, pageLimit, applied, dispatch]);
 
   const filterOption = useMemo(() => {
@@ -225,9 +238,17 @@ export default function Users({ hasAccess }) {
     async company_id => {
       if (company_id) {
         const result = await dispatch(deleteUser(company_id));
+
         if (result) {
+          const payload = {
+            limit: pageLimit,
+            start: 1,
+            query: searchQuery,
+            filter: applied,
+          };
+
           setDeletePopup(false);
-          dispatch(getUserList(pageLimit, 1, searchQuery, applied));
+          dispatch(getUserList(payload));
         }
       }
     },
@@ -299,7 +320,14 @@ export default function Users({ hasAccess }) {
       res = await dispatch(addFilter(addPayload));
     }
     if (res) {
-      dispatch(getUserList(pageLimit, 1, searchQuery, applied));
+      const payload = {
+        limit: pageLimit,
+        start: 1,
+        query: searchQuery,
+        filter: applied,
+      };
+
+      dispatch(getUserList(payload));
       dispatch(
         setAllFilters({
           ...allFilters,
@@ -545,6 +573,13 @@ export default function Users({ hasAccess }) {
         }),
       );
       if (res) {
+        const payload = {
+          limit: pageLimit,
+          start: 1,
+          query: searchQuery,
+          filter: applied,
+        };
+
         dispatch(
           setAllFilters({
             ...allFilters,
@@ -558,7 +593,7 @@ export default function Users({ hasAccess }) {
           }),
         );
         loadRequiredData();
-        dispatch(getUserList(pageLimit, 1, searchQuery, applied));
+        dispatch(getUserList(payload));
         setNameFilter('');
       }
     },
@@ -590,6 +625,13 @@ export default function Users({ hasAccess }) {
   };
 
   const handleSearchInput = e => {
+    const payload = {
+      limit: pageLimit,
+      start: currentPage,
+      query: e.target.value,
+      filter: applied,
+    };
+
     dispatch(
       setAllFilters({
         ...allFilters,
@@ -599,13 +641,18 @@ export default function Users({ hasAccess }) {
         },
       }),
     );
-    dispatch(getUserList(pageLimit, currentPage, e.target.value, applied));
+    dispatch(getUserList(payload));
   };
 
   const debounceHandleSearchInput = useCallback(
     _.debounce(handleSearchInput, 800),
     [],
   );
+
+  const customSort = e => {
+    dispatch(setSortUsersField(e.sortField));
+    dispatch(setSortUsersOrder(e.sortOrder));
+  };
 
   return (
     <>
@@ -704,9 +751,10 @@ export default function Users({ hasAccess }) {
             </button>
             <DataTable
               value={userList}
-              sortMode="multiple"
-              sortField="name"
-              sortOrder={1}
+              sortMode="single"
+              onSort={customSort}
+              sortField={sortUsersField}
+              sortOrder={sortUsersOrder}
               dataKey="_id"
               filters={userFilters}
               onFilter={event => {

@@ -9,6 +9,11 @@ let initialState = {
   partyTypeReportData: [],
   advisorReportData: {},
   newAndRepeatOrderReportData: {},
+  reviewComparisonDetail: [],
+  advisorTeamReportData: {},
+  advisorTeamComparisonReportData: {},
+  advisorTeamAverageSalesReportData: {},
+  OKRDashboardReportData: {},
 };
 
 const SalesdashboardSlice = createSlice({
@@ -39,6 +44,21 @@ const SalesdashboardSlice = createSlice({
     setNewAndRepeatOrderReportData: (state, action) => {
       state.newAndRepeatOrderReportData = action.payload;
     },
+    setReviewComparisonDetail: (state, action) => {
+      state.reviewComparisonDetail = action.payload;
+    },
+    setAdvisorTeamReportData: (state, action) => {
+      state.advisorTeamReportData = action.payload;
+    },
+    setAdvisorTeamComparisonReportData: (state, action) => {
+      state.advisorTeamComparisonReportData = action.payload;
+    },
+    setAdvisorTeamAverageSalesReportData: (state, action) => {
+      state.advisorTeamAverageSalesReportData = action.payload;
+    },
+    setOKRDashboardReportData: (state, action) => {
+      state.OKRDashboardReportData = action.payload;
+    },
   },
 });
 export const {
@@ -50,6 +70,11 @@ export const {
   setPartyTypeReportData,
   setAdvisorReportData,
   setNewAndRepeatOrderReportData,
+  setReviewComparisonDetail,
+  setAdvisorTeamReportData,
+  setAdvisorTeamComparisonReportData,
+  setAdvisorTeamAverageSalesReportData,
+  setOKRDashboardReportData,
 } = SalesdashboardSlice.actions;
 
 export default SalesdashboardSlice.reducer;

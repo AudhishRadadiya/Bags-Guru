@@ -40,11 +40,12 @@ import {
   attributes,
   setIsGetInitialValuesItem,
   setSelectedRawItem,
+  setSortRawMaterialItemField,
+  setSortRawMaterialItemOrder,
 } from 'Store/Reducers/Settings/RawItemSlice';
 import ConfirmDialog from 'Components/Common/ConfirmDialog';
 import { statusObj } from 'Helper/Common';
 import Skeleton from 'react-loading-skeleton';
-import Loader from 'Components/Common/Loader';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 
 const filterDetails = [
@@ -125,6 +126,8 @@ export default function Items({ hasAccess }) {
     rawItemsList,
     rawItemsCount,
     isGetInitialValuesItem,
+    sortRawMaterialItemField,
+    sortRawMaterialItemOrder,
   } = useSelector(({ rawitem }) => rawitem);
 
   const { listFilter, partiesLoading } = useSelector(({ parties }) => parties);
@@ -612,6 +615,11 @@ export default function Items({ hasAccess }) {
     [],
   );
 
+  const customSort = e => {
+    dispatch(setSortRawMaterialItemField(e.sortField));
+    dispatch(setSortRawMaterialItemOrder(e.sortOrder));
+  };
+
   return (
     <>
       {/* {(settingLoading || settingsCRUDLoading) && <Loader />} */}
@@ -707,9 +715,10 @@ export default function Items({ hasAccess }) {
             </button>
             <DataTable
               value={rawItemsList}
-              sortMode="multiple"
-              sortField="name"
-              sortOrder={1}
+              sortMode="single"
+              onSort={customSort}
+              sortField={sortRawMaterialItemField}
+              sortOrder={sortRawMaterialItemOrder}
               dataKey="_id"
               filterDisplay="row"
               filters={itemFilters}

@@ -86,6 +86,8 @@ export const rightsSessionList = [
   '/mfg-live-admin',
   '/mfg-live-operator',
   '/admin-dashboard',
+  '/sales-trends',
+  '/customer-dashboard',
   '/add-purchase-order',
   '/update-purchase-order',
   '/purchase-order-details',
@@ -101,6 +103,9 @@ export const rightsSessionList = [
   '/sales',
   '/purchase',
   '/monthly-turnover',
+  '/designer',
+  '/collection',
+  '/thumbnail',
 ];
 
 const GenerateNavTabs = () => {

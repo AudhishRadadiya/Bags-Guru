@@ -981,29 +981,31 @@ export default function Product({ hasAccess }) {
 
   const onPageChange = useCallback(
     page => {
-      let pageIndex = currentPage;
-      if (page?.page === 'Prev') pageIndex--;
-      else if (page?.page === 'Next') pageIndex++;
-      else pageIndex = page;
+      if (page !== currentPage) {
+        let pageIndex = currentPage;
+        if (page?.page === 'Prev') pageIndex--;
+        else if (page?.page === 'Next') pageIndex++;
+        else pageIndex = page;
 
-      dispatch(
-        setAllFilters({
-          ...allFilters,
-          product: { ...allFilters?.product, currentPage: pageIndex },
-        }),
-      );
-
-      if (showMobileChecked) {
         dispatch(
-          getShowMobileProductList(
-            mobileCurrentPageLimit,
-            pageIndex,
-            searchQuery,
-            applied,
-          ),
+          setAllFilters({
+            ...allFilters,
+            product: { ...allFilters?.product, currentPage: pageIndex },
+          }),
         );
-      } else {
-        dispatch(getProductList(pageLimit, pageIndex, searchQuery, applied));
+
+        if (showMobileChecked) {
+          dispatch(
+            getShowMobileProductList(
+              mobileCurrentPageLimit,
+              pageIndex,
+              searchQuery,
+              applied,
+            ),
+          );
+        } else {
+          dispatch(getProductList(pageLimit, pageIndex, searchQuery, applied));
+        }
       }
     },
     [
@@ -1331,12 +1333,12 @@ export default function Product({ hasAccess }) {
             body={RealImageTemplate}
             filter={filterToggle}
           ></Column>
-          <Column
+          {/* <Column
             field="water_image_str"
             header="Watermark"
             body={WaterImageTemplate}
             filter={filterToggle}
-          ></Column>
+          ></Column> */}
           <Column
             field="name"
             header="Warehouse"
@@ -1453,6 +1455,13 @@ export default function Product({ hasAccess }) {
             filterMatchMode="contains"
           ></Column>
           <Column
+            field="created_by_name"
+            header="Created By"
+            sortable
+            filter={filterToggle}
+            filterMatchMode="contains"
+          ></Column>
+          <Column
             field="action"
             header="Action"
             body={stockConsumptionAction}
@@ -1465,6 +1474,7 @@ export default function Product({ hasAccess }) {
           onPageRowsChange={onPageRowsChange}
           currentPage={currentPage}
           totalCount={productCount}
+          isRestrictTotalEntries
         />
       </div>
     );
@@ -1531,12 +1541,12 @@ export default function Product({ hasAccess }) {
             body={RealImageTemplate}
             filter={filterToggle}
           ></Column>
-          <Column
+          {/* <Column
             field="water_image_str"
             header="Watermark"
             body={WaterImageTemplate}
             filter={filterToggle}
-          ></Column>
+          ></Column> */}
           <Column
             field="name"
             header="Warehouse"
@@ -1665,6 +1675,7 @@ export default function Product({ hasAccess }) {
           onPageRowsChange={onPageRowsChange}
           currentPage={currentPage}
           totalCount={mobileProductCount}
+          isRestrictTotalEntries
         />
       </div>
     );

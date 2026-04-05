@@ -21,11 +21,7 @@ const WhatsAppShare = ({
   isBagDetail,
 }) => {
   let img = data?.product_detail ? data?.product_detail?.main_image : '';
-  let oldStereo = data?.old_stereo
-    ? data?.old_stereo === true
-      ? '*OLD BLOCK*'
-      : '*NEW BLOCK*'
-    : '';
+  let oldStereo = data?.old_stereo === true ? '*OLD BLOCK*' : '*NEW BLOCK*';
   let productTitle = data?.product_detail?.design
     ? data?.product_detail?.design?.toUpperCase()
     : '-';
@@ -170,11 +166,7 @@ const WhatsAppShare = ({
                   {/* <li>ETD: {etd}</li> */}
                 </ul>
                 <h4 className="mb-3">
-                  {data?.old_stereo
-                    ? data?.old_stereo === true
-                      ? 'OLD BLOCK'
-                      : 'NEW BLOCK'
-                    : ''}
+                  {data?.old_stereo === true ? 'OLD BLOCK' : 'NEW BLOCK'}
                 </h4>
               </>
             )}

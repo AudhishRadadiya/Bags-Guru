@@ -34,11 +34,18 @@ import customer from '../Store/Reducers/Customer/CustomerSlice';
 import salesDashBoard from '../Store/Reducers/Sales/SalesdashboardSlice';
 import adminDashBoard from '../Store/Reducers/Business/AdminDashboardSlice';
 import salesTurnover from './Reducers/Report/SalesTurnoverSlice';
+import triptaAmount from './Reducers/TriptaAmount/TriptaAmountSlice';
+import salesTrends from './Reducers/Business/SalesTrendsSlice';
+import roleAndPermission from './Reducers/Settings/RoleAndPermissionSlice';
+import thumbnail from './Reducers/Thumbnail/ThumbnailSlice';
+import customerDashboard from './Reducers/Business/CustomerDashboardSlice';
 
 const reducers = combineReducers({
   auth,
   settings,
   parties,
+  triptaAmount,
+  thumbnail,
   user,
   rawitem,
   miscMaster,
@@ -66,6 +73,9 @@ const reducers = combineReducers({
   salesDashBoard,
   adminDashBoard,
   salesTurnover,
+  salesTrends,
+  roleAndPermission,
+  customerDashboard,
 });
 
 // const store = configureStore({

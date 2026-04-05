@@ -96,6 +96,16 @@ import {
   setActiveVelcroList,
   setCustomerRatingList,
   setCustomerRatingCount,
+  setExhibitionList,
+  setExhibitionListCount,
+  setAllActiveBankList,
+  setAdvisorTeamList,
+  setAdvisorTeamCount,
+  setUnassignedAdvisorsList,
+  setCustomerRevenueTierList,
+  setCustomerRevenueTierCount,
+  setOKRDetailsList,
+  setOKRDetailsCount,
 } from 'Store/Reducers/Settings/MiscMasterSlice';
 import {
   setActiveRawItemList,
@@ -761,6 +771,40 @@ export const deleteUnit = unit_id => async dispatch => {
     dispatch(setMiscMasterCRUDLoading(false));
   }
 };
+
+/**
+ * @desc  Get Active Bank List
+ */
+export const getAllActiveBankList =
+  (limit = 30, start = 1, query = '') =>
+  async dispatch => {
+    try {
+      dispatch(setMiscMasterLoading(true));
+
+      const response = await axios.get('/list/active/bank', {
+        search: query,
+      });
+      const { err, msg, data } = response.data;
+      if (err === 0) {
+        const updatedBankData = data?.map(item => ({
+          ...item,
+          label: `${item?.name ?? ''} - ${item?.account_number ?? ''}`,
+          value: item?._id,
+        }));
+
+        dispatch(setAllActiveBankList(updatedBankData || []));
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    } catch (e) {
+      roastError(e);
+      return false;
+    } finally {
+      dispatch(setMiscMasterLoading(false));
+    }
+  };
 
 /**
  * @desc  Get Bank List
@@ -3086,12 +3130,14 @@ export const getActivePatchCylinderList = () => async dispatch => {
     const response = await axios.get(`/list/active/patchCylinder`);
     const { err, msg, data } = response.data;
     if (err === 0) {
-      const updated = data?.map(x => ({
-        ...x,
-        is_active: x?.is_active ? 1 : 0,
-        label: `${x?.cylinder ? x?.cylinder : 0} mm Circum - ${x?.name} mm`,
-        value: x?._id,
-      }));
+      const updated = data
+        ?.map(x => ({
+          ...x,
+          is_active: x?.is_active ? 1 : 0,
+          label: `${x?.cylinder ? x?.cylinder : 0} mm Circum - ${x?.name} mm`,
+          value: x?._id,
+        }))
+        ?.sort((a, b) => Number(a.cylinder) - Number(b.cylinder));
 
       dispatch(setActivePatchCylinderList(updated || []));
       return true;
@@ -5185,5 +5231,489 @@ export const addAdvisorTaget = payload => async dispatch => {
     return false;
   } finally {
     dispatch(setMiscMasterLoading(false));
+  }
+};
+
+/**
+ * @desc  Get Exhibition List
+ * @param (limit,start,query)
+ */
+export const getExhibitionList =
+  (limit = 30, start = 1, query = '') =>
+  async dispatch => {
+    try {
+      dispatch(setMiscMasterLoading(true));
+
+      const response = await axios.post(
+        `/list/exhibitionMaster/${start}/${limit}`,
+        {
+          search: query,
+        },
+      );
+      const { err, msg, data } = response.data;
+      if (err === 0) {
+        dispatch(setExhibitionList(data?.list || []));
+        dispatch(setExhibitionListCount(data?.count || []));
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    } catch (e) {
+      roastError(e);
+      return false;
+    } finally {
+      dispatch(setMiscMasterLoading(false));
+    }
+  };
+
+export const addExhibitionData = payload => async dispatch => {
+  try {
+    dispatch(setMiscMasterLoading(true));
+    const response = await axios.post('/add/exhibitionMaster', payload);
+    const { err, msg } = response.data;
+    if (err === 0) {
+      toast.success(msg);
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    return false;
+  } finally {
+    dispatch(setMiscMasterLoading(false));
+  }
+};
+
+/**
+ * @desc  Update Exhibition
+ */
+export const updateExhibitionData = payload => async dispatch => {
+  try {
+    if (payload) {
+      dispatch(setMiscMasterLoading(true));
+
+      const response = await axios.post(`/update/exhibitionMaster`, payload);
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setMiscMasterLoading(false));
+  }
+};
+
+/**
+ * @desc  Delete Exhibition Item
+ */
+export const deleteExhibitionData = payload => async dispatch => {
+  try {
+    dispatch(setMiscMasterLoading(true));
+
+    const response = await axios.post(`/delete/exhibitionMaster`, payload);
+    const { err, msg } = response.data;
+    if (err === 0) {
+      toast.success(msg);
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setMiscMasterLoading(false));
+  }
+};
+
+/**
+ * @desc  Get Advisor Team List
+ * @param (limit, start, query)
+ */
+export const getAdvisorTeamList =
+  (limit = 30, start = 1, query = '') =>
+  async dispatch => {
+    try {
+      dispatch(setMiscMasterLoading(true));
+
+      const response = await axios.post(`/list/advisorTeam/${start}/${limit}`, {
+        search: query,
+      });
+      const { err, msg, data } = response.data;
+      if (err === 0) {
+        const updated = data?.list?.map(x => ({
+          ...x,
+          is_active: x?.is_active ? 1 : 0,
+          // status: x?.is_active ? 'Yes' : 'No',
+          // is_default: x?.is_default ? 1 : 0,
+        }));
+        dispatch(setAdvisorTeamList(updated || []));
+        dispatch(setAdvisorTeamCount(data?.count || []));
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    } catch (e) {
+      roastError(e);
+      return false;
+    } finally {
+      dispatch(setMiscMasterLoading(false));
+    }
+  };
+
+/**
+ * @desc  Get Unassigned Advisors List
+ * @param (limit, start, query)
+ */
+export const getUnassignedAdvisorsList = payload => async dispatch => {
+  try {
+    dispatch(setMiscMasterLoading(true));
+
+    const response = await axios.post('/list/unassignedAdvisors', payload);
+    const { err, msg, data } = response.data;
+    if (err === 0) {
+      const updatedData = data?.map(item => {
+        return {
+          ...item,
+          label: `${item.first_name} ${item.last_name}`,
+          value: item._id,
+        };
+      });
+
+      dispatch(setUnassignedAdvisorsList(updatedData));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setMiscMasterLoading(false));
+  }
+};
+
+/**
+ * @desc  Create Advisor Team
+ */
+export const createAdvisorTeam = payload => async dispatch => {
+  try {
+    if (payload) {
+      dispatch(setSettingsCRUDLoading(true));
+
+      const response = await axios.post(`/add/advisorTeam`, payload);
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setSettingsCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  Update Advisor Team
+ */
+export const updateAdvisorTeam = payload => async dispatch => {
+  try {
+    if (payload) {
+      dispatch(setSettingsCRUDLoading(true));
+
+      const response = await axios.post(`/update/advisorTeam`, payload);
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setSettingsCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  Delete Advisor Team
+ */
+export const deleteAdvisorTeam = team_id => async dispatch => {
+  try {
+    if (team_id) {
+      dispatch(setSettingsCRUDLoading(true));
+
+      const response = await axios.post(`/delete/advisorTeam`, {
+        advisor_team_id: team_id,
+      });
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setSettingsCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  Get Customer Revenue Tier List
+ * @param (limit, start, query)
+ */
+export const getCustomerRevenueTierList =
+  (limit = 30, start = 1, query = '') =>
+  async dispatch => {
+    try {
+      dispatch(setMiscMasterLoading(true));
+
+      const response = await axios.post(
+        `/list/customerRevenueTier/${start}/${limit}`,
+        {
+          search: query,
+        },
+      );
+      const { err, msg, data } = response.data;
+      if (err === 0) {
+        const updated = data?.list?.map(x => ({
+          ...x,
+          is_active: x?.is_active ? 1 : 0,
+        }));
+
+        dispatch(setCustomerRevenueTierList(updated || []));
+        dispatch(setCustomerRevenueTierCount(data?.count || []));
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    } catch (e) {
+      roastError(e);
+      return false;
+    } finally {
+      dispatch(setMiscMasterLoading(false));
+    }
+  };
+
+/**
+ * @desc  Create Customer Revenue Tier
+ */
+export const createCustomerRevenueTier = payload => async dispatch => {
+  try {
+    if (payload) {
+      dispatch(setSettingsCRUDLoading(true));
+
+      const response = await axios.post(`/add/customerRevenueTier`, payload);
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setSettingsCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  Update Customer Revenue Tier
+ */
+export const updateCustomerRevenueTier = payload => async dispatch => {
+  try {
+    if (payload) {
+      dispatch(setSettingsCRUDLoading(true));
+
+      const response = await axios.post(`/update/customerRevenueTier`, payload);
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setSettingsCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  Delete Customer Revenue Tier
+ */
+export const deleteCustomerRevenueTier = revenueTier_id => async dispatch => {
+  try {
+    if (revenueTier_id) {
+      dispatch(setSettingsCRUDLoading(true));
+
+      const response = await axios.post(`/delete/customerRevenueTier`, {
+        revenueTier_id,
+      });
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setSettingsCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  OKR Details List
+ * @param (limit, start, query)
+ */
+export const getOKRDetailsList =
+  (limit = 30, start = 1, query = '') =>
+  async dispatch => {
+    try {
+      dispatch(setMiscMasterLoading(true));
+
+      const response = await axios.post(`/list/okr/${start}/${limit}`, {
+        search: query,
+      });
+      const { err, msg, data } = response.data;
+      if (err === 0) {
+        const updated = data?.list?.map(x => ({
+          ...x,
+          is_active: x?.is_active ? 1 : 0,
+        }));
+
+        dispatch(setOKRDetailsList(updated || []));
+        dispatch(setOKRDetailsCount(data?.count || []));
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    } catch (e) {
+      roastError(e);
+      return false;
+    } finally {
+      dispatch(setMiscMasterLoading(false));
+    }
+  };
+
+/**
+ * @desc  Create OKR Details
+ */
+export const createOKRDetails = payload => async dispatch => {
+  try {
+    if (payload) {
+      dispatch(setSettingsCRUDLoading(true));
+
+      const response = await axios.post(`/add/okr`, payload);
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setSettingsCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  Update OKR Details
+ */
+export const updateOKRDetails = payload => async dispatch => {
+  try {
+    if (payload) {
+      dispatch(setSettingsCRUDLoading(true));
+
+      const response = await axios.post(`/update/okr`, payload);
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setSettingsCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  Delete OKR Details
+ */
+export const deleteOKRDetails = okr_id => async dispatch => {
+  try {
+    if (okr_id) {
+      dispatch(setSettingsCRUDLoading(true));
+
+      const response = await axios.post(`/delete/okr`, {
+        okr_id,
+      });
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setSettingsCRUDLoading(false));
   }
 };

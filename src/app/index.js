@@ -1,27 +1,33 @@
-import { Helmet } from 'react-helmet-async';
-import Routes from 'routes/index';
-import { BrowserRouter } from 'react-router-dom';
-import '../Assets/scss/Style.scss';
-import 'react-loading-skeleton/dist/skeleton.css';
+import { useEffect } from 'react';
 import axios from 'axios';
-import { clearToken, setAuthToken } from 'Helper/AuthTokenHelper';
+import Routes from 'routes/index';
 import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
-import { useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { BrowserRouter } from 'react-router-dom';
+import {
+  clearToken,
+  setAuthToken,
+  setVerificationSessionData,
+} from 'Helper/AuthTokenHelper';
 import {
   getCurrentUserFromLocal,
   getMainModuleWithSubModule,
   getUserPermissionList,
   getUserRolesList,
 } from 'Services/baseService';
-import { getOwnProfile } from 'Services/authService';
-import { setCurrentUser } from 'Store/Reducers/Auth/auth.slice';
-import { REACT_APP_APIURL } from 'Helper/Environment';
 import io from 'socket.io-client';
-import PurchaseEntryProgress from 'Components/Common/PurchaseEntryProgress';
 import { useSelector } from 'react-redux';
-import { setPurchaseEntryList } from 'Store/Reducers/Purchase/PurchaseEntryProgressSlice';
+import { getOwnProfile } from 'Services/authService';
+import { REACT_APP_APIURL } from 'Helper/Environment';
+import { setCurrentUser } from 'Store/Reducers/Auth/auth.slice';
 import { socketDataSend } from 'Components/Common/Socket/SocketComponent';
+import PurchaseEntryProgress from 'Components/Common/PurchaseEntryProgress';
+import { setPurchaseEntryList } from 'Store/Reducers/Purchase/PurchaseEntryProgressSlice';
+
+import '../Assets/scss/Style.scss';
+import 'react-quill/dist/quill.snow.css';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export const socket = io.connect(process.env.REACT_APP_SOCKET_URL);
 
@@ -31,7 +37,8 @@ axios.interceptors.response.use(
     return response;
   },
   error => {
-    const { status } = error?.response?.data || {};
+    const { status, data } = error?.response?.data || {};
+
     if (status === 401) {
       clearToken();
       window.location.href = '/';
@@ -42,6 +49,17 @@ axios.interceptors.response.use(
       toast.error(
         'Your account is deactivated by admin. Please contact your admin.',
       );
+    } else if (status === 403) {
+      clearToken();
+
+      const payload = {
+        email: data?.email,
+        code: data?.code,
+      };
+
+      setVerificationSessionData(payload);
+
+      window.location.href = '/email-verification';
     }
     return Promise.reject(error);
   },
