@@ -54,6 +54,8 @@ import { getExtensionFromName } from 'Helper/Common';
 import HistoryIcon from '../../../Assets/Images/history-icon.svg';
 import ReactSelectSingle from 'Components/Common/ReactSelectSingle';
 import ProductHistoryDialog from './ProductHistoryDialog';
+import AiDesignComparisonDialog from './AiDesignComparison/AiDesignComparisonDialog';
+import { useAiDesignComparison } from './AiDesignComparison/useAiDesignComparison';
 
 export const toastCongig = {
   position: toast.POSITION.TOP_CENTER,
@@ -76,6 +78,14 @@ export default function ProductDetail({ initialValues }) {
   const [shortlistedBagTags, setShortlistedBagTags] = useState([]);
   const [isFirstRender, setIsFirstRender] = useState(true);
 
+  const {
+    state: aiComparisonState,
+    openDialog: openAiComparisonDialog,
+    closeDialog: closeAiComparisonDialog,
+    fetchReferenceImages,
+    ...aiComparisonRest
+  } = useAiDesignComparison();
+
   const { bagTagList, fullbagTagList, allBagTagList } = useSelector(
     ({ bag }) => bag,
   );
@@ -84,6 +94,7 @@ export default function ProductDetail({ initialValues }) {
     productLoading,
     productCRUDLoading,
     addSelectedProductData,
+    aiDesignComparisonResult,
     updateSelectedProductData,
     dupicateSelectedProductData,
     isGetInitialValuesProduct,
@@ -153,73 +164,124 @@ export default function ProductDetail({ initialValues }) {
     loadRequiredData();
   }, []);
 
-  const submitHandle = useCallback(
-    async values => {
-      let result;
-
-      if (values?._id && !values?.is_duplicated) {
-        const payload = {
-          ...values,
-          product_id: values?._id,
-          new_cylinder_width:
-            values?.design_name + '-' + values?.new_cylinder_width,
-        };
-        result = await dispatch(updateProduct(payload));
-
-        if (result) {
-          dispatch(
-            setIsGetInitialValuesProduct({
-              ...isGetInitialValuesProduct,
-              update: false,
-            }),
-          );
-          dispatch(clearUpdateSelectedProductData());
-        }
-      } else {
-        const payload = {
-          ...values,
-          new_cylinder_width:
-            values?.design_name + '-' + values?.new_cylinder_width,
-        };
-
-        result = await dispatch(createProduct(payload));
-
-        if (result) {
-          if (locationPath[1] === 'duplicate-product') {
-            dispatch(
-              setIsGetInitialValuesProduct({
-                ...isGetInitialValuesProduct,
-                duplicate: false,
-              }),
-            );
-            dispatch(clearDuplicateSelectedProductData());
-          } else {
-            dispatch(
-              setIsGetInitialValuesProduct({
-                ...isGetInitialValuesProduct,
-                add: false,
-              }),
-            );
-            dispatch(clearAddSelectedProductData());
-          }
-        }
-      }
-      if (result) {
-        dispatch(clearSelectedProduct());
-        dispatch(clearSelectedBagTagData());
-        navigate('/product');
-      }
-    },
-    [dispatch, isGetInitialValuesProduct, locationPath, navigate],
-  );
-
   const { handleBlur, errors, values, touched, handleSubmit, setFieldValue } =
     useFormik({
       enableReinitialize: true,
       initialValues: initialValues,
       validationSchema: addProductSchema,
-      onSubmit: submitHandle,
+      onSubmit: openAiComparisonDialog,
     });
+
+  const submitHandle = useCallback(async () => {
+    let result;
+
+    if (values?._id && !values?.is_duplicated) {
+      const payload = {
+        ...values,
+        product_id: values?._id,
+        new_cylinder_width:
+          values?.design_name + '-' + values?.new_cylinder_width,
+        ...(aiDesignComparisonResult && {
+          ai_review: {
+            ...aiDesignComparisonResult,
+            compared: true,
+            status: 'approved',
+          },
+        }),
+      };
+      result = await dispatch(updateProduct(payload));
+
+      if (result) {
+        dispatch(
+          setIsGetInitialValuesProduct({
+            ...isGetInitialValuesProduct,
+            update: false,
+          }),
+        );
+        dispatch(clearUpdateSelectedProductData());
+      }
+    } else {
+      const payload = {
+        ...values,
+        new_cylinder_width:
+          values?.design_name + '-' + values?.new_cylinder_width,
+        ...(aiDesignComparisonResult && {
+          ai_review: {
+            ...aiDesignComparisonResult,
+            compared: true,
+            status: 'approved',
+          },
+        }),
+      };
+
+      result = await dispatch(createProduct(payload));
+
+      if (result) {
+        if (locationPath[1] === 'duplicate-product') {
+          dispatch(
+            setIsGetInitialValuesProduct({
+              ...isGetInitialValuesProduct,
+              duplicate: false,
+            }),
+          );
+          dispatch(clearDuplicateSelectedProductData());
+        } else {
+          dispatch(
+            setIsGetInitialValuesProduct({
+              ...isGetInitialValuesProduct,
+              add: false,
+            }),
+          );
+          dispatch(clearAddSelectedProductData());
+        }
+      }
+    }
+    if (result) {
+      dispatch(clearSelectedProduct());
+      dispatch(clearSelectedBagTagData());
+      closeAiComparisonDialog();
+      navigate('/product');
+    }
+  }, [
+    closeAiComparisonDialog,
+    dispatch,
+    isGetInitialValuesProduct,
+    locationPath,
+    navigate,
+    values,
+  ]);
+
+  // const productComparisonMeta = useMemo(() => {
+  //   const customerGroup = customerPartyList?.find(
+  //     item => item?.value === values?.customer_group,
+  //   );
+  //   const designer = designerList?.find(
+  //     item => item?.value === values?.designer_name,
+  //   );
+
+  //   return {
+  //     product_code: values?.product_code,
+  //     design_name: values?.design_name,
+  //     customer_group_name: customerGroup?.label || '',
+  //     designer_name: designer?.label || values?.designer_name || '',
+  //     saved_at: values?.updated_at || values?.created_at,
+  //   };
+  // }, [
+  //   customerPartyList,
+  //   designerList,
+  //   values?.product_code,
+  //   values?.design_name,
+  //   values?.customer_group,
+  //   values?.designer_name,
+  //   values?.updated_at,
+  //   values?.created_at,
+  // ]);
+
+  // useEffect(() => {
+  //   if (values?.customer_group) {
+  //     fetchReferenceImages(values.customer_group);
+  //   }
+  // }, [values?.customer_group, fetchReferenceImages]);
 
   const commonUpdateFieldValue = (fieldName, fieldValue) => {
     if (product_id) {
@@ -1376,6 +1438,7 @@ export default function ProductDetail({ initialValues }) {
                   name="customer_group"
                   onChange={e => {
                     commonUpdateFieldValue('customer_group', e.target.value);
+                    fetchReferenceImages(e.target.value);
                   }}
                   onBlur={handleBlur}
                   placeholder="Select Customer Group"
@@ -2656,9 +2719,23 @@ export default function ProductDetail({ initialValues }) {
           )}
         </div>
       </div>
+
       <ProductHistoryDialog
         productHistoryPopup={productHistoryPopup}
         setProductHistoryPopup={setProductHistoryPopup}
+      />
+
+      <AiDesignComparisonDialog
+        visible={aiComparisonState.visible}
+        onHide={closeAiComparisonDialog}
+        mainImage={values?.main_image}
+        mainImageName={values?.main_image_name}
+        comparison={{
+          state: aiComparisonState,
+          fetchReferenceImages,
+          ...aiComparisonRest,
+        }}
+        onApprove={submitHandle}
       />
     </>
   );

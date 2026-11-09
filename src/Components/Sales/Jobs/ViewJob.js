@@ -8,7 +8,7 @@ import {
 } from 'Store/Reducers/Sales/SalesOrderSlice';
 import JobDetail from './JobDetail';
 import { getJobItem } from 'Services/Sales/OrderServices';
-import { getProductList } from 'Services/Products/ProductService';
+import { getAllProductList } from 'Services/Products/ProductService';
 import { convertIntoNumber } from 'Helper/Common';
 
 function ViewJob() {
@@ -27,7 +27,7 @@ function ViewJob() {
       }),
     );
 
-    dispatch(getProductList(0, 0));
+    dispatch(getAllProductList(0, 0));
 
     const response = await dispatch(getJobItem(job_id));
 

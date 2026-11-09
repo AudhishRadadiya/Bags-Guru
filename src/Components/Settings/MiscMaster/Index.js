@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { TabView, TabPanel } from 'primereact/tabview';
 import Warehouse from './Warehouse';
 import Unit from './Unit';
@@ -45,6 +45,7 @@ import ExhibitionMaster from './ExhibitionMaster';
 import AdvisorTeam from './AdvisorTeam/AdvisorTeam';
 import CustomerRevenueTier from './CustomerRevenueTier/CustomerRevenueTier';
 import OKRSection from './OKRSection/OKRSection';
+import ImageComparePrompt from './ImageComparePrompt/ImageComparePromptList/ImageComparePrompt';
 
 export const miscMasterLabelList = [
   'Warehouse',
@@ -90,6 +91,7 @@ export const miscMasterLabelList = [
   'Advisor Team',
   'Customer Revenue Tier',
   'OKR',
+  'Image Compare Prompt',
 ];
 
 const getMiscMasters = (index, permission) => {
@@ -174,6 +176,8 @@ const getMiscMasters = (index, permission) => {
       return <CustomerRevenueTier hasAccess={permission} />;
     case 39:
       return <OKRSection hasAccess={permission} />;
+    case 40:
+      return <ImageComparePrompt hasAccess={permission} />;
     default:
       return;
   }

@@ -309,6 +309,12 @@ let initialState = {
       currentPage: 1,
       pageLimit: 30,
     },
+    imageComparePrompt: {
+      applied: {},
+      filters: [],
+      currentPage: 1,
+      pageLimit: 30,
+    },
     unit: {
       applied: {},
       filters: [],
@@ -751,10 +757,14 @@ let initialState = {
       field_filter: {
         city_name: [],
         state_name: [],
+        source_name: [],
+        industry_name: [],
       },
       blank_field_filter: {
         city_name: [],
         state_name: [],
+        source_name: [],
+        industry_name: [],
       },
     },
     rollConsumption: {
@@ -1121,6 +1131,13 @@ let initialState = {
         max_revenue: { value: '', matchMode: 'contains' },
         min_revenue: { value: '', matchMode: 'contains' },
         BackgroundColorCode: { value: '', matchMode: 'contains' },
+      },
+      searchQuery: '',
+    },
+    imageComparePrompt: {
+      filterToggle: false,
+      imageComparePromptFilters: {
+        instructions: { value: '', matchMode: 'contains' },
       },
       searchQuery: '',
     },

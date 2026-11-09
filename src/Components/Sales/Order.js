@@ -74,6 +74,7 @@ import {
   checkModulePermission,
   convertCurrencyToNumber,
   getDMYDateFormat,
+  getSeverity,
   roundValueThousandSeparator,
 } from 'Helper/Common';
 import {
@@ -127,17 +128,6 @@ const statusObj = [
   { label: 'Rejected', value: '5' },
   { label: 'Approved for Dispatch', value: '6' },
 ];
-
-export const getSeverity = val => {
-  switch (val) {
-    case true:
-      return 'success';
-    case false:
-      return 'danger';
-    default:
-      return null;
-  }
-};
 
 export const getJobSeverity = lamination => {
   switch (lamination) {

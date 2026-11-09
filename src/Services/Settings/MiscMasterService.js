@@ -106,6 +106,8 @@ import {
   setCustomerRevenueTierCount,
   setOKRDetailsList,
   setOKRDetailsCount,
+  setImageComparePromptList,
+  setImageComparePromptCount,
 } from 'Store/Reducers/Settings/MiscMasterSlice';
 import {
   setActiveRawItemList,
@@ -5715,5 +5717,81 @@ export const deleteOKRDetails = okr_id => async dispatch => {
     return false;
   } finally {
     dispatch(setSettingsCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  Get AI Prompt Master
+ */
+export const getImageComparePromptList = () => async dispatch => {
+  try {
+    dispatch(setMiscMasterLoading(true));
+
+    const response = await axios.get(`/get/ai-prompt-master`);
+    const { err, msg, data } = response.data;
+    if (err === 0) {
+      const list = data?._id ? [data] : [];
+      dispatch(setImageComparePromptList(list));
+      dispatch(setImageComparePromptCount(list.length));
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setMiscMasterLoading(false));
+  }
+};
+
+/**
+ * @desc  Update AI Prompt Master
+ */
+export const updateImageComparePrompt = payload => async dispatch => {
+  try {
+    if (payload) {
+      dispatch(setMiscMasterCRUDLoading(true));
+
+      const response = await axios.post(`/update/ai-prompt-master`, payload);
+      const { err, msg } = response.data;
+      if (err === 0) {
+        toast.success(msg);
+        return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    }
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setMiscMasterCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc  Reset AI Prompt Master to factory default
+ */
+export const resetImageComparePrompt = () => async dispatch => {
+  try {
+    dispatch(setMiscMasterCRUDLoading(true));
+
+    const response = await axios.post(`/reset/ai-prompt-master`);
+    const { err, msg } = response.data;
+    if (err === 0) {
+      toast.success(msg);
+      return true;
+    } else if (err === 1) {
+      toast.error(msg);
+      return false;
+    } else return false;
+  } catch (e) {
+    roastError(e);
+    return false;
+  } finally {
+    dispatch(setMiscMasterCRUDLoading(false));
   }
 };

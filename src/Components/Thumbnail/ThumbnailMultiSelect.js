@@ -10,9 +10,12 @@ import { setThumbnailList } from 'Store/Reducers/Thumbnail/ThumbnailSlice';
 const ThumbnailMultiSelect = () => {
   const dispatch = useDispatch();
 
-  const { partiesStateWithoutCountry, partiesCitiesWithoutState } = useSelector(
-    ({ parties }) => parties,
-  );
+  const {
+    partiesCustomerSource,
+    partiesActiveIndustry,
+    partiesCitiesWithoutState,
+    partiesStateWithoutCountry,
+  } = useSelector(({ parties }) => parties);
 
   const { allFilters, allCommon } = useSelector(({ common }) => common);
 
@@ -29,9 +32,79 @@ const ThumbnailMultiSelect = () => {
     return Object.keys(field_filter).some(key => field_filter[key]?.length > 0);
   }, [field_filter]);
 
+  const industryOptions = useMemo(() => {
+    return partiesActiveIndustry?.map(industry => ({
+      ...industry,
+      label: industry?.name,
+      value: industry?.name,
+    }));
+  }, [partiesActiveIndustry]);
+
+  const sourceOptions = useMemo(() => {
+    return partiesCustomerSource?.map(source => ({
+      ...source,
+      label: source?.name,
+      value: source?.name,
+    }));
+  }, [partiesCustomerSource]);
+
   return (
     <div className="mfg_filter_wrrap p-2 top_filter_wrap ">
       <Row className="g-2 justify-content-end">
+        <Col xl={2} md={4} xs={12}>
+          <div className="form_group">
+            <MultiSelect
+              filter
+              maxSelectedLabels={3}
+              placeholder="Industry"
+              className="w-100"
+              options={industryOptions}
+              value={field_filter?.industry_name}
+              onChange={e => {
+                dispatch(
+                  setAllCommon({
+                    ...allCommon,
+                    thumbnail: {
+                      ...allCommon?.thumbnail,
+                      field_filter: {
+                        ...field_filter,
+                        industry_name: e.target.value,
+                      },
+                    },
+                  }),
+                );
+              }}
+            />
+          </div>
+        </Col>
+
+        <Col xl={2} md={4} xs={12}>
+          <div className="form_group">
+            <MultiSelect
+              filter
+              maxSelectedLabels={3}
+              placeholder="Source"
+              className="w-100"
+              options={sourceOptions}
+              value={field_filter?.source_name}
+              onChange={e => {
+                dispatch(
+                  setAllCommon({
+                    ...allCommon,
+                    thumbnail: {
+                      ...allCommon?.thumbnail,
+                      field_filter: {
+                        ...field_filter,
+                        source_name: e.target.value,
+                      },
+                    },
+                  }),
+                );
+              }}
+            />
+          </div>
+        </Col>
+
         <Col xl={2} md={4} xs={12}>
           <div className="form_group">
             <MultiSelect
@@ -58,6 +131,7 @@ const ThumbnailMultiSelect = () => {
             />
           </div>
         </Col>
+
         <Col xl={2} md={4} xs={12}>
           <div className="form_group">
             <MultiSelect

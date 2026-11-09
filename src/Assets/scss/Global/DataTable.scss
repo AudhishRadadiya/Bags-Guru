@@ -75,6 +75,36 @@
   }
 }
 
+.data_table_wrapper.comparison_issues_table {
+  > .p-datatable {
+    white-space: normal;
+
+    > .p-datatable-wrapper {
+      overflow-x: hidden;
+      max-height: calc(100svh - 266px);
+      height: auto;
+    }
+
+    .p-datatable-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    th,
+    td {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .comparison_cell_text {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
 .data_table_wrapper.custom_suggested_mfg {
   > .p-datatable {
     > .p-datatable-wrapper {
@@ -967,6 +997,24 @@
                   height: 11px;
                 }
               }
+            }
+
+            &.column_compact {
+              
+              .p-column-title {
+                min-width: 0;
+              }
+            }
+          }
+        }
+      }
+      tbody{
+        tr{
+          td{
+            &.custom_column_compact {
+              max-width: 140px;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
           }
         }

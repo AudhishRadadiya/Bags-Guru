@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button, Col, Row } from 'react-bootstrap';
 // import ReactSelectSingle from '../../Components/Common/ReactSelectSingle';
 import { RadioButton } from 'primereact/radiobutton';
@@ -11,10 +11,8 @@ import { useFormik } from 'formik';
 import { useDispatch } from 'react-redux';
 import {
   createSalesOrderJob,
-  getJobItem,
   updateSalesOrderJob,
 } from 'Services/Sales/OrderServices';
-import { getProductList } from 'Services/Products/ProductService';
 import { useSelector } from 'react-redux';
 import * as Yup from 'yup';
 import { Calendar } from 'primereact/calendar';

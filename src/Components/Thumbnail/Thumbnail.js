@@ -3,16 +3,18 @@ import _ from 'lodash';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { Col, Row } from 'react-bootstrap';
+import Loader from 'Components/Common/Loader';
 import { InputText } from 'primereact/inputtext';
 import ThumbnailMultiSelect from './ThumbnailMultiSelect';
 import CustomPaginator from 'Components/Common/CustomPaginator';
 import { getThumbnailList } from 'Services/Thumbnail/ThumbnailService';
 import {
+  getPartiesActiveIndustry,
   getPartiesCitiesWithoutState,
+  getPartiesCustomerSource,
   getPartiesStateWithoutCountry,
 } from 'Services/partiesService';
 import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
-import Loader from 'Components/Common/Loader';
 
 const Thumbnail = () => {
   const dispatch = useDispatch();
@@ -33,8 +35,10 @@ const Thumbnail = () => {
   }, [currentPage, dispatch, field_filter, pageLimit, searchQuery]);
 
   useEffect(() => {
-    dispatch(getPartiesStateWithoutCountry());
+    dispatch(getPartiesActiveIndustry());
+    dispatch(getPartiesCustomerSource());
     dispatch(getPartiesCitiesWithoutState());
+    dispatch(getPartiesStateWithoutCountry());
     loadRequiredData();
   }, []);
 

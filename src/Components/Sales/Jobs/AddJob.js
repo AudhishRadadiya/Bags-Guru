@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { setIsGetInitialValuesJob } from 'Store/Reducers/Sales/SalesOrderSlice';
 import JobDetail from './JobDetail';
-import { getProductList } from 'Services/Products/ProductService';
+import { getAllProductList } from 'Services/Products/ProductService';
 
 export default function AddJob() {
   const dispatch = useDispatch();
@@ -16,7 +16,7 @@ export default function AddJob() {
     if (isGetInitialValuesJob?.add === true) {
       setInitialData(addSelectedJobData);
     } else {
-      dispatch(getProductList(0, 0));
+      dispatch(getAllProductList(0, 0));
       dispatch(
         setIsGetInitialValuesJob({
           ...isGetInitialValuesJob,

@@ -19,6 +19,17 @@ export const color_code = [
   '#DCDCDC',
 ];
 
+export const getSeverity = val => {
+  switch (val) {
+    case true:
+      return 'success';
+    case false:
+      return 'danger';
+    default:
+      return null;
+  }
+};
+
 export const statusObj = [
   { label: 'Yes', value: true },
   { label: 'No', value: false },

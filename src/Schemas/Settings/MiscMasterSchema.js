@@ -52,6 +52,14 @@ export const OKRDetailsSchema = Yup.object().shape({
   is_active: Yup.boolean().oneOf([true, false], 'Invalid option'),
 });
 
+export const imageComparePromptSchema = Yup.object().shape({
+  title: Yup.string().trim().required('Title is required'),
+  instructions: Yup.string().trim().required('Prompt is required'),
+  categories: Yup.string().trim().required('Categories is required'),
+  provider: Yup.string().required('Provider is required'),
+  model_name: Yup.string().required('Model is required'),
+});
+
 export const addUnitSchema = Yup.object().shape({
   name: Yup.string().required('Unit Name is required'),
   code: Yup.string().required('Unit code is required'),

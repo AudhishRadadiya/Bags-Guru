@@ -41,12 +41,12 @@ const EditOrder = () => {
         x => x?.address_type_name !== 'BILLING',
       );
 
-      const newBillingList = billingList?.filter(x =>
-        res?.billing_address.includes(x?._id),
+      const newBillingList = res?.billing_address.map(item =>
+        billingList?.find(address => address?._id === item),
       );
 
-      const newShippingList = shippingList?.filter(x =>
-        res?.shipping_address.includes(x?._id),
+      const newShippingList = res?.shipping_address.map(item =>
+        shippingList?.find(address => address?._id === item),
       );
 
       // setAddressList(
@@ -96,8 +96,7 @@ const EditOrder = () => {
     }
     // };
 
-    let updated = { ...res };
-    updated = {
+    const updated = {
       ...res,
       ...partiesData,
       address_list:

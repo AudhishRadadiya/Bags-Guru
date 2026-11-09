@@ -365,6 +365,39 @@
   }
 }
 
+.image_compare_prompt_table {
+  .p-datatable {
+    .p-datatable-wrapper {
+      overflow-x: hidden;
+    }
+
+    .p-datatable-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    .prompt_description_col {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .prompt_description_text {
+      white-space: normal;
+      word-break: break-word;
+    }
+  }
+}
+
+.prompt_description_tooltip {
+  .tooltip-inner {
+    max-width: 400px;
+    text-align: left;
+    white-space: normal;
+    padding: 15px;
+  }
+}
+
 .roll_permission_table {
   .table_scroll_wrapper {
     table {

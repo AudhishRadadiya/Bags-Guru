@@ -196,6 +196,8 @@ let initialState = {
   sortMobileAppPriceField: '',
   sortMobileAppPriceOrder: 1,
   productHistoryDetails: [],
+  customerReferenceImages: {},
+  aiDesignComparisonResult: null,
 };
 
 const productSlice = createSlice({
@@ -308,6 +310,12 @@ const productSlice = createSlice({
     setProductHistoryDetails: (state, action) => {
       state.productHistoryDetails = action.payload;
     },
+    setCustomerReferenceImages: (state, action) => {
+      state.customerReferenceImages = action.payload;
+    },
+    setAiDesignComparisonResult: (state, action) => {
+      state.aiDesignComparisonResult = action.payload;
+    },
   },
 });
 
@@ -347,6 +355,8 @@ export const {
   setSortMobileAppPriceField,
   setSortMobileAppPriceOrder,
   setProductHistoryDetails,
+  setCustomerReferenceImages,
+  setAiDesignComparisonResult,
 } = productSlice.actions;
 
 export default productSlice.reducer;

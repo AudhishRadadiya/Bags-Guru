@@ -64,7 +64,7 @@ const CustomPaginator = ({
         >
           <img
             src={RightArrow}
-            alt="left-arrow"
+            alt="right-arrow"
             className="rounded-circle"
             width={24}
             height={24}

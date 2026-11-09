@@ -225,6 +225,8 @@ let initialState = {
   customerRevenueTierCount: 0,
   OKRDetailsList: [],
   OKRDetailsCount: 0,
+  imageComparePromptList: [],
+  imageComparePromptCount: 0,
 };
 
 const miscMasterSlice = createSlice({
@@ -662,6 +664,12 @@ const miscMasterSlice = createSlice({
     setOKRDetailsCount: (state, action) => {
       state.OKRDetailsCount = action.payload;
     },
+    setImageComparePromptList: (state, action) => {
+      state.imageComparePromptList = action.payload;
+    },
+    setImageComparePromptCount: (state, action) => {
+      state.imageComparePromptCount = action.payload;
+    },
   },
 });
 
@@ -809,6 +817,8 @@ export const {
   setCustomerRevenueTierCount,
   setOKRDetailsList,
   setOKRDetailsCount,
+  setImageComparePromptList,
+  setImageComparePromptCount,
 } = miscMasterSlice.actions;
 
 export default miscMasterSlice.reducer;

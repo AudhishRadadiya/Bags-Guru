@@ -1,6 +1,8 @@
 import { convertIntoNumber, getDMYDateFormat, roastError } from 'Helper/Common';
 import {
+  setAiDesignComparisonResult,
   setAllProductList,
+  setCustomerReferenceImages,
   setMobileProductCount,
   setMobileProductList,
   setProductCRUDLoading,
@@ -120,6 +122,7 @@ export const getProductList =
           let updated = {
             ...dataWithoutWarehouse,
             isSelected: false,
+            ai_compared: x?.ai_compared ?? false,
             main_image_str: x?.main_image ? 'Yes' : 'No',
             real_image_str: x?.real_image ? 'Yes' : 'No',
             water_image_str: x?.water_image ? 'Yes' : 'No',
@@ -162,11 +165,42 @@ export const getProductList =
         let newList = data?.list?.map((x, i) => {
           return { ...x, isSelected: false };
         });
-        dispatch(setAllProductList(data?.list || []));
+        // dispatch(setAllProductList(data?.list || []));
         dispatch(setProductList(updated || []));
         dispatch(setProductForProforma(newList || []));
         dispatch(setProductCount(data?.count || 0));
         return true;
+      } else if (err === 1) {
+        toast.error(msg);
+        return false;
+      } else return false;
+    } catch (e) {
+      roastError(e);
+      return false;
+    } finally {
+      dispatch(setProductLoading(false));
+    }
+  };
+
+/**
+ * @desc Get All Product List
+ */
+export const getAllProductList =
+  (limit = 30, start = 1, query = '', filter = {}, isCompact = true) =>
+  async dispatch => {
+    try {
+      dispatch(setProductLoading(true));
+
+      const response = await axios.post(`/list/product/${start}/${limit}`, {
+        filter: filter,
+        search: query,
+        is_compact: isCompact,
+      });
+      const { err, data, msg } = response.data;
+
+      if (err === 0) {
+        dispatch(setAllProductList(data?.list || []));
+        return data?.list;
       } else if (err === 1) {
         toast.error(msg);
         return false;
@@ -668,5 +702,103 @@ export const saveProductRate = payload => async dispatch => {
     return false;
   } finally {
     dispatch(setProductCRUDLoading(false));
+  }
+};
+
+/**
+ * @desc Get customer reference images for AI design comparison
+ */
+export const getCustomerReferenceImages = customer_group => async dispatch => {
+  try {
+    if (!customer_group) return;
+
+    const response = await axios.get(
+      `/product/ai-review/context/customer-group/${customer_group}`,
+    );
+    const { err, data, msg } = response.data;
+
+    if (err === 0) {
+      const response = data ?? {};
+
+      const updatedResponse = {
+        ...response,
+        reference_images: response?.reference_images?.map(item => ({
+          ...item,
+          image_url: item.main_image,
+          id: item?._id,
+          image_name: item?.design_name,
+          label: 'Old Reference Image',
+        })),
+      };
+
+      dispatch(setCustomerReferenceImages(updatedResponse));
+
+      return updatedResponse;
+    } else if (err === 1) {
+      toast.error(msg);
+      return {};
+    }
+
+    return {};
+  } catch (e) {
+    roastError(e);
+    return {};
+  }
+};
+
+/**
+ * @desc Compare main design image with reference images using AI
+ */
+export const compareAiDesign = payload => async dispatch => {
+  try {
+    if (!payload) return;
+
+    dispatch(setProductLoading(true));
+
+    const response = await axios.post(`/product/ai-review/run`, payload);
+    const { err, data, msg } = response.data;
+
+    if (err === 0) {
+      dispatch(setAiDesignComparisonResult(data));
+
+      return data ?? {};
+    } else if (err === 1) {
+      toast.error(msg);
+      return {};
+    }
+    return {};
+  } catch (e) {
+    roastError(e);
+    return {};
+  } finally {
+    dispatch(setProductLoading(false));
+  }
+};
+
+/**
+ * @desc Get AI compared image review by product id
+ */
+export const getAiComparedImageReview = product_id => async dispatch => {
+  try {
+    if (!product_id) return;
+
+    dispatch(setProductLoading(true));
+
+    const response = await axios.get(`product/ai-review/${product_id}`);
+    const { err, data, msg } = response.data;
+
+    if (err === 0) {
+      return data ?? {};
+    } else if (err === 1) {
+      toast.error(msg);
+      return null;
+    }
+
+    return response.data ?? {};
+  } catch (e) {
+    roastError(e);
+    return null;
+  } finally {
+    dispatch(setProductLoading(false));
   }
 };

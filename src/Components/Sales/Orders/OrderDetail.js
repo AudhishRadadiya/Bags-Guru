@@ -961,14 +961,35 @@ const OrderDetail = ({ initialValues }) => {
                 </Col>
               </Row>
               <Row>
+                <Col lg={4} md={6}>
+                  <div className="form_group mb-3">
+                    <label htmlFor="Comment">Comment</label>
+                    <InputTextarea
+                      placeholder="Comment"
+                      type="textarea"
+                      rows={4}
+                      name="comment"
+                      value={values?.comment || ''}
+                      onChange={e => {
+                        commonUpdateFieldValue(e.target.name, e.target.value);
+                      }}
+                      onBlur={handleBlur}
+                    />
+                    {touched?.comment && errors?.comment && (
+                      <p className="text-danger">{errors?.comment}</p>
+                    )}
+                  </div>
+                </Col>
                 <Col className="mb-4 d-flex align-items-center gap-2">
                   <h4 className="m-0">Total due amount:</h4>
                   <span>{values?.tripta_due_amount || 0}</span>
                 </Col>
-                {values?.address_list?.map((x, i) => {
+              </Row>
+              <Row>
+                {values?.address_list?.map((_, i) => {
                   return (
                     <React.Fragment key={i}>
-                      <div className="plus_address_wrap d-flex align-items-center mb-3">
+                      <div className="col-12 plus_address_wrap d-flex align-items-center mb-3">
                         <h3 className="m-0">Address Details {i + 1} </h3>{' '}
                         {values?.multiple_billing === 1 ? (
                           i === 0 ? (
@@ -1083,7 +1104,10 @@ const OrderDetail = ({ initialValues }) => {
                             />
                             {values?.shipping_address?.[i]?.address ? (
                               <div className="address_wrap">
-                                {`Due Amount: ${values?.shipping_address?.[i]?.party_address_due}`}
+                                {`Due Amount: ${
+                                  values?.shipping_address?.[i]
+                                    ?.party_address_due || 0
+                                }`}
                                 <br />
                                 <br />
                                 {values?.shipping_address?.[i]?.address},<br />
@@ -1102,25 +1126,6 @@ const OrderDetail = ({ initialValues }) => {
                     </React.Fragment>
                   );
                 })}
-                <Col lg={4} md={6}>
-                  <div className="form_group mb-3">
-                    <label htmlFor="Comment">Comment</label>
-                    <InputTextarea
-                      placeholder="Comment"
-                      type="textarea"
-                      rows={4}
-                      name="comment"
-                      value={values?.comment || ''}
-                      onChange={e => {
-                        commonUpdateFieldValue(e.target.name, e.target.value);
-                      }}
-                      onBlur={handleBlur}
-                    />
-                    {touched?.comment && errors?.comment && (
-                      <p className="text-danger">{errors?.comment}</p>
-                    )}
-                  </div>
-                </Col>
               </Row>
             </Col>
             <Col lg={3} md={4} sm={6}>

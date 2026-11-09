@@ -36,6 +36,7 @@ import {
   updateFilter,
 } from 'Services/partiesService';
 import {
+  getAiComparedImageReview,
   getExportProductFile,
   getProductList,
   getShowMobileProductList,
@@ -72,6 +73,7 @@ import { setAllCommon, setAllFilters } from 'Store/Reducers/Common';
 import { InputNumber } from 'primereact/inputnumber';
 import { Tag } from 'primereact/tag';
 import { useNavigate } from 'react-router-dom';
+import AiComparedImageReviewDialog from './Product/AiComparedImageReviewDialog';
 
 const renderMsg = () => {
   toast.error(
@@ -89,6 +91,7 @@ const filterDetails = [
   // { label: 'Printing Technology', value: 'print_technology', type: 'dropDown' },
   { label: 'Industry', value: 'industry', type: 'dropDown' },
   { label: 'Design Name', value: 'design_name', type: 'inputBox' },
+  { label: 'Created By', value: 'created_by', type: 'inputBox' },
   { label: 'Designer Name', value: 'designer_name', type: 'dropDown' },
   { label: 'Fabric Color', value: 'fabric_color_name', type: 'inputBox' },
   { label: 'Width', value: 'width', type: 'inputBox' },
@@ -119,6 +122,17 @@ export const getProductSeverity = lamination => {
   }
 };
 
+const getAiImageComparedSeverity = aiCompared => {
+  switch (aiCompared) {
+    case true:
+      return 'glitter';
+    case false:
+      return 'bopp';
+    default:
+      return 'bopp';
+  }
+};
+
 export default function Product({ hasAccess }) {
   const op = useRef(null);
   const dispatch = useDispatch();
@@ -142,6 +156,10 @@ export default function Product({ hasAccess }) {
   const [stockTransferModal, setStockTransferModal] = useState(false);
   const [transferFilterToggle, setTransferFilterToggle] = useState(false);
   const [productTransferDate, setProductTransferDate] = useState(new Date());
+  const [isAiComparedImageReviewDialog, setIsAiComparedImageReviewDialog] =
+    useState(false);
+  const [aiComparedImageReviewData, setAiComparedImageReviewData] =
+    useState(null);
   // const [searchQuery, setSearchQuery] = useState('');
   // const [currentPage, setCurrentPage] = useState(1);
   // const [pageLimit, setPageLimit] = useState(10);
@@ -155,7 +173,6 @@ export default function Product({ hasAccess }) {
     productLoading,
     productList,
     mobileProductList,
-    allProductList,
     productCount,
     mobileProductCount,
     productCRUDLoading,
@@ -409,26 +426,26 @@ export default function Product({ hasAccess }) {
     );
   }, []);
 
-  const WaterImageTemplate = useCallback(item => {
-    return (
-      <div className="image_zoom_Wrapper">
-        <Image
-          preview
-          width="50px"
-          height="50px"
-          downloadable
-          src={item?.data?.water_image}
-          zoomSrc={item?.data?.water_image}
-          alt={`${item?.data?.product_code}_water_image.${getExtensionFromName(
-            item?.data?.water_image,
-          )}`}
-          title={`${
-            item?.data?.product_code
-          }_water_image.${getExtensionFromName(item?.data?.water_image)}`}
-        />
-      </div>
-    );
-  }, []);
+  // const WaterImageTemplate = useCallback(item => {
+  //   return (
+  //     <div className="image_zoom_Wrapper">
+  //       <Image
+  //         preview
+  //         width="50px"
+  //         height="50px"
+  //         downloadable
+  //         src={item?.data?.water_image}
+  //         zoomSrc={item?.data?.water_image}
+  //         alt={`${item?.data?.product_code}_water_image.${getExtensionFromName(
+  //           item?.data?.water_image,
+  //         )}`}
+  //         title={`${
+  //           item?.data?.product_code
+  //         }_water_image.${getExtensionFromName(item?.data?.water_image)}`}
+  //       />
+  //     </div>
+  //   );
+  // }, []);
 
   const laminationTemplate = item => {
     const lamination = [...(item?.data?.lamination_type_name || [])]?.sort();
@@ -981,8 +998,12 @@ export default function Product({ hasAccess }) {
 
   const onPageChange = useCallback(
     page => {
-      if (page !== currentPage) {
-        let pageIndex = currentPage;
+      const updatedCurrentPage = showMobileChecked
+        ? mobileCurrentPage
+        : currentPage;
+
+      if (page !== updatedCurrentPage) {
+        let pageIndex = updatedCurrentPage;
         if (page?.page === 'Prev') pageIndex--;
         else if (page?.page === 'Next') pageIndex++;
         else pageIndex = page;
@@ -990,7 +1011,12 @@ export default function Product({ hasAccess }) {
         dispatch(
           setAllFilters({
             ...allFilters,
-            product: { ...allFilters?.product, currentPage: pageIndex },
+            product: {
+              ...allFilters?.product,
+              ...(showMobileChecked
+                ? { mobileCurrentPage: pageIndex }
+                : { currentPage: pageIndex }),
+            },
           }),
         );
 
@@ -1009,21 +1035,20 @@ export default function Product({ hasAccess }) {
       }
     },
     [
-      applied,
-      dispatch,
-      pageLimit,
-      allFilters,
       currentPage,
-      searchQuery,
       showMobileChecked,
+      mobileCurrentPage,
+      dispatch,
+      allFilters,
       mobileCurrentPageLimit,
+      searchQuery,
+      applied,
+      pageLimit,
     ],
   );
 
   const onPageRowsChange = useCallback(
     page => {
-      // setPageLimit(page);
-      // setCurrentPage(page === 0 ? 0 : 1);
       const updatedCurrentPage = page === 0 ? 0 : 1;
 
       dispatch(
@@ -1031,8 +1056,12 @@ export default function Product({ hasAccess }) {
           ...allFilters,
           product: {
             ...allFilters?.product,
-            currentPage: page === 0 ? 0 : 1,
-            pageLimit: page,
+            ...(showMobileChecked
+              ? { mobileCurrentPage: updatedCurrentPage }
+              : { currentPage: updatedCurrentPage }),
+            ...(showMobileChecked
+              ? { mobileCurrentPageLimit: page }
+              : { pageLimit: page }),
           },
         }),
       );
@@ -1278,8 +1307,78 @@ export default function Product({ hasAccess }) {
         </span>
       );
     },
-    [navigate],
+    [dispatch, isGetInitialValuesProduct, navigate],
   );
+
+  const handleAiComparedImageReview = useCallback(
+    async (e, productId) => {
+      e?.stopPropagation();
+
+      setIsAiComparedImageReviewDialog(true);
+
+      const response = await dispatch(getAiComparedImageReview(productId));
+      setAiComparedImageReviewData(response);
+    },
+    [dispatch],
+  );
+
+  const aiComparedStatusTemplate = useCallback(
+    ({ data }) => {
+      return (
+        <Tag
+          value={data.ai_compared ? 'Compared' : 'Not Compared'}
+          severity={getAiImageComparedSeverity(data.ai_compared)}
+          className="me-2"
+          onClick={e => {
+            if (!!data.ai_compared) {
+              handleAiComparedImageReview(e, data._id);
+            }
+          }}
+          style={{ cursor: data.ai_compared && 'pointer' }}
+        />
+      );
+    },
+    [handleAiComparedImageReview],
+  );
+
+  const designNameTemplate = row => {
+    return (
+      <OverlayTrigger
+        overlay={props => (
+          <Tooltip {...props}>{row?.data?.design_name}</Tooltip>
+        )}
+        placement="top"
+      >
+        <span>{row?.data?.design_name}</span>
+      </OverlayTrigger>
+    );
+  };
+
+  const industryNameTemplate = row => {
+    return (
+      <OverlayTrigger
+        overlay={props => (
+          <Tooltip {...props}>{row?.data?.industry_name}</Tooltip>
+        )}
+        placement="top"
+      >
+        <span>{row?.data?.industry_name}</span>
+      </OverlayTrigger>
+    );
+  };
+
+  const createdByNameTemplate = row => {
+    return (
+      <OverlayTrigger
+        overlay={props => (
+          <Tooltip {...props}>{row?.data?.created_by_name}</Tooltip>
+        )}
+        placement="top"
+      >
+        <span>{row?.data?.created_by_name}</span>
+      </OverlayTrigger>
+    );
+  };
 
   const renderProductTable = useMemo(() => {
     return (
@@ -1340,27 +1439,6 @@ export default function Product({ hasAccess }) {
             filter={filterToggle}
           ></Column> */}
           <Column
-            field="name"
-            header="Warehouse"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
-          ></Column>
-          <Column
-            field="qty"
-            header="Qty(Pcs)"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
-          ></Column>
-          <Column
-            field="kg_qty"
-            header="Qty(Kgs)"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
-          ></Column>
-          <Column
             field="product_code"
             header="Product Code"
             className="product_code_page"
@@ -1368,20 +1446,6 @@ export default function Product({ hasAccess }) {
             filterMatchMode="contains"
             filter={filterToggle}
             body={productCodeTemplate}
-          ></Column>
-          <Column
-            field="material_name"
-            header="Material"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
-          ></Column>
-          <Column
-            field="form_name"
-            header="Form"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
           ></Column>
           <Column
             field="bag_type_name"
@@ -1411,6 +1475,7 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact"
           ></Column>
           <Column
             field="height"
@@ -1418,6 +1483,7 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact"
           ></Column>
           <Column
             field="gusset"
@@ -1425,6 +1491,7 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact"
           ></Column>
           <Column
             field="gsm"
@@ -1432,6 +1499,7 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact"
           ></Column>
           <Column
             field="fabric_color_name"
@@ -1446,6 +1514,8 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact custom_column_compact"
+            body={designNameTemplate}
           ></Column>
           <Column
             field="industry_name"
@@ -1453,6 +1523,8 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact custom_column_compact"
+            body={industryNameTemplate}
           ></Column>
           <Column
             field="created_by_name"
@@ -1460,6 +1532,16 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact custom_column_compact"
+            body={createdByNameTemplate}
+          ></Column>
+          <Column
+            field="ai_compared"
+            header="AI Compared Status"
+            sortable
+            filter={filterToggle}
+            filterMatchMode="contains"
+            body={aiComparedStatusTemplate}
           ></Column>
           <Column
             field="action"
@@ -1480,8 +1562,8 @@ export default function Product({ hasAccess }) {
     );
   }, [
     RealImageTemplate,
-    WaterImageTemplate,
     allCommon,
+    aiComparedStatusTemplate,
     checkboxTemplate,
     currentPage,
     customSort,
@@ -1548,27 +1630,6 @@ export default function Product({ hasAccess }) {
             filter={filterToggle}
           ></Column> */}
           <Column
-            field="name"
-            header="Warehouse"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
-          ></Column>
-          <Column
-            field="qty"
-            header="Qty(Pcs)"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
-          ></Column>
-          <Column
-            field="kg_qty"
-            header="Qty(Kgs)"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
-          ></Column>
-          <Column
             field="product_code"
             header="Product Code"
             className="product_code_page"
@@ -1576,20 +1637,6 @@ export default function Product({ hasAccess }) {
             filterMatchMode="contains"
             filter={filterToggle}
             body={productCodeTemplate}
-          ></Column>
-          <Column
-            field="material_name"
-            header="Material"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
-          ></Column>
-          <Column
-            field="form_name"
-            header="Form"
-            sortable
-            filter={filterToggle}
-            filterMatchMode="contains"
           ></Column>
           <Column
             field="bag_type_name"
@@ -1619,6 +1666,7 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact"
           ></Column>
           <Column
             field="height"
@@ -1626,6 +1674,7 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact"
           ></Column>
           <Column
             field="gusset"
@@ -1633,6 +1682,7 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact"
           ></Column>
           <Column
             field="gsm"
@@ -1640,6 +1690,7 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="column_compact"
           ></Column>
           <Column
             field="fabric_color_name"
@@ -1654,6 +1705,8 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="custom_column_compact"
+            body={designNameTemplate}
           ></Column>
           <Column
             field="industry_name"
@@ -1661,6 +1714,16 @@ export default function Product({ hasAccess }) {
             sortable
             filter={filterToggle}
             filterMatchMode="contains"
+            className="custom_column_compact"
+            body={industryNameTemplate}
+          ></Column>
+          <Column
+            field="ai_compared"
+            header="AI Compared Status"
+            sortable
+            filter={filterToggle}
+            filterMatchMode="contains"
+            body={aiComparedStatusTemplate}
           ></Column>
           <Column
             field="action"
@@ -1673,7 +1736,7 @@ export default function Product({ hasAccess }) {
           pageLimit={mobileCurrentPageLimit}
           onPageChange={onPageChange}
           onPageRowsChange={onPageRowsChange}
-          currentPage={currentPage}
+          currentPage={mobileCurrentPage}
           totalCount={mobileProductCount}
           isRestrictTotalEntries
         />
@@ -1681,23 +1744,22 @@ export default function Product({ hasAccess }) {
     );
   }, [
     mobileCurrentPageLimit,
-    // pageLimit,
     mobileProductList,
     customSort,
     productLoading,
     filterToggle,
     imageTemplate,
     RealImageTemplate,
-    WaterImageTemplate,
     productCodeTemplate,
     stockConsumptionAction,
     onPageChange,
     onPageRowsChange,
-    currentPage,
+    mobileCurrentPage,
     mobileProductCount,
     dispatch,
     allCommon,
     checkboxTemplate,
+    aiComparedStatusTemplate,
   ]);
 
   const handleShowMobileCheckbox = useCallback(
@@ -1754,7 +1816,15 @@ export default function Product({ hasAccess }) {
         dispatch(setMobileProductList(updatedMobileProductList || []));
       }
     },
-    [clearAppliedFilter, allCommon, dispatch, mobileProductList],
+    [
+      dispatch,
+      allCommon,
+      clearAppliedFilter,
+      mobileCurrentPageLimit,
+      applied,
+      pageLimit,
+      mobileProductList,
+    ],
   );
 
   const handleSearchInput = (e, mobileChecked) => {
@@ -2085,6 +2155,7 @@ export default function Product({ hasAccess }) {
           </div>
         </Dialog>
       </div>
+
       <FilterOverlay
         op={op}
         filters={filters}
@@ -2108,6 +2179,15 @@ export default function Product({ hasAccess }) {
         visible={deletePopup}
         handleDelete={handleDelete}
         setDeletePopup={setDeletePopup}
+      />
+      <AiComparedImageReviewDialog
+        visible={isAiComparedImageReviewDialog}
+        onHide={() => {
+          setIsAiComparedImageReviewDialog(false);
+          setAiComparedImageReviewData(null);
+        }}
+        reviewData={aiComparedImageReviewData}
+        loading={productLoading}
       />
     </>
   );
